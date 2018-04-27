@@ -1003,11 +1003,13 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetDepthStencilState(ID3D10DepthStencilState ** ppStencil, UINT * StencilRef)
 	{
-		*ppStencil = nullptr;
+		if (ppStencil)
+			*ppStencil = nullptr;
+
 		ID3D11DepthStencilState* dx11DepthStencil = nullptr;
 		m_context->OMGetDepthStencilState(&dx11DepthStencil, StencilRef);
 
-		if (dx11DepthStencil)
+		if (dx11DepthStencil && ppStencil)
 			*ppStencil = LookupFromD3D11<ID3D10DepthStencilState, ID3D11DepthStencilState>(dx11DepthStencil);
 	}
 	void STDMETHODCALLTYPE D3D10Device::SOGetTargets(UINT NumBuffers, ID3D10Buffer ** ppSOTargets, UINT * pOffsets)
@@ -1022,16 +1024,21 @@ namespace dxup
 		for (UINT i = 0; i < NumBuffers; i++)
 			dx10targets.push_back(LookupFromD3D11<ID3D10Buffer, ID3D11Buffer>(dx11targets[i]));
 
-		std::memcpy(ppSOTargets, dx10targets.data(), NumBuffers * sizeof(ID3D10Buffer*));
-		std::memcpy(pOffsets, m_soOffsets.data(), m_soOffsets.size() * sizeof(UINT));
+		if (ppSOTargets)
+			std::memcpy(ppSOTargets, dx10targets.data(), NumBuffers * sizeof(ID3D10Buffer*));
+
+		if (pOffsets)
+			std::memcpy(pOffsets, m_soOffsets.data(), m_soOffsets.size() * sizeof(UINT));
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetState(ID3D10RasterizerState** ppState)
 	{
-		*ppState = nullptr;
+		if (ppState)
+			*ppState = nullptr;
+
 		ID3D11RasterizerState* dx11Raster = nullptr;
 		m_context->RSGetState(&dx11Raster);
 
-		if (dx11Raster)
+		if (dx11Raster && ppState)
 			*ppState = LookupFromD3D11<ID3D10RasterizerState, ID3D11RasterizerState>(dx11Raster);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetViewports(UINT* pNumViewports, D3D10_VIEWPORT* pViewports)
@@ -1095,21 +1102,22 @@ namespace dxup
 	{
 		ID3D11Resource* d3d11Resource = nullptr;
 
-		D3D10_RESOURCE_DIMENSION resourceType = D3D10_RESOURCE_DIMENSION_UNKNOWN;
-
 		if (pResource)
+		{
+			D3D10_RESOURCE_DIMENSION resourceType = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 			pResource->GetType(&resourceType);
 
-		switch (resourceType)
-		{
-		case D3D10_RESOURCE_DIMENSION_BUFFER:
-			d3d11Resource = static_cast<D3D10Buffer*>(pResource)->GetD3D11Interface(); break;
-		case D3D10_RESOURCE_DIMENSION_TEXTURE1D:
-			d3d11Resource = static_cast<D3D10Texture1D*>(pResource)->GetD3D11Interface(); break;
-		case D3D10_RESOURCE_DIMENSION_TEXTURE2D:
-			d3d11Resource = static_cast<D3D10Texture2D*>(pResource)->GetD3D11Interface(); break;
-		case D3D10_RESOURCE_DIMENSION_TEXTURE3D:
-			d3d11Resource = static_cast<D3D10Texture3D*>(pResource)->GetD3D11Interface(); break;
+			switch (resourceType)
+			{
+			case D3D10_RESOURCE_DIMENSION_BUFFER:
+				d3d11Resource = static_cast<D3D10Buffer*>(pResource)->GetD3D11Interface(); break;
+			case D3D10_RESOURCE_DIMENSION_TEXTURE1D:
+				d3d11Resource = static_cast<D3D10Texture1D*>(pResource)->GetD3D11Interface(); break;
+			case D3D10_RESOURCE_DIMENSION_TEXTURE2D:
+				d3d11Resource = static_cast<D3D10Texture2D*>(pResource)->GetD3D11Interface(); break;
+			case D3D10_RESOURCE_DIMENSION_TEXTURE3D:
+				d3d11Resource = static_cast<D3D10Texture3D*>(pResource)->GetD3D11Interface(); break;
+			}
 		}
 
 		return d3d11Resource;
