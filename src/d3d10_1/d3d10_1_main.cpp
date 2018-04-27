@@ -1,7 +1,7 @@
 #include <array>
 
 #include "d3d10_1_device.h"
-#include "dxgi_swapchain.h"
+#include "../dxgi/dxgi_swapchain.h"
 
 extern "C"
 {
@@ -16,6 +16,20 @@ extern "C"
 		D3D_FEATURE_LEVEL_9_2,
 		D3D_FEATURE_LEVEL_9_1,
 	};
+
+	typedef void (__stdcall *DXUPWrapSwapChain)(IDXGISwapChain** ppSwapChain);
+
+	DXUPWrapSwapChain SwapChainWrapFunc = nullptr;
+	void DXGISwapchainWrapper(IDXGISwapChain** ppSwapchain)
+	{
+		if (!SwapChainWrapFunc)
+		{
+			HMODULE dxgiModule = LoadLibraryA("dxgi.dll");
+			SwapChainWrapFunc = (DXUPWrapSwapChain) GetProcAddress(dxgiModule, "DXUPWrapSwapChain");
+		}
+
+		SwapChainWrapFunc(ppSwapchain);
+	}
 
 	HRESULT STDMETHODCALLTYPE D3D10CreateDevice1(
 		_In_  IDXGIAdapter         *pAdapter,
@@ -78,7 +92,10 @@ extern "C"
 
 		pDX11Device->QueryInterface(__uuidof(ID3D11Device1), (void **)&pDX11Device1);
 
-		*ppSwapChain = new DXGISwapChain(pSwapChain);
+		DXGISwapchainWrapper(&pSwapChain);
+
+		*ppSwapChain = pSwapChain;
+
 		*ppDevice = new D3D10Device(pDX11Device1);
 
 		return result;

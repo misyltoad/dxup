@@ -1,11 +1,21 @@
 #pragma once
 
 #include <dxgi.h>
+
+#ifndef NO_MAP
+#define NO_MAP
+#endif
 #include "d3d10_1_base.h"
 
 namespace dxup
 {
-	class DXGISwapChain : public D3D10Unknown<IDXGISwapChain, IDXGISwapChain>
+#ifdef DXUP_DXGI_EXPORTS
+#define DXUP_DXGI_EXPORT __declspec(dllexport)
+#else
+#define DXUP_DXGI_EXPORT __declspec(dllimport)
+#endif
+
+	class DXUP_DXGI_EXPORT DXGISwapChain : public D3D10Unknown<IDXGISwapChain, IDXGISwapChain>
 	{
 	public:
 		DXGISwapChain(IDXGISwapChain* pBase);

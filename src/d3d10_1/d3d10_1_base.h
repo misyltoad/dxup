@@ -6,6 +6,12 @@
 
 namespace dxup
 {
+#ifdef DXUP_EXPORTS
+#define DXUP_EXPORT __declspec(dllexport)
+#else
+#define DXUP_EXPORT __declspec(dllimport)
+#endif
+
 #ifdef _DEBUG
 	#define DXUP_Assert(condition, text, ...) \
 	if (! (condition) ) \
@@ -24,7 +30,7 @@ namespace dxup
 	#define DXUP_Warn(condition, text, ...)
 #endif
 
-	extern std::unordered_map<void*, void*> D3D11ToD3D10InterfaceMap;
+	DXUP_EXPORT extern std::unordered_map<void*, void*> D3D11ToD3D10InterfaceMap;
 
 	template<typename DX10Interface, typename DX11Interface>
 	class D3D10Unknown : public DX10Interface

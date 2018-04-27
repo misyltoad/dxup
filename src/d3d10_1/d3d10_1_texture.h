@@ -24,7 +24,7 @@ namespace dxup {
 		void STDMETHODCALLTYPE Unmap(UINT Subresource) final;
 	};
 
-	class D3D10Texture2D : public D3D10DeviceChildDesc<D3D10_TEXTURE2D_DESC, ID3D10Texture2D, ID3D11Texture2D> 
+	class DXUP_EXPORT D3D10Texture2D : public D3D10DeviceChildDesc<D3D10_TEXTURE2D_DESC, ID3D10Texture2D, ID3D11Texture2D>
 	{
 	public:
 		D3D10Texture2D(const D3D10_TEXTURE2D_DESC* pDesc, D3D10Device* pDevice, ID3D11Texture2D* pTexture);

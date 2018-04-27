@@ -1,4 +1,7 @@
 #include "../d3d10_original/d3d10_original.h"
+#include "../d3d10_1/d3d10_1_base.h"
+
+FILE* g_LogFile = nullptr;
 
 D3D10OriginalInterface* D3D10OriginalInterface::s_d3d10OriginalInterface = nullptr;
 

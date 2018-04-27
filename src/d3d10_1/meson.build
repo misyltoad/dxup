@@ -10,7 +10,6 @@ d3d10_1_src = [
   'd3d10_1_view_dsv.cpp',
   'd3d10_1_view_rtv.cpp',
   'd3d10_1_view_srv.cpp',
-  'dxgi_swapchain.cpp'
 ]
 
 d3d10_1_dll = shared_library('d3d10_1', d3d10_1_src,
@@ -18,6 +17,7 @@ d3d10_1_dll = shared_library('d3d10_1', d3d10_1_src,
   install             : true,
   dependencies        : [ d3d11_lib ],
   vs_module_defs      : 'd3d10_1.def',
+  cpp_args			  : '-DDXUP_EXPORTS',
   override_options    : ['cpp_std='+dxup_cpp_std])
 
 d3d10_1_dep = declare_dependency(

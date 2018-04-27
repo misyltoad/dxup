@@ -44,7 +44,7 @@ namespace dxup
 		if (riid == __uuidof(IDXGIDevice) || riid == __uuidof(IDXGIDevice1) || riid == __uuidof(IDXGIDevice2))
 			return m_base->QueryInterface(riid, ppvObject);
 
-		if (riid == __uuidof(ID3D10InfoQueue)) 
+		if (riid == __uuidof(ID3D10InfoQueue) || riid == __uuidof(ID3D10Debug))
 			return E_FAIL;
 
 		DXUP_Warn(false, "Couldn't find interface!");
@@ -107,14 +107,8 @@ namespace dxup
 		ID3D11Texture1D* texture;
 
 		D3D11_TEXTURE1D_DESC desc;
-		desc.ArraySize = pDesc->ArraySize;
-		desc.BindFlags = pDesc->BindFlags;
-		desc.CPUAccessFlags = pDesc->CPUAccessFlags;
-		desc.Format = pDesc->Format;
-		desc.MipLevels = pDesc->MipLevels;
+		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE1D_DESC));
 		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
-		desc.Usage = D3D11_USAGE(pDesc->Usage);
-		desc.Width = pDesc->Width;
 
 		HRESULT result = m_base->CreateTexture1D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
 
@@ -136,16 +130,8 @@ namespace dxup
 		ID3D11Texture2D* texture;
 
 		D3D11_TEXTURE2D_DESC desc;
-		desc.ArraySize = pDesc->ArraySize;
-		desc.BindFlags = pDesc->BindFlags;
-		desc.CPUAccessFlags = pDesc->CPUAccessFlags;
-		desc.Format = pDesc->Format;
-		desc.Height = pDesc->Height;
-		desc.MipLevels = pDesc->MipLevels;
+		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE2D_DESC));
 		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
-		desc.SampleDesc = pDesc->SampleDesc;
-		desc.Usage = D3D11_USAGE(pDesc->Usage);
-		desc.Width = pDesc->Width;
 
 		HRESULT result = m_base->CreateTexture2D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
 
@@ -169,16 +155,8 @@ namespace dxup
 		ID3D11Texture3D* texture;
 
 		D3D11_TEXTURE3D_DESC desc;
-
-		desc.BindFlags = pDesc->BindFlags;
-		desc.CPUAccessFlags = pDesc->CPUAccessFlags;
-		desc.Depth = pDesc->Depth;
-		desc.Format = pDesc->Format;
-		desc.Height = pDesc->Height;
-		desc.MipLevels = pDesc->MipLevels;
-		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
-		desc.Usage = D3D11_USAGE(pDesc->Usage);
-		desc.Width = pDesc->Width;
+		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE3D_DESC));
+		desc.MipLevels = FixMiscFlags(pDesc->MiscFlags);
 
 		HRESULT result = m_base->CreateTexture3D((const D3D11_TEXTURE3D_DESC*)pDesc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
 
@@ -549,14 +527,18 @@ namespace dxup
 
 		if (pQueryDesc)
 		{
-			queryDesc.MiscFlags = pQueryDesc->MiscFlags;
+			queryDesc.MiscFlags = FixMiscFlags(pQueryDesc->MiscFlags);
 			queryDesc.Query = ConvertD3D10_QUERY(pQueryDesc->Query);
 		}
 
 		HRESULT result = m_base->CreateQuery(pQueryDesc ? &queryDesc : nullptr, &dx11Query);
 
-		if (ppQuery && dx11Query)
-			*ppQuery = new D3D10Query(pQueryDesc, this, dx11Query);
+		if (dx11Query)
+		{
+			auto* query = new D3D10Query(pQueryDesc, this, dx11Query);
+			if (ppQuery)
+				*ppQuery = query;
+		}
 		return result;
 	}
 
@@ -571,14 +553,18 @@ namespace dxup
 
 		if (pPredicateDesc)
 		{
-			queryDesc.MiscFlags = pPredicateDesc->MiscFlags;
+			queryDesc.MiscFlags = FixMiscFlags(pPredicateDesc->MiscFlags);
 			queryDesc.Query = ConvertD3D10_QUERY(pPredicateDesc->Query);
 		}
 
 		HRESULT result = m_base->CreatePredicate(pPredicateDesc ? &queryDesc : nullptr, &dx11Query);
 
-		if (dx11Query && ppPredicate)
-			*ppPredicate = (ID3D10Predicate*)(new D3D10Query(pPredicateDesc, this, dx11Query));
+		if (dx11Query)
+		{
+			auto* predicate = new D3D10Query(pPredicateDesc, this, dx11Query);
+			if (ppPredicate)
+				*ppPredicate = predicate;
+		}
 		return result;
 	}
 
@@ -905,9 +891,12 @@ namespace dxup
 		auto* dxupSRV = static_cast<D3D10ShaderResourceView*>(pSRV);
 		m_context->GenerateMips(dxupSRV->GetD3D11Interface());
 	}
-	void STDMETHODCALLTYPE D3D10Device::ResolveSubresource(ID3D10Resource *, UINT, ID3D10Resource *, UINT, DXGI_FORMAT)
+	void STDMETHODCALLTYPE D3D10Device::ResolveSubresource(ID3D10Resource * pDstResource, UINT DstSubresource, ID3D10Resource * pSrcResource, UINT SrcSubresource, DXGI_FORMAT Format)
 	{
-		printf("Stub: ResolveSubresource\n");
+		auto* dst = ResolveResource(pDstResource);
+		auto* src = ResolveResource(pSrcResource);
+
+		m_context->ResolveSubresource(dst, DstSubresource, src, SrcSubresource, Format);
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSGetConstantBuffers(UINT, UINT, ID3D10Buffer **)
 	{
@@ -965,9 +954,16 @@ namespace dxup
 	{
 		printf("Stub: VSGetSamplers\n");
 	}
-	void STDMETHODCALLTYPE D3D10Device::GetPredication(ID3D10Predicate **, BOOL *)
+	void STDMETHODCALLTYPE D3D10Device::GetPredication(ID3D10Predicate ** ppPredicate, BOOL * pPredicateValue)
 	{
-		printf("Stub: GetPredication\n");
+		ID3D11Predicate* pDX11Predicate = nullptr;
+		m_context->GetPredication(&pDX11Predicate, pPredicateValue);
+
+		if (pDX11Predicate)
+		{
+			if (ppPredicate)
+				*ppPredicate = LookupFromD3D11<ID3D10Predicate, ID3D11Predicate>(pDX11Predicate);
+		}
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSGetShaderResources(UINT, UINT, ID3D10ShaderResourceView **)
 	{
@@ -977,13 +973,33 @@ namespace dxup
 	{
 		printf("Stub: GSGetSamplers\n");
 	}
-	void STDMETHODCALLTYPE D3D10Device::OMGetRenderTargets(UINT, ID3D10RenderTargetView **, ID3D10DepthStencilView **)
+	void STDMETHODCALLTYPE D3D10Device::OMGetRenderTargets(UINT NumViews, ID3D10RenderTargetView ** ppRenderTargetViews, ID3D10DepthStencilView ** ppDepthStencilView)
 	{
-		printf("Stub: OMGetRenderTargets\n");
+		std::vector<ID3D11RenderTargetView*> rtvs;
+		rtvs.reserve(NumViews);
+		ID3D11DepthStencilView* dsv;
+
+		m_context->OMGetRenderTargets(NumViews, rtvs.data(), &dsv);
+
+		if (ppRenderTargetViews)
+		{
+			for (UINT i = 0; i < NumViews; i++)
+				ppRenderTargetViews[i] = LookupFromD3D11<ID3D10RenderTargetView, ID3D11RenderTargetView>(rtvs[i]);
+		}
+
+		if (dsv)
+		{
+			if (ppDepthStencilView)
+				*ppDepthStencilView = LookupFromD3D11<ID3D10DepthStencilView, ID3D11DepthStencilView>(dsv);
+		}
 	}
-	void STDMETHODCALLTYPE D3D10Device::OMGetBlendState(ID3D10BlendState **, FLOAT[], UINT *)
+	void STDMETHODCALLTYPE D3D10Device::OMGetBlendState(ID3D10BlendState ** ppBlendState , FLOAT BlendFactor[4], UINT* pSampleMask)
 	{
-		printf("Stub: OMGetBlendState\n");
+		ID3D11BlendState* pDX11BlendState;
+		m_context->OMGetBlendState(&pDX11BlendState, BlendFactor, pSampleMask);
+
+		if (ppBlendState && pDX11BlendState)
+			*ppBlendState = LookupFromD3D11<ID3D10BlendState, ID3D11BlendState>(pDX11BlendState);
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetDepthStencilState(ID3D10DepthStencilState ** ppStencil, UINT * StencilRef)
 	{
