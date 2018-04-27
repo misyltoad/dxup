@@ -4,7 +4,7 @@
 
 namespace dxup
 {
-	DXGIFactory::DXGIFactory(IDXGIFactory2* base)
+	DXGIFactory::DXGIFactory(IDXGIFactory1* base)
 	{
 		m_base = base;
 	}
@@ -95,59 +95,4 @@ namespace dxup
 	{
 		return m_base->IsCurrent();
 	}
-
-	BOOL DXGIFactory::IsWindowedStereoEnabled(void)
-	{
-		return m_base->IsWindowedStereoEnabled();
-	}
-
-	HRESULT DXGIFactory::CreateSwapChainForHwnd(IUnknown * pDevice, HWND hWnd, const DXGI_SWAP_CHAIN_DESC1 * pDesc, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC * pFullscreenDesc, IDXGIOutput * pRestrictToOutput, IDXGISwapChain1 ** ppSwapChain)
-	{
-		return E_NOTIMPL;
-	}
-
-	HRESULT DXGIFactory::CreateSwapChainForCoreWindow(IUnknown * pDevice, IUnknown * pWindow, const DXGI_SWAP_CHAIN_DESC1 * pDesc, IDXGIOutput * pRestrictToOutput, IDXGISwapChain1 ** ppSwapChain)
-	{
-		return E_NOTIMPL;
-	}
-
-	HRESULT DXGIFactory::GetSharedResourceAdapterLuid(HANDLE hResource, LUID * pLuid)
-	{
-		return E_NOTIMPL;
-	}
-
-	HRESULT DXGIFactory::RegisterStereoStatusWindow(HWND WindowHandle, UINT wMsg, DWORD * pdwCookie)
-	{
-		return m_base->RegisterStereoStatusWindow(WindowHandle, wMsg, pdwCookie);
-	}
-
-	HRESULT DXGIFactory::RegisterStereoStatusEvent(HANDLE hEvent, DWORD * pdwCookie)
-	{
-		return m_base->RegisterStereoStatusEvent(hEvent, pdwCookie);
-	}
-
-	void DXGIFactory::UnregisterStereoStatus(DWORD dwCookie)
-	{
-		m_base->UnregisterStereoStatus(dwCookie);
-	}
-
-	HRESULT DXGIFactory::RegisterOcclusionStatusWindow(HWND WindowHandle, UINT wMsg, DWORD * pdwCookie)
-	{
-		return E_NOTIMPL;
-	}
-
-	HRESULT DXGIFactory::RegisterOcclusionStatusEvent(HANDLE hEvent, DWORD * pdwCookie)
-	{
-		return E_NOTIMPL;
-	}
-
-	void DXGIFactory::UnregisterOcclusionStatus(DWORD dwCookie)
-	{
-	}
-
-	HRESULT DXGIFactory::CreateSwapChainForComposition(IUnknown * pDevice, const DXGI_SWAP_CHAIN_DESC1 * pDesc, IDXGIOutput * pRestrictToOutput, IDXGISwapChain1 ** ppSwapChain)
-	{
-		return E_NOTIMPL;
-	}
-
 }

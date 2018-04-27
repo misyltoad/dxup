@@ -1,7 +1,7 @@
 #include "dxgi_swapchain.h"
 #include "dxgi_factory.h"
 
-typedef HRESULT(__stdcall *CreateDXGIFactory2Func)(UINT Flags, REFIID riid, void **ppFactory);
+typedef HRESULT(__stdcall *CreateDXGIFactory1Func)(REFIID riid, void **ppFactory);
 
 using namespace dxup;
 
@@ -12,10 +12,10 @@ public:
 	{
 		HMODULE dxgiModule = LoadLibraryA("dxgi_original.dll");
 		if (dxgiModule)
-			CreateDXGIFactory2Function = (CreateDXGIFactory2Func)GetProcAddress(dxgiModule, "CreateDXGIFactory2");
+			CreateDXGIFactory1Function = (CreateDXGIFactory1Func)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
 	}
 
-	CreateDXGIFactory2Func CreateDXGIFactory2Function;
+	CreateDXGIFactory1Func CreateDXGIFactory1Function;
 
 	static DXGIWrapper& Get()
 	{
@@ -43,7 +43,7 @@ extern "C"
 	HRESULT __stdcall CreateDXGIFactory2(UINT Flags, REFIID riid, void **ppFactory)
 	{
 		IDXGIFactory2* pWrappedFactory = nullptr;
-		HRESULT result = DXGIWrapper::Get().CreateDXGIFactory2Function(Flags, __uuidof(IDXGIFactory2), (void**)&pWrappedFactory);
+		HRESULT result = DXGIWrapper::Get().CreateDXGIFactory1Function(__uuidof(IDXGIFactory1), (void**)&pWrappedFactory);
 
 		if (pWrappedFactory)
 		{
