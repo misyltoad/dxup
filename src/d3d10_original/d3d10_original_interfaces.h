@@ -19,6 +19,9 @@ D3D10_ORIGINAL_ARGS(HRESULT, ReflectShader, pShaderBytecode, BytecodeLength, ppR
 D3D10_ORIGINAL_WRAP(HRESULT, DisassembleEffect, ID3D10Effect *pEffect, BOOL EnableColorCode, ID3D10Blob** ppDisassembly)
 D3D10_ORIGINAL_ARGS(HRESULT, DisassembleEffect, pEffect, EnableColorCode, ppDisassembly)
 
+D3D10_ORIGINAL_WRAP(HRESULT, DisassembleShader, const void       *pShader, SIZE_T     BytecodeLength, BOOL       EnableColorCode, LPCSTR     pComments, ID3D10Blob **ppDisassembly)
+D3D10_ORIGINAL_ARGS(HRESULT, DisassembleShader, pShader, BytecodeLength, EnableColorCode, pComments, ppDisassembly)
+
 D3D10_ORIGINAL_WRAP(HRESULT, PreprocessShader, LPCSTR             pSrcData,
 	SIZE_T             SrcDataSize,
 	LPCSTR             pFileName,

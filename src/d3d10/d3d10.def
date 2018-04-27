@@ -17,4 +17,5 @@ EXPORTS
 	D3D10CreateBlob
 	D3D10GetInputSignatureBlob
 	D3D10CreateEffectPoolFromMemory
+	D3D10DisassembleShader
 	RevertToOldImplementation
