@@ -165,7 +165,7 @@ namespace dxup
 			auto* tex = new D3D10Texture3D(pDesc, this, texture);
 
 			if (ppTexture3D)
-				*ppTexture3D = new D3D10Texture3D(pDesc, this, texture);
+				*ppTexture3D = tex;
 		}
 
 		return result;

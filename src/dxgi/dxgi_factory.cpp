@@ -1,5 +1,6 @@
 #include "dxgi_factory.h"
 #include "dxgi_swapchain.h"
+#include "../d3d10_1/d3d10_1_device.h"
 
 namespace dxup
 {
@@ -45,7 +46,10 @@ namespace dxup
 		IDXGISwapChain**      ppSwapChain)
 	{
 		IDXGISwapChain* originalSwapchain = nullptr;
-		HRESULT result = m_base->CreateSwapChain(pDevice, pDesc, &originalSwapchain);
+
+		auto* dxupDevice = static_cast<D3D10Device*>(pDevice);
+
+		HRESULT result = m_base->CreateSwapChain(dxupDevice->GetD3D11Interface(), pDesc, &originalSwapchain);
 
 		if (originalSwapchain)
 		{
