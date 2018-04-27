@@ -18,7 +18,7 @@
 
 namespace dxup
 {
-	std::unordered_map<void*, void*> D3D11ToD3D10InterfaceMap;
+	std::map<void*, void*> D3D11ToD3D10InterfaceMap;
 
 	D3D10Device::D3D10Device(ID3D11Device1* pD3D11Device)
 	{

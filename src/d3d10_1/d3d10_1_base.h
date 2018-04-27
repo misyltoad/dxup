@@ -2,6 +2,7 @@
 
 #include "d3d10_1_include.h"
 #include <unordered_map>
+#include <map>
 #include <assert.h>
 
 namespace dxup
@@ -30,7 +31,7 @@ namespace dxup
 	#define DXUP_Warn(condition, text, ...)
 #endif
 
-	DXUP_EXPORT extern std::unordered_map<void*, void*> D3D11ToD3D10InterfaceMap;
+	DXUP_EXPORT extern std::map<void*, void*> D3D11ToD3D10InterfaceMap;
 
 	template<typename DX10Interface, typename DX11Interface>
 	class D3D10Unknown : public DX10Interface
@@ -44,8 +45,14 @@ namespace dxup
 
 		void SetBase(DX11Interface* pNewBase)
 		{
+			if (m_base)
+			{
+				if (D3D11ToD3D10InterfaceMap.find(m_base) != D3D11ToD3D10InterfaceMap.end())
+					D3D11ToD3D10InterfaceMap.erase(m_base);
+			}
+			
 			m_base = pNewBase;
-			D3D11ToD3D10InterfaceMap[pNewBase] = this;
+			D3D11ToD3D10InterfaceMap[(void*)m_base] = this;
 		}
 
 		DX11Interface* GetBase()

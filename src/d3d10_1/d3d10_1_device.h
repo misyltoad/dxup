@@ -303,6 +303,10 @@ namespace dxup {
 		if (D3D11ToD3D10InterfaceMap.find(genericAddress) != D3D11ToD3D10InterfaceMap.end())
 			return (IDX10*)D3D11ToD3D10InterfaceMap[genericAddress];
 		else
-			return new DX10(address);
+		{
+			auto* dx10 = new DX10(address);
+			D3D11ToD3D10InterfaceMap[address] = dx10;
+			return dx10;
+		}
 	}
 }

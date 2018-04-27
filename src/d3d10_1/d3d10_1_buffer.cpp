@@ -46,16 +46,17 @@ namespace dxup {
 		m_base->GetType((D3D11_RESOURCE_DIMENSION*)(pResourceDimension));
 	}
 
-	HRESULT D3D10Buffer::Map(D3D10_MAP MapType, UINT MapFlags, void ** ppData)
+	HRESULT STDMETHODCALLTYPE D3D10Buffer::Map(D3D10_MAP MapType, UINT MapFlags, void ** ppData)
 	{
 		D3D11_MAPPED_SUBRESOURCE subres;
 		subres.pData = nullptr;
 		HRESULT result = m_device->GetD3D11Context()->Map(m_base, 0, (D3D11_MAP)MapType, MapFlags, &subres);
-		*ppData = subres.pData;
+		if (ppData)
+			*ppData = subres.pData;
 		return result;
 	}
 
-	void D3D10Buffer::Unmap(void)
+	void STDMETHODCALLTYPE D3D10Buffer::Unmap(void)
 	{
 		m_device->GetD3D11Context()->Unmap(m_base, 0);
 	}
