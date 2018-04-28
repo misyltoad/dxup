@@ -18,8 +18,6 @@
 
 namespace dxup
 {
-	std::map<void*, void*> D3D11ToD3D10InterfaceMap;
-
 	D3D10Device::D3D10Device(ID3D11Device1* pD3D11Device)
 	{
 		SetBase(pD3D11Device);
@@ -158,7 +156,7 @@ namespace dxup
 		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE3D_DESC));
 		desc.MipLevels = FixMiscFlags(pDesc->MiscFlags);
 
-		HRESULT result = m_base->CreateTexture3D((const D3D11_TEXTURE3D_DESC*)pDesc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
+		HRESULT result = m_base->CreateTexture3D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
 
 		if (texture)
 		{
@@ -855,13 +853,16 @@ namespace dxup
 
 		m_context->RSSetViewports(NumViewports, viewports.data());
 	}
-	void STDMETHODCALLTYPE D3D10Device::RSSetScissorRects(UINT, const D3D10_RECT *)
+	void STDMETHODCALLTYPE D3D10Device::RSSetScissorRects(UINT NumRects, const D3D10_RECT * pRects)
 	{
-		printf("Stub: RSSetScissorRects\n");
+		m_context->RSSetScissorRects(NumRects, (const D3D11_RECT*)pRects);
 	}
-	void STDMETHODCALLTYPE D3D10Device::CopySubresourceRegion(ID3D10Resource *, UINT, UINT, UINT, UINT, ID3D10Resource *, UINT, const D3D10_BOX *)
+	void STDMETHODCALLTYPE D3D10Device::CopySubresourceRegion(ID3D10Resource * pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D10Resource * pSrcResource, UINT SrcSubresource, const D3D10_BOX * pSrcBox)
 	{
-		printf("Stub: CopySubresourceRegion\n");
+		auto* dstRes = ResolveResource(pDstResource);
+		auto* srcRes = ResolveResource(pSrcResource);
+
+		m_context->CopySubresourceRegion(dstRes, DstSubresource, DstX, DstY, DstZ, srcRes, SrcSubresource, (const D3D11_BOX *)pSrcBox);
 	}
 	void STDMETHODCALLTYPE D3D10Device::CopyResource(ID3D10Resource* a, ID3D10Resource* b)
 	{
@@ -1100,27 +1101,7 @@ namespace dxup
 
 	ID3D11Resource * D3D10Device::ResolveResource(ID3D10Resource* pResource)
 	{
-		ID3D11Resource* d3d11Resource = nullptr;
-
-		if (pResource)
-		{
-			D3D10_RESOURCE_DIMENSION resourceType = D3D10_RESOURCE_DIMENSION_UNKNOWN;
-			pResource->GetType(&resourceType);
-
-			switch (resourceType)
-			{
-			case D3D10_RESOURCE_DIMENSION_BUFFER:
-				d3d11Resource = static_cast<D3D10Buffer*>(pResource)->GetD3D11Interface(); break;
-			case D3D10_RESOURCE_DIMENSION_TEXTURE1D:
-				d3d11Resource = static_cast<D3D10Texture1D*>(pResource)->GetD3D11Interface(); break;
-			case D3D10_RESOURCE_DIMENSION_TEXTURE2D:
-				d3d11Resource = static_cast<D3D10Texture2D*>(pResource)->GetD3D11Interface(); break;
-			case D3D10_RESOURCE_DIMENSION_TEXTURE3D:
-				d3d11Resource = static_cast<D3D10Texture3D*>(pResource)->GetD3D11Interface(); break;
-			}
-		}
-
-		return d3d11Resource;
+		return static_cast<D3D10Buffer*>(pResource)->GetD3D11Interface();
 	}
 
 	void D3D10Device::SetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D10Buffer * const * pObj, DXUP_SHADER_TYPE type)

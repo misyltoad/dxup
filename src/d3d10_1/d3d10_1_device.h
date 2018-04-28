@@ -288,25 +288,21 @@ namespace dxup {
 	template <typename IDX10, typename IDX11>
 	IDX10* LookupFromD3D11(IDX11* address)
 	{
-		auto* genericAddress = (void*)address;
-		if (D3D11ToD3D10InterfaceMap.find(genericAddress) != D3D11ToD3D10InterfaceMap.end())
-			return (IDX10*)D3D11ToD3D10InterfaceMap[genericAddress];
+		UINT DataSize = sizeof(void*);
+		IDX10* returnAddress = nullptr;
+		address->GetPrivateData(__uuidof(IDX10), &DataSize, &address);
 
-		DXUP_Assert(false, "LookupFromD3D11 failed!");
-		return nullptr;
+		return returnAddress;
 	}
 
 	template <typename IDX10, typename IDX11, typename DX10>
 	IDX10* LookupOrCreateFromD3D11(IDX11* address)
 	{
-		auto* genericAddress = (void*)address;
-		if (D3D11ToD3D10InterfaceMap.find(genericAddress) != D3D11ToD3D10InterfaceMap.end())
-			return (IDX10*)D3D11ToD3D10InterfaceMap[genericAddress];
-		else
-		{
-			auto* dx10 = new DX10(address);
-			D3D11ToD3D10InterfaceMap[address] = dx10;
-			return dx10;
-		}
+		UINT DataSize = sizeof(void*);
+		IDX10* returnAddress;
+		if (!FAILED(address->GetPrivateData(__uuidof(IDX10), &DataSize, &returnAddress)))
+			return (IDX10*)returnAddress;
+
+		return new DX10(address);
 	}
 }

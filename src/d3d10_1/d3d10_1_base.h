@@ -31,28 +31,13 @@ namespace dxup
 	#define DXUP_Warn(condition, text, ...)
 #endif
 
-	DXUP_EXPORT extern std::map<void*, void*> D3D11ToD3D10InterfaceMap;
-
 	template<typename DX10Interface, typename DX11Interface>
 	class D3D10Unknown : public DX10Interface
 	{
 	public:
-		~D3D10Unknown()
-		{
-			if (m_base)
-				D3D11ToD3D10InterfaceMap.erase(m_base);
-		}
-
 		void SetBase(DX11Interface* pNewBase)
 		{
-			if (m_base)
-			{
-				if (D3D11ToD3D10InterfaceMap.find(m_base) != D3D11ToD3D10InterfaceMap.end())
-					D3D11ToD3D10InterfaceMap.erase(m_base);
-			}
-			
 			m_base = pNewBase;
-			D3D11ToD3D10InterfaceMap[(void*)m_base] = this;
 		}
 
 		DX11Interface* GetBase()
@@ -104,6 +89,13 @@ namespace dxup
 			void    *pData)
 		{
 			return m_base->GetPrivateData(guid, pDataSize, pData);
+		}
+
+		void SetBase(DX11Interface* pNewBase)
+		{
+			D3D10Unknown<DX10Interface, DX11Interface>::SetBase(pNewBase);
+
+			pNewBase->SetPrivateData(__uuidof(DX10Interface), sizeof(void*), this);
 		}
 
 		HRESULT STDMETHODCALLTYPE SetPrivateData(
