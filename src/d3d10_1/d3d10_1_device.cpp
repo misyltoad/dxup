@@ -325,7 +325,7 @@ namespace dxup
 
 		std::vector<D3D11_SO_DECLARATION_ENTRY> entries;
 
-		for (int i = 0; i < NumEntries; i++)
+		for (UINT i = 0; i < NumEntries; i++)
 		{
 			D3D11_SO_DECLARATION_ENTRY entry;
 			entry.ComponentCount = pSODeclaration[i].ComponentCount;
