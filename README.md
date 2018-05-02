@@ -7,7 +7,7 @@
 
 ### How do I use it?
 Simple (Linux Only):
-Use ``./package-release.sh master /your/target/directory --no-package`` to automagically.
+Use ``./package-release.sh master /your/target/directory --no-package`` to automagically build to the target directory.
 Advanced (Windows & Linux):
 Use meson to build the dlls.
 
