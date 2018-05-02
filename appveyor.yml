@@ -1,5 +1,4 @@
-images:
-  - Visual Studio 2017
+image: Visual Studio 2017
 clone_folder: C:\Projects\DXUP
 shallow_clone: true
 
