@@ -77,6 +77,28 @@ namespace dxup
 		return returnedFlags;
 	}
 
+	UINT UnFixMiscFlags(UINT DX11Flags)
+	{
+		UINT returnedFlags = 0;
+
+		if (DX11Flags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+			returnedFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
+
+		if (DX11Flags & D3D11_RESOURCE_MISC_SHARED)
+			returnedFlags |= D3D10_RESOURCE_MISC_SHARED;
+
+		if (DX11Flags & D3D11_RESOURCE_MISC_TEXTURECUBE)
+			returnedFlags |= D3D10_RESOURCE_MISC_TEXTURECUBE;
+
+		if (DX11Flags & D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX)
+			returnedFlags |= D3D10_RESOURCE_MISC_SHARED_KEYEDMUTEX;
+
+		if (DX11Flags & D3D11_RESOURCE_MISC_GDI_COMPATIBLE)
+			returnedFlags |= D3D10_RESOURCE_MISC_GDI_COMPATIBLE;
+
+		return returnedFlags;
+	}
+
 	HRESULT STDMETHODCALLTYPE D3D10Device::CreateBuffer(
 		const D3D10_BUFFER_DESC*      pDesc,
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
@@ -100,6 +122,7 @@ namespace dxup
 				*ppBuffer = buf;
 		}
 		DXUP_Assert(buffer);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -127,6 +150,7 @@ namespace dxup
 				*ppTexture1D = tex;
 		}
 		DXUP_Assert(texture);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -155,6 +179,7 @@ namespace dxup
 				*ppTexture2D = tex;
 		}
 		DXUP_Assert(texture);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -184,6 +209,7 @@ namespace dxup
 				*ppTexture3D = tex;
 		}
 		DXUP_Assert(texture);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -212,6 +238,7 @@ namespace dxup
 				*ppSRView = pDXUPResourceView;
 		}
 		DXUP_Assert(resourceView);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -250,6 +277,7 @@ namespace dxup
 				*ppRTView = rt;
 		}
 		DXUP_Assert(rtView);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -285,6 +313,7 @@ namespace dxup
 				*ppDepthStencilView = dsv;
 		}
 		DXUP_Assert(dsView);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -311,6 +340,7 @@ namespace dxup
 				*ppInputLayout = il;
 		}
 		DXUP_Assert(inputLayout);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -334,6 +364,7 @@ namespace dxup
 				*ppVertexShader = vs;
 		}
 		DXUP_Assert(dx11Shader);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -358,6 +389,7 @@ namespace dxup
 				*ppGeometryShader = gs;
 		}
 		DXUP_Assert(dx11Shader);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -377,6 +409,7 @@ namespace dxup
 		ID3D11GeometryShader* dx11Shader = nullptr;
 
 		std::vector<D3D11_SO_DECLARATION_ENTRY> entries;
+		entries.reserve(NumEntries);
 
 		for (UINT i = 0; i < NumEntries; i++)
 		{
@@ -399,6 +432,7 @@ namespace dxup
 				*ppGeometryShader = gs;
 		}
 		DXUP_Assert(dx11Shader);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -422,6 +456,7 @@ namespace dxup
 				*ppPixelShader = ps;
 		}
 		DXUP_Assert(dx11Shader);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -489,6 +524,7 @@ namespace dxup
 				*ppBlendState = bs;
 		}
 		DXUP_Assert(dx11BlendState);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -512,6 +548,7 @@ namespace dxup
 				*ppDepthStencilState = dss;
 		}
 		DXUP_Assert(dx11State);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -552,6 +589,7 @@ namespace dxup
 				*ppRasterizerState = rs;
 		}
 		DXUP_Assert(dx11State);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -574,6 +612,7 @@ namespace dxup
 				*ppSamplerState = ss;
 		}
 		DXUP_Assert(dx11State);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -622,6 +661,7 @@ namespace dxup
 				*ppQuery = query;
 		}
 		DXUP_Assert(dx11Query);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -653,6 +693,7 @@ namespace dxup
 				*ppPredicate = predicate;
 		}
 		DXUP_Assert(dx11Query);
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
@@ -965,7 +1006,6 @@ namespace dxup
 		ID3D11Resource* d3d11ResourceA = ResolveResource(a);
 		ID3D11Resource* d3d11ResourceB = ResolveResource(b);
 
-		DXUP_Assert(d3d11ResourceA && d3d11ResourceB);
 		if (d3d11ResourceA && d3d11ResourceB)
 			m_context->CopyResource(d3d11ResourceA, d3d11ResourceB);
 	}
@@ -1230,6 +1270,7 @@ namespace dxup
 
 	ID3D11Resource * D3D10Device::ResolveResource(ID3D10Resource* pResource)
 	{
+		DXUP_Assert(pResource);
 		return static_cast<D3D10Buffer*>(pResource)->GetD3D11Interface();
 	}
 

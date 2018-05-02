@@ -64,6 +64,8 @@ namespace dxup {
 		SetBase(pTexture);
 	}
 
+	extern UINT UnFixMiscFlags(UINT DX11Flags);
+
 	D3D10Texture2D::D3D10Texture2D(ID3D11Texture2D* pTexture)
 	{
 		SetBase(pTexture);
@@ -85,7 +87,7 @@ namespace dxup {
 		m_desc.Format = d3d11Desc.Format;
 		m_desc.Height = d3d11Desc.Height;
 		m_desc.MipLevels = d3d11Desc.MipLevels;
-		m_desc.MiscFlags = d3d11Desc.MiscFlags;
+		m_desc.MiscFlags = UnFixMiscFlags(d3d11Desc.MiscFlags);
 		m_desc.SampleDesc = d3d11Desc.SampleDesc;
 		m_desc.Usage = D3D10_USAGE(d3d11Desc.Usage);
 		m_desc.Width = d3d11Desc.Width;
