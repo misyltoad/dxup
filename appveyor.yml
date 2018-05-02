@@ -36,7 +36,6 @@ build_script:
   - copy C:\Projects\DXUP\build\src\d3d10\d3d10.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\build\src\d3d10_1\d3d10_1.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\build\src\dxgi\dxgi.dll C:\Projects\DXUP\out
-  - copy C:\Projects\DXUP\dxgi_original\%arch%\dxgi_original.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\d3d10_original\%arch%\d3d10_original.dll C:\Projects\DXUP\out
   
 artifacts:
