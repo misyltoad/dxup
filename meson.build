@@ -14,7 +14,7 @@ if dxup_compiler.get_id() == 'msvc'
 	add_global_arguments('/std:' + dxup_cpp_std, language : 'cpp')
 endif
 
-d3d11_lib   = dxup_compiler.find_library('d3d11')
+lib_d3d11   = dxup_compiler.find_library('d3d11')
 
 subdir('src')
 
