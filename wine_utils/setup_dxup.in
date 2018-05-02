@@ -3,9 +3,9 @@
 export WINEDEBUG=-all
 
 dlls_dir=`dirname "$(readlink -f $0)"`
-build_arch='x86'
+build_arch='@arch@'
 
-if [ $build_arch == "x86_64" ]; then
+if [ $build_arch == "x64" ]; then
     wine=wine64
 else
     wine=wine
@@ -160,16 +160,18 @@ check)
     ;;
 esac
 
-echo '[1/6] d3d10:'
+echo '[1/7] d3d10:'
 $fun d3d10
-echo '[2/6] d3d10_1:'
+echo '[2/7] d3d10_1:'
 $fun d3d10_1
-echo '[3/6] d3d10_original:'
+echo '[3/7] d3d10_original:'
 $fun d3d10_original
-echo '[4/6] dxgi:'
+echo '[4/7] dxgi:'
 $fun dxgi
-echo '[5/6] dxgi_original:'
+echo '[5/7] dxgi_original:'
 $fun dxgi_original
-echo '[5/6] d3d11:'
+echo '[5/7] d3d11:'
 $fun d3d11
+echo '[7/7] d3dx10_43:'
+$fun d3dx10_43
 exit $ret
