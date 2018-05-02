@@ -121,9 +121,6 @@ namespace dxup
 			{
 				d3d10->m_cachedResource10 = new D3D10Texture2D(pD3D11Tex);
 				d3d10->m_cachedResource11 = pD3D11Tex;
-
-				d3d10->m_cachedResource10->AddRef();
-				d3d10->m_cachedResource11->AddRef();
 			}
 
 			*ppResource = d3d10->m_cachedResource10;
