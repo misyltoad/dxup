@@ -1,0 +1,37 @@
+images:
+  - Visual Studio 2017
+clone_folder: C:\Projects\DXUP
+shallow_clone: true
+
+environment:
+  parallel: true
+  matrix:
+    - frontend: meson
+      builder: msbuild
+      compiler: cl
+      toolchain: vs2017
+      arch: x64
+      
+    - frontend: meson
+      builder: msbuild
+      compiler: cl
+      toolchain: vs2017
+      arch: x86
+
+
+install:
+  - set PATH=C:\Python35\scripts;%PATH%
+  - pip3 install meson
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" -arch=%arch%
+  
+before_build:
+  - cd C:\Projects\DXUP
+  - mkdir build
+  - meson --backend vs2017 --buildtype release
+  
+build_script:
+  - msbuild /m /p:Configuration=release C:\Projects\DXUP\dxup.sln
+  
+artifacts:
+  - path: C:\Projects\DXUP\build
+    name: DXUP - %arch%
