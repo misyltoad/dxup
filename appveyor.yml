@@ -24,7 +24,7 @@ install:
   - set PATH=C:\Python35\scripts;%PATH%
   - pip3 install meson
   - if "%arch%" == "x64" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
-  - if "%arch%" == "x86" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat")
+  - if "%arch%" == "x86" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" --arch x86)
   
 before_build:
   - cd C:\Projects\DXUP
