@@ -34,5 +34,5 @@ build_script:
   - msbuild /m /p:Configuration=release C:\Projects\DXUP\build\dxup.sln
   
 artifacts:
-  - path: C:\Projects\DXUP\build
+  - path: build
     name: DXUP - %arch%
