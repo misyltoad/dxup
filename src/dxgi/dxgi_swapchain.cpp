@@ -28,7 +28,7 @@ namespace dxup
 			return result;
 		}
 
-		return E_INVALIDARG;
+		return m_base->GetBuffer(Buffer, riid, ppSurface);
 	}
 	HRESULT DXGISwapChain::SetFullscreenState(BOOL Fullscreen, IDXGIOutput * pTarget)
 	{
