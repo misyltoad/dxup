@@ -12,12 +12,14 @@ environment:
       compiler: cl
       toolchain: vs2017
       arch: x64
+      toolarch: win64
       
     - frontend: meson
       builder: msbuild
       compiler: cl
       toolchain: vs2017
       arch: x86
+      toolarch: x86
 
 
 install:
@@ -32,7 +34,7 @@ before_build:
   - meson build --backend vs2017 --buildtype release
   
 build_script:
-  - msbuild /m /property:Platform=%arch% /p:Configuration=Release C:\Projects\DXUP\build\dxup.sln
+  - msbuild /m /property:Platform=%toolarch% /p:Configuration=Release C:\Projects\DXUP\build\dxup.sln
   - copy C:\Projects\DXUP\build\src\d3d10\d3d10.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\build\src\d3d10_1\d3d10_1.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\build\src\dxgi\dxgi.dll C:\Projects\DXUP\out
