@@ -5,13 +5,17 @@
 
 namespace dxup
 {
-	D3D10ShaderResourceView::D3D10ShaderResourceView(const D3D10_SHADER_RESOURCE_VIEW_DESC1* pDesc, D3D10Device* pDevice, ID3D11ShaderResourceView* pSRV, ID3D10Resource* pResource)
+	D3D10ShaderResourceView::D3D10ShaderResourceView(const D3D10_SHADER_RESOURCE_VIEW_DESC1* pDesc, D3D10Device* pDevice, ID3D11ShaderResourceView* pSRV)
+		: m_cachedResource10(nullptr)
+		, m_cachedResource11(nullptr)
 	{
-		m_desc = *pDesc;
+		if (pDesc)
+			m_desc = *pDesc;
+
+		DXUP_Assert(pDesc); // Until I can be bothered to impl default desc.
+
 		m_device = pDevice;
 		SetBase(pSRV);
-
-		m_resource = pResource;
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10ShaderResourceView::QueryInterface(REFIID riid, void** ppvObject)
@@ -39,7 +43,6 @@ namespace dxup
 
 	void STDMETHODCALLTYPE D3D10ShaderResourceView::GetResource(ID3D10Resource** ppResource)
 	{
-		if (ppResource)
-			*ppResource = m_resource;
+		GetBaseResource(ppResource, this);
 	}
 }

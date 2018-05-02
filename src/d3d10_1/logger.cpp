@@ -7,6 +7,7 @@ namespace dxup
 {
 	namespace Logger
 	{
+#ifdef _DEBUG
 		class LoggerInstance
 		{
 		public:
@@ -59,5 +60,6 @@ namespace dxup
 			fputs(buf2, stdout);
 			fflush(stdout);
 		}
+#endif
 	}
 }

@@ -5,13 +5,15 @@
 
 namespace dxup
 {
-	D3D10DepthStencilView::D3D10DepthStencilView(const D3D10_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D10Device* pDevice, ID3D11DepthStencilView* pDSV, ID3D10Resource* pResource)
+	D3D10DepthStencilView::D3D10DepthStencilView(const D3D10_DEPTH_STENCIL_VIEW_DESC* pDesc, D3D10Device* pDevice, ID3D11DepthStencilView* pDSV)
+		: m_cachedResource10(nullptr)
+		, m_cachedResource11(nullptr)
 	{
-		m_desc = *pDesc;
+		if (pDesc)
+			m_desc = *pDesc;
+
 		m_device = pDevice;
 		SetBase(pDSV);
-
-		m_resource = pResource;
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10DepthStencilView::QueryInterface(REFIID riid, void** ppvObject)
@@ -33,7 +35,6 @@ namespace dxup
 
 	void STDMETHODCALLTYPE D3D10DepthStencilView::GetResource(ID3D10Resource** ppResource)
 	{
-		if (ppResource)
-			*ppResource = m_resource;
+		GetBaseResource(ppResource, this);
 	}
 }

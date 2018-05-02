@@ -228,6 +228,8 @@ namespace dxup
 
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
+		DXUP_Assert(d3d11Resource);
+
 		if (!d3d11Resource)
 			return E_INVALIDARG;
 
@@ -237,7 +239,7 @@ namespace dxup
 
 		if (resourceView)
 		{
-			D3D10ShaderResourceView* pDXUPResourceView = new D3D10ShaderResourceView(pDesc, this, resourceView, pResource);
+			D3D10ShaderResourceView* pDXUPResourceView = new D3D10ShaderResourceView(pDesc, this, resourceView);
 			if (ppSRView)
 				*ppSRView = pDXUPResourceView;
 		}
@@ -266,6 +268,8 @@ namespace dxup
 
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
+		DXUP_Assert(d3d11Resource);
+
 		if (!d3d11Resource)
 			return E_INVALIDARG;
 
@@ -274,7 +278,7 @@ namespace dxup
 
 		if (rtView)
 		{
-			auto* rt = new D3D10RenderTargetView(pDesc, this, rtView, pResource);
+			auto* rt = new D3D10RenderTargetView(pDesc, this, rtView);
 
 			if (ppRTView)
 				*ppRTView = rt;
@@ -309,7 +313,7 @@ namespace dxup
 		
 		if (dsView)
 		{
-			auto* dsv = new D3D10DepthStencilView(pDesc, this, dsView, pResource);
+			auto* dsv = new D3D10DepthStencilView(pDesc, this, dsView);
 
 			if (ppDepthStencilView)
 				*ppDepthStencilView = dsv;
@@ -985,7 +989,10 @@ namespace dxup
 		auto* dstRes = ResolveResource(pDstResource);
 		auto* srcRes = ResolveResource(pSrcResource);
 
-		m_context->CopySubresourceRegion(dstRes, DstSubresource, DstX, DstY, DstZ, srcRes, SrcSubresource, (const D3D11_BOX *)pSrcBox);
+		DXUP_Assert(dstRes && srcRes);
+
+		if (dstRes && srcRes)
+			m_context->CopySubresourceRegion(dstRes, DstSubresource, DstX, DstY, DstZ, srcRes, SrcSubresource, (const D3D11_BOX *)pSrcBox);
 	}
 	void STDMETHODCALLTYPE D3D10Device::CopyResource(ID3D10Resource* a, ID3D10Resource* b)
 	{

@@ -10,7 +10,7 @@ namespace dxup
 	{
 	public:
 
-		D3D10ShaderResourceView(const D3D10_SHADER_RESOURCE_VIEW_DESC1* pDesc, D3D10Device* pDevice, ID3D11ShaderResourceView* pSRV, ID3D10Resource* pResource);
+		D3D10ShaderResourceView(const D3D10_SHADER_RESOURCE_VIEW_DESC1* pDesc, D3D10Device* pDevice, ID3D11ShaderResourceView* pSRV);
 
 		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
@@ -18,8 +18,8 @@ namespace dxup
 
 		void STDMETHODCALLTYPE GetResource(ID3D10Resource** ppResource);
 
-	private:
-		ID3D10Resource* m_resource;
+		ID3D10Resource* m_cachedResource10;
+		ID3D11Resource* m_cachedResource11;
 	};
 
 }

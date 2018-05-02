@@ -5,15 +5,15 @@
 
 namespace dxup
 {
-	D3D10RenderTargetView::D3D10RenderTargetView(const D3D10_RENDER_TARGET_VIEW_DESC* pDesc, D3D10Device* pDevice, ID3D11RenderTargetView* pRTV, ID3D10Resource* pResource)
+	D3D10RenderTargetView::D3D10RenderTargetView(const D3D10_RENDER_TARGET_VIEW_DESC* pDesc, D3D10Device* pDevice, ID3D11RenderTargetView* pRTV)
+		: m_cachedResource10(nullptr)
+		, m_cachedResource11(nullptr)
 	{
 		if (pDesc)
 			m_desc = *pDesc;
 
 		m_device = pDevice;
 		SetBase(pRTV);
-		
-		m_resource = pResource;
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10RenderTargetView::QueryInterface(REFIID riid, void** ppvObject)
@@ -35,7 +35,6 @@ namespace dxup
 
 	void STDMETHODCALLTYPE D3D10RenderTargetView::GetResource(ID3D10Resource** ppResource)
 	{
-		if (ppResource)
-			*ppResource = m_resource;
+		GetBaseResource(ppResource, this);
 	}
 }
