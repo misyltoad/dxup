@@ -3,6 +3,8 @@ images:
 clone_folder: C:\Projects\DXUP
 shallow_clone: true
 
+version: 0.{build}
+
 environment:
   parallel: true
   matrix:
