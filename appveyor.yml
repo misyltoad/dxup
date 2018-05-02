@@ -1,4 +1,3 @@
-image: Visual Studio 2017
 clone_folder: C:\Projects\DXUP
 shallow_clone: true
 
@@ -12,16 +11,20 @@ environment:
       compiler: cl
       toolchain: vs2017
       arch: x64
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       
     - frontend: meson
       builder: msbuild
       compiler: cl
       toolchain: vs2017
       arch: x86
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+
 install:
   - set PATH=C:\Python35\scripts;%PATH%
   - pip3 install meson
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" %arch%
+  - if "%arch%" == "x64" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - if "%arch%" == "x86" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat")
   
 before_build:
   - cd C:\Projects\DXUP
