@@ -39,6 +39,7 @@ build_script:
   - copy C:\Projects\DXUP\d3d10_original\%arch%\d3d10_original.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\d3dx10_43\%arch%\d3dx10_43.dll C:\Projects\DXUP\out
   - copy C:\Projects\DXUP\wine_utils\setup_dxup.in C:\Projects\DXUP\out\setup_dxup.sh
+  - copy C:\Projects\DXUP\wine_utils\readme.txt C:\Projects\DXUP\out
   - powershell -Command "(gc C:\Projects\DXUP\out\setup_dxup.sh) -replace '@arch@', \"%arch%\" | Out-File C:\Projects\DXUP\out\setup_dxup.sh"
   
 artifacts:
