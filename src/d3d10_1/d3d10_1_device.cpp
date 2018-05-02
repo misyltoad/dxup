@@ -1095,8 +1095,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::GetPredication(ID3D10Predicate ** ppPredicate, BOOL * pPredicateValue)
 	{
-		if (ppPredicate)
-			*ppPredicate = nullptr;
+		InitReturnPtr(ppPredicate);
 
 		ID3D11Predicate* pDX11Predicate = nullptr;
 		m_context->GetPredication(&pDX11Predicate, pPredicateValue);
