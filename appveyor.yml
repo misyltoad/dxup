@@ -40,5 +40,5 @@ build_script:
   - copy C:\Projects\DXUP\d3d10_original\%arch%\d3d10_original.dll C:\Projects\DXUP\out
   
 artifacts:
-  - path: out/src
-    name: DXUP - %arch%
+  - path: out
+    name: dxup-%arch%
