@@ -3,12 +3,7 @@
 export WINEDEBUG=-all
 
 dlls_dir=`dirname "$(readlink -f $0)"`
-build_arch='@arch@'
-
-if [ ! -f "$dlls_dir/d3d10.dll" ] || [ ! -f "$dlls_dir/d3d10core.dll" ] || [ ! -f "$dlls_dir/dx10_1.dll" ] || [ ! -f "$dlls_dir/dx10_1core.dll" ]; then
-    echo "d3d10.dll, dx3d10core.dll, d3d10_1.dll or d3d10_1core.dll not found in $dlls_dir" >&2
-    exit 1
-fi
+build_arch='x86'
 
 if [ $build_arch == "x86_64" ]; then
     wine=wine64
@@ -165,12 +160,16 @@ check)
     ;;
 esac
 
-echo '[1/4] d3d10:'
+echo '[1/6] d3d10:'
 $fun d3d10
-echo '[2/4] d3d10core:'
-$fun d3d10core
-echo '[3/4] d3d10_1:'
+echo '[2/6] d3d10_1:'
 $fun d3d10_1
-echo '[4/4] d3d10_1core:'
-$fun d3d10_1core
+echo '[3/6] d3d10_original:'
+$fun d3d10_original
+echo '[4/6] dxgi:'
+$fun dxgi
+echo '[5/6] dxgi_original:'
+$fun dxgi_original
+echo '[5/6] d3d11:'
+$fun d3d11
 exit $ret
