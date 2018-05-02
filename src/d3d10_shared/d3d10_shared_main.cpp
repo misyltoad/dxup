@@ -9,17 +9,17 @@ extern "C"
 {
 	const char* __stdcall D3D10GetVertexShaderProfile(ID3D10Device *device)
 	{
-		return "vs_4_0";
+		return "vs_4_1";
 	}
 
 	const char* __stdcall D3D10GetGeometryShaderProfile(ID3D10Device *device)
 	{
-		return "gs_4_0";
+		return "gs_4_1";
 	}
 
 	const char* __stdcall D3D10GetPixelShaderProfile(ID3D10Device *device)
 	{
-		return "ps_4_0";
+		return "ps_4_1";
 	}
 
 	// Unknown params & returntype
