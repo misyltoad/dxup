@@ -31,7 +31,7 @@ before_build:
   - meson build --backend vs2017 --buildtype release
   
 build_script:
-  - msbuild /m /p:Configuration=release C:\Projects\DXUP\dxup.sln
+  - msbuild /m /p:Configuration=release C:\Projects\DXUP\build\dxup.sln
   
 artifacts:
   - path: C:\Projects\DXUP\build
