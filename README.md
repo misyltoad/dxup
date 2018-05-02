@@ -13,7 +13,8 @@ Advanced (Windows & Linux):
 Use meson to build the dlls.
 
 Then set those up as wine overrides if you're on Linux or if you're on windows copy them & the d3d10_original and dxgi_original dlls for the right arch to the game/application folder.
-If you wish to use DXVK then use their dxgi as the dxgi_original dll and the DXUP one as the main override.
+
+**If you wish to use DXVK then use their dxgi as the dxgi_original dll and the DXUP one as the main override.**
 
 ### Screenshots
 
