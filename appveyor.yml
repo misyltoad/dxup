@@ -28,7 +28,7 @@ install:
 before_build:
   - cd C:\Projects\DXUP
   - mkdir build
-  - meson --backend vs2017 --buildtype release
+  - meson build --backend vs2017 --buildtype release
   
 build_script:
   - msbuild /m /p:Configuration=release C:\Projects\DXUP\dxup.sln
