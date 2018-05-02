@@ -27,13 +27,14 @@ namespace dxup
 			return S_OK;
 		}
 
-		DXUP_Warn(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_FAIL;
 	}
 
 	void STDMETHODCALLTYPE D3D10ShaderResourceView::GetDesc(D3D10_SHADER_RESOURCE_VIEW_DESC* pDesc)
 	{
-		std::memcpy(pDesc, &m_desc, sizeof(D3D10_SHADER_RESOURCE_VIEW_DESC));
+		if (pDesc)
+			std::memcpy(pDesc, &m_desc, sizeof(D3D10_SHADER_RESOURCE_VIEW_DESC));
 	}
 
 	void STDMETHODCALLTYPE D3D10ShaderResourceView::GetResource(ID3D10Resource** ppResource)

@@ -27,7 +27,7 @@ namespace dxup
 			return S_OK;
 		}
 
-		DXUP_Warn(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_FAIL;
 	}
 

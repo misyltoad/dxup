@@ -290,7 +290,8 @@ namespace dxup {
 	{
 		UINT DataSize = sizeof(void*);
 		IDX10* returnAddress = nullptr;
-		address->GetPrivateData(__uuidof(IDX10), &DataSize, &address);
+		if (FAILED(address->GetPrivateData(__uuidof(IDX10), &DataSize, &address)))
+			return nullptr;
 
 		return returnAddress;
 	}

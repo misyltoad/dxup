@@ -10,6 +10,7 @@ d3d10_1_src = [
   'd3d10_1_view_dsv.cpp',
   'd3d10_1_view_rtv.cpp',
   'd3d10_1_view_srv.cpp',
+  'logger.cpp'
 ]
 
 d3d10_1_dll = shared_library('d3d10_1', d3d10_1_src,

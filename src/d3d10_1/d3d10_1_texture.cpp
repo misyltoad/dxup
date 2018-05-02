@@ -22,7 +22,7 @@ namespace dxup {
 			return S_OK;
 		}
 
-		DXUP_Warn(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_INVALIDARG;
 	}
 
@@ -105,7 +105,7 @@ namespace dxup {
 			return S_OK;
 		}
 
-		DXUP_Assert(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_FAIL;
 	}
 
@@ -162,7 +162,7 @@ namespace dxup {
 			return S_OK;
 		}
 
-		DXUP_Assert(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_INVALIDARG;
 	}
 

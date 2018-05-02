@@ -1,6 +1,7 @@
 #pragma once
 
 #include "d3d10_1_include.h"
+#include "logger.h"
 #include <unordered_map>
 #include <map>
 #include <assert.h>
@@ -11,24 +12,6 @@ namespace dxup
 #define DXUP_EXPORT __declspec(dllexport)
 #else
 #define DXUP_EXPORT __declspec(dllimport)
-#endif
-
-#ifdef _DEBUG
-	#define DXUP_Assert(condition, text, ...) \
-	if (! (condition) ) \
-	{ \
-		printf(text "\n" , __VA_ARGS__); \
-		int* foo = 0; \
-		*foo = 0xDEAD; \
-	}
-	#define DXUP_Warn(condition, text, ...) \
-	if (! (condition) ) \
-	{ \
-		printf(text "\n" , __VA_ARGS__); \
-	}
-#else
-	#define DXUP_Assert(condition, text, ...)
-	#define DXUP_Warn(condition, text, ...)
 #endif
 
 	template<typename DX10Interface, typename DX11Interface>

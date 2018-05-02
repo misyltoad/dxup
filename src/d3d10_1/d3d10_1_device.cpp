@@ -29,6 +29,9 @@ namespace dxup
 
 	HRESULT STDMETHODCALLTYPE D3D10Device::QueryInterface(REFIID riid, void** ppvObject)
 	{
+		if (ppvObject)
+			*ppvObject = nullptr;
+
 		if (riid == __uuidof(ID3D10Device)
 			|| riid == __uuidof(ID3D10Device1)
 			|| riid == __uuidof(IUnknown)
@@ -43,9 +46,12 @@ namespace dxup
 			return m_base->QueryInterface(riid, ppvObject);
 
 		if (riid == __uuidof(ID3D10InfoQueue) || riid == __uuidof(ID3D10Debug))
+		{
+			DXUP_Log(Warn, "Couldn't find interface, asked for %s!", riid == __uuidof(ID3D10InfoQueue) ? "ID3D10InfoQueue" : "ID3D10Debug");
 			return E_FAIL;
+		}
 
-		DXUP_Warn(false, "Couldn't find interface!");
+		DXUP_Log(Warn, "Couldn't find interface!");
 		return E_FAIL;
 	}
 
@@ -84,15 +90,16 @@ namespace dxup
 		bufferDesc.StructureByteStride = 0;
 		bufferDesc.Usage = D3D11_USAGE(pDesc->Usage);
 
-		ID3D11Buffer* buffer;
-		HRESULT result = m_base->CreateBuffer(&bufferDesc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &buffer);
+		ID3D11Buffer* buffer = nullptr;
+		HRESULT result = m_base->CreateBuffer(&bufferDesc, reinterpret_cast<const D3D11_SUBRESOURCE_DATA*>(pInitialData), &buffer);
 
 		if (buffer)
 		{
-			auto* buf = new D3D10Buffer(pDesc, this, buffer);;
+			auto* buf = new D3D10Buffer(pDesc, this, buffer);
 			if (ppBuffer)
 				*ppBuffer = buf;
 		}
+		DXUP_Assert(buffer);
 
 		return result;
 	}
@@ -102,13 +109,16 @@ namespace dxup
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture1D**       ppTexture1D)
 	{
-		ID3D11Texture1D* texture;
+		if (ppTexture1D)
+			*ppTexture1D = nullptr;
+
+		ID3D11Texture1D* texture = nullptr;
 
 		D3D11_TEXTURE1D_DESC desc;
 		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE1D_DESC));
 		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
 
-		HRESULT result = m_base->CreateTexture1D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
+		HRESULT result = m_base->CreateTexture1D(&desc, reinterpret_cast<const D3D11_SUBRESOURCE_DATA*>(pInitialData), &texture);
 
 		if (texture)
 		{
@@ -116,6 +126,7 @@ namespace dxup
 			if (ppTexture1D)
 				*ppTexture1D = tex;
 		}
+		DXUP_Assert(texture);
 
 		return result;
 	}
@@ -125,13 +136,16 @@ namespace dxup
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture2D**       ppTexture2D)
 	{
-		ID3D11Texture2D* texture;
+		if (ppTexture2D)
+			*ppTexture2D = nullptr;
+
+		ID3D11Texture2D* texture = nullptr;
 
 		D3D11_TEXTURE2D_DESC desc;
 		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE2D_DESC));
 		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
 
-		HRESULT result = m_base->CreateTexture2D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
+		HRESULT result = m_base->CreateTexture2D(&desc, reinterpret_cast<const D3D11_SUBRESOURCE_DATA*>(pInitialData), &texture);
 
 		if (texture)
 		{
@@ -140,6 +154,7 @@ namespace dxup
 			if (ppTexture2D)
 				*ppTexture2D = tex;
 		}
+		DXUP_Assert(texture);
 
 		return result;
 	}
@@ -150,13 +165,16 @@ namespace dxup
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture3D**       ppTexture3D)
 	{
-		ID3D11Texture3D* texture;
+		if (ppTexture3D)
+			*ppTexture3D = nullptr;
+
+		ID3D11Texture3D* texture = nullptr;
 
 		D3D11_TEXTURE3D_DESC desc;
 		std::memcpy(&desc, pDesc, sizeof(D3D10_TEXTURE3D_DESC));
-		desc.MipLevels = FixMiscFlags(pDesc->MiscFlags);
+		desc.MiscFlags = FixMiscFlags(pDesc->MiscFlags);
 
-		HRESULT result = m_base->CreateTexture3D(&desc, (const D3D11_SUBRESOURCE_DATA*)pInitialData, &texture);
+		HRESULT result = m_base->CreateTexture3D(&desc, reinterpret_cast<const D3D11_SUBRESOURCE_DATA*>(pInitialData), &texture);
 
 		if (texture)
 		{
@@ -165,6 +183,7 @@ namespace dxup
 			if (ppTexture3D)
 				*ppTexture3D = tex;
 		}
+		DXUP_Assert(texture);
 
 		return result;
 	}
@@ -174,12 +193,16 @@ namespace dxup
 		const D3D10_SHADER_RESOURCE_VIEW_DESC1*  pDesc,
 		ID3D10ShaderResourceView1**        ppSRView)
 	{
+		if (ppSRView)
+			*ppSRView = nullptr;
+
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
 		if (!d3d11Resource)
 			return E_INVALIDARG;
 
-		ID3D11ShaderResourceView* resourceView;
+		ID3D11ShaderResourceView* resourceView = nullptr;
+		static_assert(sizeof(D3D10_SHADER_RESOURCE_VIEW_DESC1) == sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
 		HRESULT result = m_base->CreateShaderResourceView(d3d11Resource, (const D3D11_SHADER_RESOURCE_VIEW_DESC*) pDesc, &resourceView);
 
 		if (resourceView)
@@ -188,6 +211,7 @@ namespace dxup
 			if (ppSRView)
 				*ppSRView = pDXUPResourceView;
 		}
+		DXUP_Assert(resourceView);
 
 		return result;
 	}
@@ -197,6 +221,7 @@ namespace dxup
 		const D3D10_SHADER_RESOURCE_VIEW_DESC*  pDesc,
 		ID3D10ShaderResourceView**        ppSRView)
 	{
+		static_assert(sizeof(D3D10_SHADER_RESOURCE_VIEW_DESC) == sizeof(D3D10_SHADER_RESOURCE_VIEW_DESC1));
 		return CreateShaderResourceView1(pResource, (const D3D10_SHADER_RESOURCE_VIEW_DESC1*)pDesc, (ID3D10ShaderResourceView1**)ppSRView);
 	}
 
@@ -206,12 +231,15 @@ namespace dxup
 		const D3D10_RENDER_TARGET_VIEW_DESC*    pDesc,
 		ID3D10RenderTargetView**          ppRTView)
 	{
+		if (ppRTView)
+			*ppRTView = nullptr;
+
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
 		if (!d3d11Resource)
 			return E_INVALIDARG;
 
-		ID3D11RenderTargetView* rtView;
+		ID3D11RenderTargetView* rtView = nullptr;
 		HRESULT result = m_base->CreateRenderTargetView(d3d11Resource, reinterpret_cast<const D3D11_RENDER_TARGET_VIEW_DESC*>(pDesc), &rtView);
 
 		if (rtView)
@@ -221,6 +249,8 @@ namespace dxup
 			if (ppRTView)
 				*ppRTView = rt;
 		}
+		DXUP_Assert(rtView);
+
 		return result;
 	}
 
@@ -230,6 +260,9 @@ namespace dxup
 		const D3D10_DEPTH_STENCIL_VIEW_DESC*    pDesc,
 		ID3D10DepthStencilView**          ppDepthStencilView)
 	{
+		if (ppDepthStencilView)
+			*ppDepthStencilView = nullptr;
+
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
 		if (!d3d11Resource)
@@ -241,7 +274,7 @@ namespace dxup
 		desc.Flags = 0;
 		std::memcpy( ((char*)&desc.Flags) + sizeof(UINT), ((char*)&pDesc->ViewDimension) + sizeof(D3D10_DSV_DIMENSION), sizeof(D3D10_TEX2DMS_DSV));
 
-		ID3D11DepthStencilView* dsView;
+		ID3D11DepthStencilView* dsView = nullptr;
 		HRESULT result = m_base->CreateDepthStencilView(d3d11Resource, &desc, &dsView);
 		
 		if (dsView)
@@ -251,6 +284,8 @@ namespace dxup
 			if (ppDepthStencilView)
 				*ppDepthStencilView = dsv;
 		}
+		DXUP_Assert(dsView);
+
 		return result;
 	}
 
@@ -262,7 +297,10 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10InputLayout**         ppInputLayout)
 	{
-		ID3D11InputLayout* inputLayout;
+		if (ppInputLayout)
+			*ppInputLayout = nullptr;
+
+		ID3D11InputLayout* inputLayout = nullptr;
 		HRESULT result = m_base->CreateInputLayout((const D3D11_INPUT_ELEMENT_DESC*)pInputElementDescs, NumElements, pShaderBytecodeWithInputSignature, BytecodeLength, &inputLayout);
 
 		if (inputLayout)
@@ -272,6 +310,8 @@ namespace dxup
 			if (ppInputLayout)
 				*ppInputLayout = il;
 		}
+		DXUP_Assert(inputLayout);
+
 		return result;
 	}
 
@@ -281,7 +321,10 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10VertexShader**        ppVertexShader)
 	{
-		ID3D11VertexShader* dx11Shader;
+		if (ppVertexShader)
+			*ppVertexShader = nullptr;
+
+		ID3D11VertexShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreateVertexShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
 
 		if (dx11Shader)
@@ -290,6 +333,8 @@ namespace dxup
 			if (ppVertexShader)
 				*ppVertexShader = vs;
 		}
+		DXUP_Assert(dx11Shader);
+
 		return result;
 	}
 
@@ -299,7 +344,10 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10GeometryShader**      ppGeometryShader)
 	{
-		ID3D11GeometryShader* dx11Shader;
+		if (ppGeometryShader)
+			*ppGeometryShader = nullptr;
+
+		ID3D11GeometryShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreateGeometryShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
 
 		if (dx11Shader)
@@ -309,6 +357,8 @@ namespace dxup
 			if (ppGeometryShader)
 				*ppGeometryShader = gs;
 		}
+		DXUP_Assert(dx11Shader);
+
 		return result;
 	}
 
@@ -321,7 +371,10 @@ namespace dxup
 		UINT						OutputStreamStride,
 		ID3D10GeometryShader**      ppGeometryShader)
 	{
-		ID3D11GeometryShader* dx11Shader;
+		if (ppGeometryShader)
+			*ppGeometryShader = nullptr;
+
+		ID3D11GeometryShader* dx11Shader = nullptr;
 
 		std::vector<D3D11_SO_DECLARATION_ENTRY> entries;
 
@@ -345,6 +398,8 @@ namespace dxup
 			if (ppGeometryShader)
 				*ppGeometryShader = gs;
 		}
+		DXUP_Assert(dx11Shader);
+
 		return result;
 	}
 
@@ -352,8 +407,12 @@ namespace dxup
 	HRESULT STDMETHODCALLTYPE D3D10Device::CreatePixelShader(
 		const void*                       pShaderBytecode,
 		SIZE_T                      BytecodeLength,
-		ID3D10PixelShader**         ppPixelShader) {
-		ID3D11PixelShader* dx11Shader;
+		ID3D10PixelShader**         ppPixelShader)
+	{
+		if (ppPixelShader)
+			*ppPixelShader = nullptr;
+
+		ID3D11PixelShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreatePixelShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
 		if (dx11Shader)
 		{
@@ -362,6 +421,8 @@ namespace dxup
 			if (ppPixelShader)
 				*ppPixelShader = ps;
 		}
+		DXUP_Assert(dx11Shader);
+
 		return result;
 	}
 
@@ -392,7 +453,10 @@ namespace dxup
 		const D3D10_BLEND_DESC1*          pBlendStateDesc,
 		ID3D10BlendState1**         ppBlendState)
 	{
-		ID3D11BlendState1* dx11BlendState;
+		if (ppBlendState)
+			*ppBlendState = nullptr;
+
+		ID3D11BlendState1* dx11BlendState = nullptr;
 
 		D3D11_BLEND_DESC1 desc;
 		if (pBlendStateDesc)
@@ -424,6 +488,7 @@ namespace dxup
 			if (ppBlendState)
 				*ppBlendState = bs;
 		}
+		DXUP_Assert(dx11BlendState);
 
 		return result;
 	}
@@ -433,7 +498,10 @@ namespace dxup
 		const D3D10_DEPTH_STENCIL_DESC*   pDepthStencilDesc,
 		ID3D10DepthStencilState**   ppDepthStencilState)
 	{
-		ID3D11DepthStencilState* dx11State;
+		if (ppDepthStencilState)
+			*ppDepthStencilState = nullptr;
+
+		ID3D11DepthStencilState* dx11State = nullptr;
 		HRESULT result = m_base->CreateDepthStencilState((const D3D11_DEPTH_STENCIL_DESC*)pDepthStencilDesc, &dx11State);
 
 		if (dx11State)
@@ -443,6 +511,8 @@ namespace dxup
 			if (ppDepthStencilState)
 				*ppDepthStencilState = dss;
 		}
+		DXUP_Assert(dx11State);
+
 		return result;
 	}
 
@@ -451,7 +521,10 @@ namespace dxup
 		const D3D10_RASTERIZER_DESC*      pRasterizerDesc,
 		ID3D10RasterizerState**     ppRasterizerState)
 	{
-		ID3D11RasterizerState1* dx11State;
+		if (ppRasterizerState)
+			*ppRasterizerState = nullptr;
+
+		ID3D11RasterizerState1* dx11State = nullptr;
 
 		D3D11_RASTERIZER_DESC1 desc;
 		if (pRasterizerDesc)
@@ -473,11 +546,13 @@ namespace dxup
 
 		if (dx11State)
 		{
-			auto* rs = new D3D10RasterizerState(pRasterizerDesc, this, dx11State);;
+			auto* rs = new D3D10RasterizerState(pRasterizerDesc, this, dx11State);
 
 			if (ppRasterizerState)
 				*ppRasterizerState = rs;
 		}
+		DXUP_Assert(dx11State);
+
 		return result;
 	}
 
@@ -485,7 +560,10 @@ namespace dxup
 		const D3D10_SAMPLER_DESC*         pSamplerDesc,
 		ID3D10SamplerState**        ppSamplerState)
 	{
-		ID3D11SamplerState* dx11State;
+		if (ppSamplerState)
+			*ppSamplerState = nullptr;
+
+		ID3D11SamplerState* dx11State = nullptr;
 		HRESULT result = m_base->CreateSamplerState((const D3D11_SAMPLER_DESC*)pSamplerDesc, &dx11State);
 
 		if (dx11State)
@@ -495,6 +573,8 @@ namespace dxup
 			if (ppSamplerState)
 				*ppSamplerState = ss;
 		}
+		DXUP_Assert(dx11State);
+
 		return result;
 	}
 
@@ -512,14 +592,18 @@ namespace dxup
 		case D3D10_QUERY_SO_STATISTICS: return D3D11_QUERY_SO_STATISTICS;
 		case D3D10_QUERY_SO_OVERFLOW_PREDICATE: return D3D11_QUERY_SO_OVERFLOW_PREDICATE;
 		}
+
+		DXUP_Log(Warn, "Failed to convert D3D10 Query");
 	}
 
-	// Todo - Josh share code between query & predicate
 	HRESULT STDMETHODCALLTYPE D3D10Device::CreateQuery(
 		const D3D10_QUERY_DESC*           pQueryDesc,
 		ID3D10Query**               ppQuery)
 	{
-		ID3D11Query* dx11Query;
+		if (ppQuery)
+			*ppQuery = nullptr;
+
+		ID3D11Query* dx11Query = nullptr;
 
 		D3D11_QUERY_DESC queryDesc;
 
@@ -537,6 +621,8 @@ namespace dxup
 			if (ppQuery)
 				*ppQuery = query;
 		}
+		DXUP_Assert(dx11Query);
+
 		return result;
 	}
 
@@ -545,7 +631,10 @@ namespace dxup
 		const D3D10_QUERY_DESC*           pPredicateDesc,
 		ID3D10Predicate**           ppPredicate)
 	{
-		ID3D11Predicate* dx11Query;
+		if (ppPredicate)
+			*ppPredicate = nullptr;
+
+		ID3D11Predicate* dx11Query = nullptr;
 
 		D3D11_QUERY_DESC queryDesc;
 
@@ -563,6 +652,8 @@ namespace dxup
 			if (ppPredicate)
 				*ppPredicate = predicate;
 		}
+		DXUP_Assert(dx11Query);
+
 		return result;
 	}
 
@@ -624,7 +715,7 @@ namespace dxup
 
 	void STDMETHODCALLTYPE D3D10Device::CheckCounterInfo(D3D10_COUNTER_INFO* pCounterInfo)
 	{
-		// Todo Later - Josh
+		DXUP_Log(Warn, "Stub: CheckCounterInfo");
 	}
 
 
@@ -639,7 +730,7 @@ namespace dxup
 		LPSTR               szDescription,
 		UINT*               pDescriptionLength)
 	{
-		// Todo Later - Josh
+		DXUP_Log(Warn, "Stub: CheckCounter");
 		return E_NOTIMPL;
 	}
 
@@ -866,10 +957,17 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::CopyResource(ID3D10Resource* a, ID3D10Resource* b)
 	{
+		DXUP_Assert(a && b);
+
+		if (!a || !b)
+			return;
+
 		ID3D11Resource* d3d11ResourceA = ResolveResource(a);
 		ID3D11Resource* d3d11ResourceB = ResolveResource(b);
 
-		m_context->CopyResource(d3d11ResourceA, d3d11ResourceB);
+		DXUP_Assert(d3d11ResourceA && d3d11ResourceB);
+		if (d3d11ResourceA && d3d11ResourceB)
+			m_context->CopyResource(d3d11ResourceA, d3d11ResourceB);
 	}
 	void STDMETHODCALLTYPE D3D10Device::UpdateSubresource(ID3D10Resource * pDstResource, UINT DstSubresource, const D3D10_BOX * pDstBox, const void * pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)
 	{
@@ -894,54 +992,61 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::ResolveSubresource(ID3D10Resource * pDstResource, UINT DstSubresource, ID3D10Resource * pSrcResource, UINT SrcSubresource, DXGI_FORMAT Format)
 	{
+		DXUP_Assert(pDstResource && pSrcResource);
+		if (!pDstResource || !pSrcResource)
+			return;
+
 		auto* dst = ResolveResource(pDstResource);
 		auto* src = ResolveResource(pSrcResource);
 
-		m_context->ResolveSubresource(dst, DstSubresource, src, SrcSubresource, Format);
+		DXUP_Assert(dst && src);
+		if (dst && src)
+			m_context->ResolveSubresource(dst, DstSubresource, src, SrcSubresource, Format);
+
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSGetConstantBuffers(UINT, UINT, ID3D10Buffer **)
 	{
-		printf("Stub: VSGetConstantBuffers\n");
+		DXUP_Log(Warn, "Stub: VSGetConstantBuffers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSGetShaderResources(UINT, UINT, ID3D10ShaderResourceView **)
 	{
-		printf("Stub: PSGetShaderResources\n");
+		DXUP_Log(Warn, "Stub: PSGetShaderResources\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSGetShader(ID3D10PixelShader **)
 	{
-		printf("Stub: PSGetShader\n");
+		DXUP_Log(Warn, "Stub: PSGetShader\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSGetSamplers(UINT, UINT, ID3D10SamplerState **)
 	{
-		printf("Stub: PSGetSamplers\n");
+		DXUP_Log(Warn, "Stub: PSGetSamplers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSGetShader(ID3D10VertexShader **)
 	{
-		printf("Stub: VSGetShader\n");
+		DXUP_Log(Warn, "Stub: VSGetShader\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSGetConstantBuffers(UINT, UINT, ID3D10Buffer **)
 	{
-		printf("Stub: PSGetConstantBuffers\n");
+		DXUP_Log(Warn, "Stub: PSGetConstantBuffers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::IAGetInputLayout(ID3D10InputLayout **)
 	{
-		printf("Stub: IAGetInputLayout\n");
+		DXUP_Log(Warn, "Stub: IAGetInputLayout\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::IAGetVertexBuffers(UINT, UINT, ID3D10Buffer **, UINT *, UINT *)
 	{
-		printf("Stub: IAGetVertexBuffers\n");
+		DXUP_Log(Warn, "Stub: IAGetVertexBuffers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::IAGetIndexBuffer(ID3D10Buffer **, DXGI_FORMAT *, UINT *)
 	{
-		printf("Stub: IAGetIndexBuffer\n");
+		DXUP_Log(Warn, "Stub: IAGetIndexBuffer\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSGetConstantBuffers(UINT, UINT, ID3D10Buffer **)
 	{
-		printf("Stub: GSGetConstantBuffers\n");
+		DXUP_Log(Warn, "Stub: GSGetConstantBuffers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSGetShader(ID3D10GeometryShader **)
 	{
-		printf("Stub: GSGetShader\n");
+		DXUP_Log(Warn, "Stub: GSGetShader\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::IAGetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY* pTopology)
 	{
@@ -949,14 +1054,17 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSGetShaderResources(UINT, UINT, ID3D10ShaderResourceView **)
 	{
-		printf("Stub: VSGetShaderResources\n");
+		DXUP_Log(Warn, "Stub: VSGetShaderResources\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSGetSamplers(UINT, UINT, ID3D10SamplerState **)
 	{
-		printf("Stub: VSGetSamplers\n");
+		DXUP_Log(Warn, "Stub: VSGetSamplers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::GetPredication(ID3D10Predicate ** ppPredicate, BOOL * pPredicateValue)
 	{
+		if (ppPredicate)
+			*ppPredicate = nullptr;
+
 		ID3D11Predicate* pDX11Predicate = nullptr;
 		m_context->GetPredication(&pDX11Predicate, pPredicateValue);
 
@@ -965,22 +1073,24 @@ namespace dxup
 			if (ppPredicate)
 				*ppPredicate = LookupFromD3D11<ID3D10Predicate, ID3D11Predicate>(pDX11Predicate);
 		}
+		DXUP_Assert(pDX11Predicate);
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSGetShaderResources(UINT, UINT, ID3D10ShaderResourceView **)
 	{
-		printf("Stub: GSGetShaderResources\n");
+		DXUP_Log(Warn, "Stub: GSGetShaderResources\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSGetSamplers(UINT, UINT, ID3D10SamplerState **)
 	{
-		printf("Stub: GSGetSamplers\n");
+		DXUP_Log(Warn, "Stub: GSGetSamplers\n");
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetRenderTargets(UINT NumViews, ID3D10RenderTargetView ** ppRenderTargetViews, ID3D10DepthStencilView ** ppDepthStencilView)
 	{
-		std::vector<ID3D11RenderTargetView*> rtvs;
-		rtvs.reserve(NumViews);
-		ID3D11DepthStencilView* dsv;
+		ID3D11RenderTargetView** rtvs = (ID3D11RenderTargetView**) malloc(sizeof(ID3D11RenderTargetView*) * NumViews);
 
-		m_context->OMGetRenderTargets(NumViews, rtvs.data(), &dsv);
+		ID3D11DepthStencilView* dsv = nullptr;
+
+		m_context->OMGetRenderTargets(NumViews, rtvs, &dsv);
+		DXUP_Assert(dsv);
 
 		if (ppRenderTargetViews)
 		{
@@ -988,16 +1098,26 @@ namespace dxup
 				ppRenderTargetViews[i] = LookupFromD3D11<ID3D10RenderTargetView, ID3D11RenderTargetView>(rtvs[i]);
 		}
 
+		if (ppDepthStencilView)
+			*ppDepthStencilView = nullptr;
+
 		if (dsv)
 		{
 			if (ppDepthStencilView)
 				*ppDepthStencilView = LookupFromD3D11<ID3D10DepthStencilView, ID3D11DepthStencilView>(dsv);
 		}
+
+		free(rtvs);
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetBlendState(ID3D10BlendState ** ppBlendState , FLOAT BlendFactor[4], UINT* pSampleMask)
 	{
-		ID3D11BlendState* pDX11BlendState;
+		if (ppBlendState)
+			*ppBlendState = nullptr;
+
+		ID3D11BlendState* pDX11BlendState = nullptr;
 		m_context->OMGetBlendState(&pDX11BlendState, BlendFactor, pSampleMask);
+
+		DXUP_Assert(pDX11BlendState);
 
 		if (ppBlendState && pDX11BlendState)
 			*ppBlendState = LookupFromD3D11<ID3D10BlendState, ID3D11BlendState>(pDX11BlendState);
@@ -1015,12 +1135,11 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::SOGetTargets(UINT NumBuffers, ID3D10Buffer ** ppSOTargets, UINT * pOffsets)
 	{
-		std::vector<ID3D11Buffer*> dx11targets;
+		ID3D11Buffer** dx11targets = (ID3D11Buffer**)malloc(NumBuffers * sizeof(ID3D11Buffer*));
 		std::vector<ID3D10Buffer*> dx10targets;
-		dx11targets.reserve(NumBuffers);
 		dx10targets.reserve(NumBuffers);
 
-		m_context->SOGetTargets(NumBuffers, dx11targets.data());
+		m_context->SOGetTargets(NumBuffers, dx11targets);
 
 		for (UINT i = 0; i < NumBuffers; i++)
 			dx10targets.push_back(LookupFromD3D11<ID3D10Buffer, ID3D11Buffer>(dx11targets[i]));
@@ -1030,6 +1149,8 @@ namespace dxup
 
 		if (pOffsets)
 			std::memcpy(pOffsets, m_soOffsets.data(), m_soOffsets.size() * sizeof(UINT));
+
+		free(dx11targets);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetState(ID3D10RasterizerState** ppState)
 	{
@@ -1041,9 +1162,13 @@ namespace dxup
 
 		if (dx11Raster && ppState)
 			*ppState = LookupFromD3D11<ID3D10RasterizerState, ID3D11RasterizerState>(dx11Raster);
+
+		DXUP_Assert(dx11Raster);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetViewports(UINT* pNumViewports, D3D10_VIEWPORT* pViewports)
 	{
+		DXUP_Assert(pNumViewports);
+
 		if (!pNumViewports)
 			return;
 
@@ -1054,10 +1179,9 @@ namespace dxup
 		}
 
 		UINT viewportCount = *pNumViewports;
-		std::vector<D3D11_VIEWPORT> viewports;
-		viewports.reserve(viewportCount);
+		D3D11_VIEWPORT* viewports = (D3D11_VIEWPORT*) malloc(viewportCount * sizeof(D3D11_VIEWPORT));
 
-		m_context->RSGetViewports(pNumViewports, viewports.data());
+		m_context->RSGetViewports(pNumViewports, viewports);
 
 		for (UINT i = 0; i < viewportCount; i++)
 		{
@@ -1068,6 +1192,8 @@ namespace dxup
 			pViewports[i].TopLeftY = (INT)viewports[i].TopLeftY;
 			pViewports[i].Width = (UINT)viewports[i].Width;
 		}
+
+		free(viewports);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetScissorRects(UINT* pNumRects, D3D10_RECT* rects)
 	{
@@ -1087,11 +1213,14 @@ namespace dxup
 	// This method is not implemented, and should not be used.
 	void STDMETHODCALLTYPE D3D10Device::SetTextFilterSize(UINT w, UINT h)
 	{
+		DXUP_Log(Warn, "SetTextFilterSize used.");
 		TextFilterSize[0] = w;
 		TextFilterSize[1] = h;
 	}
 	void STDMETHODCALLTYPE D3D10Device::GetTextFilterSize(UINT* w, UINT * h)
 	{
+		DXUP_Log(Warn, "GetTextFilterSize used.");
+
 		if (w)
 			*w = TextFilterSize[0];
 
