@@ -41,8 +41,8 @@ namespace dxup
 		ULONG STDMETHODCALLTYPE Release()
 		{
 			ULONG RefCount = m_base->Release();
-			//if (RefCount == 0)
-			//	delete this;
+			if (RefCount == 0)
+				delete this;
 
 			return RefCount;
 		}
