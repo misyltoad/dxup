@@ -17,10 +17,10 @@ If you wish to use DXVK then use their dxgi as the dxgi_original dll and the DXU
 ### Screenshots
 
 DXVK:
-[Crysis Warhead Menu](https://i.imgur.com/q1l2gLb.png)
-[Crysis Warhead Game](https://i.imgur.com/7yY5bZy.jpg)
+![Crysis Warhead Menu](https://i.imgur.com/q1l2gLb.png)
+![Crysis Warhead Game](https://i.imgur.com/7yY5bZy.jpg)
 
-Native:
-[Just Cause 2 Benchmark](https://cdn.discordapp.com/attachments/438131362390867979/439554845616242688/unknown.png)
+Native DX11:
+![Just Cause 2 Benchmark](https://cdn.discordapp.com/attachments/438131362390867979/439554845616242688/unknown.png)
 
 # Have fun!
