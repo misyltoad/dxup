@@ -48,7 +48,12 @@ namespace dxup {
 		D3D11_MAPPED_SUBRESOURCE subres;
 		subres.pData = nullptr;
 		HRESULT result = m_device->GetD3D11Context()->Map(m_base, Subresource, D3D11_MAP(MapType), MapFlags, &subres);
-		*ppData = subres.pData;
+
+		DXUP_Assert(ppData);
+		if (ppData)
+			*ppData = subres.pData;
+
+		DXUP_AssertSuccess(result);
 		return result;
 	}
 
@@ -133,9 +138,14 @@ namespace dxup {
 		D3D11_MAPPED_SUBRESOURCE subres = { 0 };
 		HRESULT result = m_device->GetD3D11Context()->Map(m_base, Subresource, D3D11_MAP(MapType), MapFlags, &subres);
 
-		pMappedTexture2D->pData = subres.pData;
-		pMappedTexture2D->RowPitch = subres.RowPitch;
+		DXUP_Assert(pMappedTexture2D);
+		if (pMappedTexture2D)
+		{
+			pMappedTexture2D->pData = subres.pData;
+			pMappedTexture2D->RowPitch = subres.RowPitch;
+		}
 
+		DXUP_AssertSuccess(result);
 		return result;
 	}
 
@@ -191,9 +201,14 @@ namespace dxup {
 		D3D11_MAPPED_SUBRESOURCE subres = { 0 };
 		HRESULT result = m_device->GetD3D11Context()->Map(m_base, Subresource, D3D11_MAP(MapType), MapFlags, &subres);
 
-		pMappedTexture3D->pData = subres.pData;
-		pMappedTexture3D->RowPitch = subres.RowPitch;
-		pMappedTexture3D->DepthPitch = subres.DepthPitch;
+		if (pMappedTexture3D)
+		{
+			pMappedTexture3D->pData = subres.pData;
+			pMappedTexture3D->RowPitch = subres.RowPitch;
+			pMappedTexture3D->DepthPitch = subres.DepthPitch;
+		}
+
+		DXUP_AssertSuccess(result);
 
 		return result;
 	}
