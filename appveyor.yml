@@ -12,19 +12,16 @@ environment:
       compiler: cl
       toolchain: vs2017
       arch: x64
-      toolarch: amd64
       
     - frontend: meson
       builder: msbuild
       compiler: cl
       toolchain: vs2017
       arch: x86
-      toolarch: x86
-
 install:
   - set PATH=C:\Python35\scripts;%PATH%
   - pip3 install meson
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" -arch=%toolarch%
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" %arch%
   
 before_build:
   - cd C:\Projects\DXUP
