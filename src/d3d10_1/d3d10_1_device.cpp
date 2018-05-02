@@ -127,13 +127,20 @@ namespace dxup
 		return result;
 	}
 
+	template <typename T>
+	void InitReturnPtr(T** ptr)
+	{
+		DXUP_Assert(ptr);
+		if (ptr)
+			*ptr = nullptr;
+	}
+
 	HRESULT STDMETHODCALLTYPE D3D10Device::CreateTexture1D(
 		const D3D10_TEXTURE1D_DESC*   pDesc,
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture1D**       ppTexture1D)
 	{
-		if (ppTexture1D)
-			*ppTexture1D = nullptr;
+		InitReturnPtr(ppTexture1D);
 
 		ID3D11Texture1D* texture = nullptr;
 
@@ -160,8 +167,7 @@ namespace dxup
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture2D**       ppTexture2D)
 	{
-		if (ppTexture2D)
-			*ppTexture2D = nullptr;
+		InitReturnPtr(ppTexture2D);
 
 		ID3D11Texture2D* texture = nullptr;
 
@@ -190,8 +196,7 @@ namespace dxup
 		const D3D10_SUBRESOURCE_DATA* pInitialData,
 		ID3D10Texture3D**       ppTexture3D)
 	{
-		if (ppTexture3D)
-			*ppTexture3D = nullptr;
+		InitReturnPtr(ppTexture3D);
 
 		ID3D11Texture3D* texture = nullptr;
 
@@ -219,8 +224,7 @@ namespace dxup
 		const D3D10_SHADER_RESOURCE_VIEW_DESC1*  pDesc,
 		ID3D10ShaderResourceView1**        ppSRView)
 	{
-		if (ppSRView)
-			*ppSRView = nullptr;
+		InitReturnPtr(ppSRView);
 
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
@@ -258,8 +262,7 @@ namespace dxup
 		const D3D10_RENDER_TARGET_VIEW_DESC*    pDesc,
 		ID3D10RenderTargetView**          ppRTView)
 	{
-		if (ppRTView)
-			*ppRTView = nullptr;
+		InitReturnPtr(ppRTView);
 
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
@@ -288,8 +291,7 @@ namespace dxup
 		const D3D10_DEPTH_STENCIL_VIEW_DESC*    pDesc,
 		ID3D10DepthStencilView**          ppDepthStencilView)
 	{
-		if (ppDepthStencilView)
-			*ppDepthStencilView = nullptr;
+		InitReturnPtr(ppDepthStencilView);
 
 		ID3D11Resource* d3d11Resource = ResolveResource(pResource);
 
@@ -326,8 +328,7 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10InputLayout**         ppInputLayout)
 	{
-		if (ppInputLayout)
-			*ppInputLayout = nullptr;
+		InitReturnPtr(ppInputLayout);
 
 		ID3D11InputLayout* inputLayout = nullptr;
 		HRESULT result = m_base->CreateInputLayout((const D3D11_INPUT_ELEMENT_DESC*)pInputElementDescs, NumElements, pShaderBytecodeWithInputSignature, BytecodeLength, &inputLayout);
@@ -351,8 +352,7 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10VertexShader**        ppVertexShader)
 	{
-		if (ppVertexShader)
-			*ppVertexShader = nullptr;
+		InitReturnPtr(ppVertexShader);
 
 		ID3D11VertexShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreateVertexShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
@@ -375,8 +375,7 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10GeometryShader**      ppGeometryShader)
 	{
-		if (ppGeometryShader)
-			*ppGeometryShader = nullptr;
+		InitReturnPtr(ppGeometryShader);
 
 		ID3D11GeometryShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreateGeometryShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
@@ -403,8 +402,7 @@ namespace dxup
 		UINT						OutputStreamStride,
 		ID3D10GeometryShader**      ppGeometryShader)
 	{
-		if (ppGeometryShader)
-			*ppGeometryShader = nullptr;
+		InitReturnPtr(ppGeometryShader);
 
 		ID3D11GeometryShader* dx11Shader = nullptr;
 
@@ -443,8 +441,7 @@ namespace dxup
 		SIZE_T                      BytecodeLength,
 		ID3D10PixelShader**         ppPixelShader)
 	{
-		if (ppPixelShader)
-			*ppPixelShader = nullptr;
+		InitReturnPtr(ppPixelShader);
 
 		ID3D11PixelShader* dx11Shader = nullptr;
 		HRESULT result = m_base->CreatePixelShader(pShaderBytecode, BytecodeLength, nullptr, &dx11Shader);
@@ -488,8 +485,7 @@ namespace dxup
 		const D3D10_BLEND_DESC1*          pBlendStateDesc,
 		ID3D10BlendState1**         ppBlendState)
 	{
-		if (ppBlendState)
-			*ppBlendState = nullptr;
+		InitReturnPtr(ppBlendState);
 
 		ID3D11BlendState1* dx11BlendState = nullptr;
 
@@ -534,8 +530,7 @@ namespace dxup
 		const D3D10_DEPTH_STENCIL_DESC*   pDepthStencilDesc,
 		ID3D10DepthStencilState**   ppDepthStencilState)
 	{
-		if (ppDepthStencilState)
-			*ppDepthStencilState = nullptr;
+		InitReturnPtr(ppDepthStencilState);
 
 		ID3D11DepthStencilState* dx11State = nullptr;
 		HRESULT result = m_base->CreateDepthStencilState((const D3D11_DEPTH_STENCIL_DESC*)pDepthStencilDesc, &dx11State);
@@ -558,8 +553,7 @@ namespace dxup
 		const D3D10_RASTERIZER_DESC*      pRasterizerDesc,
 		ID3D10RasterizerState**     ppRasterizerState)
 	{
-		if (ppRasterizerState)
-			*ppRasterizerState = nullptr;
+		InitReturnPtr(ppRasterizerState);
 
 		ID3D11RasterizerState1* dx11State = nullptr;
 
@@ -598,8 +592,7 @@ namespace dxup
 		const D3D10_SAMPLER_DESC*         pSamplerDesc,
 		ID3D10SamplerState**        ppSamplerState)
 	{
-		if (ppSamplerState)
-			*ppSamplerState = nullptr;
+		InitReturnPtr(ppSamplerState);
 
 		ID3D11SamplerState* dx11State = nullptr;
 		HRESULT result = m_base->CreateSamplerState((const D3D11_SAMPLER_DESC*)pSamplerDesc, &dx11State);
@@ -639,8 +632,7 @@ namespace dxup
 		const D3D10_QUERY_DESC*           pQueryDesc,
 		ID3D10Query**               ppQuery)
 	{
-		if (ppQuery)
-			*ppQuery = nullptr;
+		InitReturnPtr(ppQuery);
 
 		ID3D11Query* dx11Query = nullptr;
 
@@ -671,8 +663,7 @@ namespace dxup
 		const D3D10_QUERY_DESC*           pPredicateDesc,
 		ID3D10Predicate**           ppPredicate)
 	{
-		if (ppPredicate)
-			*ppPredicate = nullptr;
+		InitReturnPtr(ppPredicate);
 
 		ID3D11Predicate* dx11Query = nullptr;
 
@@ -1006,6 +997,8 @@ namespace dxup
 		ID3D11Resource* d3d11ResourceA = ResolveResource(a);
 		ID3D11Resource* d3d11ResourceB = ResolveResource(b);
 
+		DXUP_Assert(d3d11ResourceA && d3d11ResourceB);
+
 		if (d3d11ResourceA && d3d11ResourceB)
 			m_context->CopyResource(d3d11ResourceA, d3d11ResourceB);
 	}
@@ -1125,6 +1118,8 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetRenderTargets(UINT NumViews, ID3D10RenderTargetView ** ppRenderTargetViews, ID3D10DepthStencilView ** ppDepthStencilView)
 	{
+		InitReturnPtr(ppDepthStencilView);
+
 		ID3D11RenderTargetView** rtvs = (ID3D11RenderTargetView**) malloc(sizeof(ID3D11RenderTargetView*) * NumViews);
 
 		ID3D11DepthStencilView* dsv = nullptr;
@@ -1138,9 +1133,6 @@ namespace dxup
 				ppRenderTargetViews[i] = LookupFromD3D11<ID3D10RenderTargetView, ID3D11RenderTargetView>(rtvs[i]);
 		}
 
-		if (ppDepthStencilView)
-			*ppDepthStencilView = nullptr;
-
 		if (dsv)
 		{
 			if (ppDepthStencilView)
@@ -1151,8 +1143,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetBlendState(ID3D10BlendState ** ppBlendState , FLOAT BlendFactor[4], UINT* pSampleMask)
 	{
-		if (ppBlendState)
-			*ppBlendState = nullptr;
+		InitReturnPtr(ppBlendState);
 
 		ID3D11BlendState* pDX11BlendState = nullptr;
 		m_context->OMGetBlendState(&pDX11BlendState, BlendFactor, pSampleMask);
@@ -1164,11 +1155,12 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetDepthStencilState(ID3D10DepthStencilState ** ppStencil, UINT * StencilRef)
 	{
-		if (ppStencil)
-			*ppStencil = nullptr;
+		InitReturnPtr(ppStencil);
 
 		ID3D11DepthStencilState* dx11DepthStencil = nullptr;
 		m_context->OMGetDepthStencilState(&dx11DepthStencil, StencilRef);
+
+		DXUP_Assert(dx11DepthStencil);
 
 		if (dx11DepthStencil && ppStencil)
 			*ppStencil = LookupFromD3D11<ID3D10DepthStencilState, ID3D11DepthStencilState>(dx11DepthStencil);
@@ -1184,6 +1176,8 @@ namespace dxup
 		for (UINT i = 0; i < NumBuffers; i++)
 			dx10targets.push_back(LookupFromD3D11<ID3D10Buffer, ID3D11Buffer>(dx11targets[i]));
 
+		DXUP_Assert(ppSOTargets && pOffsets);
+
 		if (ppSOTargets)
 			std::memcpy(ppSOTargets, dx10targets.data(), NumBuffers * sizeof(ID3D10Buffer*));
 
@@ -1194,8 +1188,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetState(ID3D10RasterizerState** ppState)
 	{
-		if (ppState)
-			*ppState = nullptr;
+		InitReturnPtr(ppState);
 
 		ID3D11RasterizerState* dx11Raster = nullptr;
 		m_context->RSGetState(&dx11Raster);
