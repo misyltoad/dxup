@@ -16,7 +16,7 @@ d3d10_1_src = [
 d3d10_1_dll = shared_library('d3d10_1', d3d10_1_src,
   name_prefix         : '',
   install             : true,
-  dependencies        : [ d3d11_lib ],
+  dependencies        : [ lib_d3d11 ],
   vs_module_defs      : 'd3d10_1.def',
   cpp_args			  : '-DDXUP_EXPORTS',
   override_options    : ['cpp_std='+dxup_cpp_std])
