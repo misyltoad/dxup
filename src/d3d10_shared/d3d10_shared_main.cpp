@@ -22,6 +22,11 @@ extern "C"
 		return "ps_4_1";
 	}
 
+	bool __stdcall IsDXUP()
+	{
+		return true;
+	}
+
 	// Unknown params & returntype
 	void __stdcall D3D10GetVersion()
 	{

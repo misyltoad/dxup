@@ -19,4 +19,5 @@ EXPORTS
 	D3D10CreateEffectPoolFromMemory
 	D3D10DisassembleShader
 	RevertToOldImplementation
+	IsDXUP
 
