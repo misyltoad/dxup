@@ -410,8 +410,11 @@ namespace dxup
 
 		ID3D11GeometryShader* dx11Shader = nullptr;
 
-		std::vector<D3D11_SO_DECLARATION_ENTRY> entries;
-		entries.reserve(NumEntries);
+		constexpr size_t MaxEntryCount = D3D11_SO_STREAM_COUNT * D3D11_SO_OUTPUT_COMPONENT_COUNT;
+
+		DXUP_Assert(NumEntries < MaxEntryCount);
+
+		D3D11_SO_DECLARATION_ENTRY entries[MaxEntryCount];
 
 		for (UINT i = 0; i < NumEntries; i++)
 		{
@@ -422,10 +425,10 @@ namespace dxup
 			entry.SemanticName = pSODeclaration[i].SemanticName;
 			entry.StartComponent = pSODeclaration[i].StartComponent;
 			entry.Stream = 0;
-			entries.push_back(entry);
+			entries[i] = entry;
 		}
 
-		HRESULT result = m_base->CreateGeometryShaderWithStreamOutput(pShaderBytecode, BytecodeLength, entries.data(), NumEntries, &OutputStreamStride, 1, D3D11_SO_NO_RASTERIZED_STREAM, nullptr, &dx11Shader);
+		HRESULT result = m_base->CreateGeometryShaderWithStreamOutput(pShaderBytecode, BytecodeLength, entries, NumEntries, &OutputStreamStride, 1, D3D11_SO_NO_RASTERIZED_STREAM, nullptr, &dx11Shader);
 		if (dx11Shader)
 		{
 			auto* gs = new D3D10GeometryShader(this, dx11Shader);
@@ -433,6 +436,7 @@ namespace dxup
 			if (ppGeometryShader)
 				*ppGeometryShader = gs;
 		}
+
 		DXUP_Assert(dx11Shader);
 		DXUP_AssertSuccess(result);
 
@@ -828,7 +832,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSSetShader(ID3D10PixelShader* pShader)
 	{
-		m_context->PSSetShader(((D3D10PixelShader*)pShader)->GetD3D11Interface(), nullptr, 0);
+		m_context->PSSetShader(ToD3D11(PixelShader, pShader), nullptr, 0);
 	}
 	void STDMETHODCALLTYPE D3D10Device::PSSetSamplers(UINT StartSlot, UINT NumSamplers, ID3D10SamplerState *const * ppSamplers)
 	{
@@ -836,7 +840,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::VSSetShader(ID3D10VertexShader* pShader)
 	{
-		m_context->VSSetShader(((D3D10VertexShader*)pShader)->GetD3D11Interface(), nullptr, 0);
+		m_context->VSSetShader(ToD3D11(VertexShader, pShader), nullptr, 0);
 	}
 	void STDMETHODCALLTYPE D3D10Device::DrawIndexed(UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation)
 	{
@@ -852,25 +856,20 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::IASetInputLayout(ID3D10InputLayout * pLayout)
 	{
-		auto* dxupInputLayout = static_cast<D3D10InputLayout*>(pLayout);
-		m_context->IASetInputLayout(dxupInputLayout->GetD3D11Interface());
+		m_context->IASetInputLayout(ToD3D11(InputLayout, pLayout));
 	}
 	void STDMETHODCALLTYPE D3D10Device::IASetVertexBuffers(UINT StartSlot, UINT NumBuffers, ID3D10Buffer *const * ppVertexBuffers, const UINT * pStrides, const UINT * pOffsets)
 	{
-		std::vector<ID3D11Buffer*> buffers;
-		buffers.reserve(NumBuffers);
+		DXUP_Assert(NumBuffers < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT);
+		ID3D11Buffer* buffers[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
 		for (UINT i = 0; i < NumBuffers; i++)
-		{
-			auto* dxupBuffer = static_cast<D3D10Buffer*>(ppVertexBuffers[i]);
-			buffers.push_back(dxupBuffer->GetD3D11Interface());
-		}
+			buffers[i] = ToD3D11(Buffer, ppVertexBuffers[i]);
 
-		m_context->IASetVertexBuffers(StartSlot, NumBuffers, buffers.data(), pStrides, pOffsets);
+		m_context->IASetVertexBuffers(StartSlot, NumBuffers, buffers, pStrides, pOffsets);
 	}
-	void STDMETHODCALLTYPE D3D10Device::IASetIndexBuffer(ID3D10Buffer * buffer, DXGI_FORMAT format, UINT offset)
+	void STDMETHODCALLTYPE D3D10Device::IASetIndexBuffer(ID3D10Buffer * pBuffer, DXGI_FORMAT Format, UINT Offset)
 	{
-		auto* dxupBuffer = static_cast<D3D10Buffer*>(buffer);
-		m_context->IASetIndexBuffer(dxupBuffer->GetD3D11Interface(), format, offset);
+		m_context->IASetIndexBuffer(ToD3D11(Buffer, pBuffer), Format, Offset);
 	}
 	void STDMETHODCALLTYPE D3D10Device::DrawIndexedInstanced(UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation)
 	{
@@ -886,7 +885,7 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::GSSetShader(ID3D10GeometryShader* pShader)
 	{
-		m_context->GSSetShader(((D3D10GeometryShader*)pShader)->GetD3D11Interface(), nullptr, 0);
+		m_context->GSSetShader(ToD3D11(GeometryShader, pShader), nullptr, 0);
 	}
 	void STDMETHODCALLTYPE D3D10Device::IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY Topology)
 	{
@@ -915,41 +914,32 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMSetRenderTargets(UINT NumViews, ID3D10RenderTargetView *const * pRTV, ID3D10DepthStencilView * pDSV)
 	{
-		std::vector<ID3D11RenderTargetView*> rts;
-		rts.reserve(NumViews);
+		DXUP_Assert(NumViews < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
+		ID3D11RenderTargetView* DX11RenderTargets[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+
 		for (UINT i = 0; i < NumViews; i++)
-		{
-			auto* dxupRTV = static_cast<D3D10RenderTargetView*>(pRTV[i]);
-			rts.push_back(dxupRTV->GetD3D11Interface());
-		}
+			DX11RenderTargets[i] = ToD3D11(RenderTargetView, pRTV[i]);
 
-		auto* dxupDSV = static_cast<D3D10DepthStencilView*>(pDSV);
-
-		m_context->OMSetRenderTargets(NumViews, rts.data(), dxupDSV->GetD3D11Interface());
+		m_context->OMSetRenderTargets(NumViews, DX11RenderTargets, ToD3D11(DepthStencilView, pDSV) );
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMSetBlendState(ID3D10BlendState* pState, const FLOAT BlendFactor[4], UINT SampleMask)
 	{
-		auto* dxupBlendState = static_cast<D3D10BlendState*>(pState);
-		m_context->OMSetBlendState(dxupBlendState->GetD3D11Interface(), BlendFactor, SampleMask);
+		m_context->OMSetBlendState(ToD3D11(BlendState, pState), BlendFactor, SampleMask);
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMSetDepthStencilState(ID3D10DepthStencilState* pState, UINT StencilRef)
 	{
-		auto* dxupDepthStencilState = static_cast<D3D10DepthStencilState*>(pState);
-		m_context->OMSetDepthStencilState(dxupDepthStencilState->GetD3D11Interface(), StencilRef);
+		m_context->OMSetDepthStencilState(ToD3D11(DepthStencilState, pState), StencilRef);
 	}
 	void STDMETHODCALLTYPE D3D10Device::SOSetTargets(UINT NumBuffers, ID3D10Buffer *const * ppSoTargets, const UINT * pOffsets)
 	{
-		std::vector<ID3D11Buffer*> soTargets;
-		soTargets.reserve(NumBuffers);
-		m_soOffsets.clear();
+		ID3D11Buffer* soTargets[D3D11_SO_STREAM_COUNT];
 		for (UINT i = 0; i < NumBuffers; i++)
 		{
-			auto* dxupBuf = static_cast<D3D10Buffer*>(ppSoTargets[i]);
-			soTargets.push_back(dxupBuf->GetD3D11Interface());
-			m_soOffsets.push_back(pOffsets[i]);
+			soTargets[i] = ToD3D11(Buffer, ppSoTargets[i]);
+			m_soOffsets[i] = pOffsets[i];
 		}
 
-		m_context->SOSetTargets(NumBuffers, soTargets.data(), pOffsets);
+		m_context->SOSetTargets(NumBuffers, soTargets, pOffsets);
 	}
 	void STDMETHODCALLTYPE D3D10Device::DrawAuto(void)
 	{
@@ -957,28 +947,26 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSSetState(ID3D10RasterizerState* pState)
 	{
-		auto* dxupState = static_cast<D3D10RasterizerState*>(pState);
-		m_context->RSSetState(dxupState->GetD3D11Interface());
+		m_context->RSSetState(ToD3D11(RasterizerState, pState));
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSSetViewports(UINT NumViewports, const D3D10_VIEWPORT * pViewports)
 	{
-		std::vector<D3D11_VIEWPORT> viewports;
-		viewports.reserve(NumViewports);
+		D3D11_VIEWPORT viewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+
+		DXUP_Assert(NumViewports < D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 
 		for (UINT i = 0; i < NumViewports; i++)
 		{
-			D3D11_VIEWPORT viewport;
+			D3D11_VIEWPORT& viewport = viewports[i];
 			viewport.Height = (FLOAT)pViewports->Height;
 			viewport.MaxDepth = pViewports->MaxDepth;
 			viewport.MinDepth = pViewports->MinDepth;
 			viewport.TopLeftX = (FLOAT)pViewports->TopLeftX;
 			viewport.TopLeftY = (FLOAT)pViewports->TopLeftY;
 			viewport.Width = (FLOAT)pViewports->Width;
-
-			viewports.push_back(viewport);
 		}
 
-		m_context->RSSetViewports(NumViewports, viewports.data());
+		m_context->RSSetViewports(NumViewports, viewports);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSSetScissorRects(UINT NumRects, const D3D10_RECT * pRects)
 	{
@@ -1015,20 +1003,17 @@ namespace dxup
 
 		m_context->UpdateSubresource(pDstResource11, DstSubresource, (const D3D11_BOX*)pDstBox, pSrcData, SrcRowPitch, SrcDepthPitch);
 	}
-	void STDMETHODCALLTYPE D3D10Device::ClearRenderTargetView(ID3D10RenderTargetView* view, const FLOAT rgba[4])
+	void STDMETHODCALLTYPE D3D10Device::ClearRenderTargetView(ID3D10RenderTargetView* pView, const FLOAT RGBA[4])
 	{
-		auto* dxupRTV = static_cast<D3D10RenderTargetView*>(view);
-		m_context->ClearRenderTargetView(dxupRTV->GetD3D11Interface(), rgba);
+		m_context->ClearRenderTargetView(ToD3D11(RenderTargetView, pView), RGBA);
 	}
 	void STDMETHODCALLTYPE D3D10Device::ClearDepthStencilView(ID3D10DepthStencilView * pDSV, UINT ClearFlags, FLOAT Depth, UINT8 Stencil)
 	{
-		auto* dxupDSV = static_cast<D3D10DepthStencilView*>(pDSV);
-		m_context->ClearDepthStencilView(dxupDSV->GetD3D11Interface(), ClearFlags, Depth, Stencil);
+		m_context->ClearDepthStencilView(ToD3D11(DepthStencilView, pDSV), ClearFlags, Depth, Stencil);
 	}
 	void STDMETHODCALLTYPE D3D10Device::GenerateMips(ID3D10ShaderResourceView* pSRV)
 	{
-		auto* dxupSRV = static_cast<D3D10ShaderResourceView*>(pSRV);
-		m_context->GenerateMips(dxupSRV->GetD3D11Interface());
+		m_context->GenerateMips(ToD3D11(ShaderResourceView, pSRV));
 	}
 	void STDMETHODCALLTYPE D3D10Device::ResolveSubresource(ID3D10Resource * pDstResource, UINT DstSubresource, ID3D10Resource * pSrcResource, UINT SrcSubresource, DXGI_FORMAT Format)
 	{
@@ -1124,10 +1109,10 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetRenderTargets(UINT NumViews, ID3D10RenderTargetView ** ppRenderTargetViews, ID3D10DepthStencilView ** ppDepthStencilView)
 	{
+		DXUP_Assert(NumViews < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
 		InitReturnPtr(ppDepthStencilView);
 
-		ID3D11RenderTargetView** rtvs = (ID3D11RenderTargetView**) malloc(sizeof(ID3D11RenderTargetView*) * NumViews);
-
+		ID3D11RenderTargetView* rtvs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
 		ID3D11DepthStencilView* dsv = nullptr;
 
 		m_context->OMGetRenderTargets(NumViews, rtvs, &dsv);
@@ -1144,8 +1129,6 @@ namespace dxup
 			if (ppDepthStencilView)
 				*ppDepthStencilView = LookupFromD3D11<ID3D10DepthStencilView, ID3D11DepthStencilView>(dsv);
 		}
-
-		free(rtvs);
 	}
 	void STDMETHODCALLTYPE D3D10Device::OMGetBlendState(ID3D10BlendState ** ppBlendState , FLOAT BlendFactor[4], UINT* pSampleMask)
 	{
@@ -1173,24 +1156,20 @@ namespace dxup
 	}
 	void STDMETHODCALLTYPE D3D10Device::SOGetTargets(UINT NumBuffers, ID3D10Buffer ** ppSOTargets, UINT * pOffsets)
 	{
-		ID3D11Buffer** dx11targets = (ID3D11Buffer**)malloc(NumBuffers * sizeof(ID3D11Buffer*));
-		std::vector<ID3D10Buffer*> dx10targets;
-		dx10targets.reserve(NumBuffers);
+		DXUP_Assert(NumBuffers < D3D11_SO_STREAM_COUNT);
+
+		ID3D11Buffer* dx11targets[D3D11_SO_STREAM_COUNT];
 
 		m_context->SOGetTargets(NumBuffers, dx11targets);
 
-		for (UINT i = 0; i < NumBuffers; i++)
-			dx10targets.push_back(LookupFromD3D11<ID3D10Buffer, ID3D11Buffer>(dx11targets[i]));
-
-		DXUP_Assert(ppSOTargets && pOffsets);
-
 		if (ppSOTargets)
-			std::memcpy(ppSOTargets, dx10targets.data(), NumBuffers * sizeof(ID3D10Buffer*));
+		{
+			for (UINT i = 0; i < NumBuffers; i++)
+				ppSOTargets[i] = LookupFromD3D11<ID3D10Buffer, ID3D11Buffer>(dx11targets[i]);
+		}
 
 		if (pOffsets)
-			std::memcpy(pOffsets, m_soOffsets.data(), m_soOffsets.size() * sizeof(UINT));
-
-		free(dx11targets);
+			std::memcpy(pOffsets, m_soOffsets, NumBuffers * sizeof(UINT));
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetState(ID3D10RasterizerState** ppState)
 	{
@@ -1218,7 +1197,8 @@ namespace dxup
 		}
 
 		UINT viewportCount = *pNumViewports;
-		D3D11_VIEWPORT* viewports = (D3D11_VIEWPORT*) malloc(viewportCount * sizeof(D3D11_VIEWPORT));
+		DXUP_Assert(viewportCount < D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
+		D3D11_VIEWPORT viewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
 
 		m_context->RSGetViewports(pNumViewports, viewports);
 
@@ -1231,8 +1211,6 @@ namespace dxup
 			pViewports[i].TopLeftY = (INT)viewports[i].TopLeftY;
 			pViewports[i].Width = (UINT)viewports[i].Width;
 		}
-
-		free(viewports);
 	}
 	void STDMETHODCALLTYPE D3D10Device::RSGetScissorRects(UINT* pNumRects, D3D10_RECT* rects)
 	{
@@ -1275,55 +1253,51 @@ namespace dxup
 
 	void D3D10Device::SetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D10Buffer * const * pObj, DXUP_SHADER_TYPE type)
 	{
-		std::vector<ID3D11Buffer*> DX11ConstantBuffers;
-		DX11ConstantBuffers.reserve(NumBuffers);
+		DXUP_Assert(NumBuffers < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT);
+
+		ID3D11Buffer* DX11ConstantBuffers[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT];
 		for (UINT i = 0; i < NumBuffers; i++)
-		{
-			auto* dxupBuffer = static_cast<D3D10Buffer*>(pObj[i]);
-			DX11ConstantBuffers.push_back(dxupBuffer->GetD3D11Interface());
-		}
+			DX11ConstantBuffers[i] = ToD3D11(Buffer, pObj[i]);
 
 		switch (type)
 		{
-		case DXUP_VERTEX_SHADER: m_context->VSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
-		case DXUP_PIXEL_SHADER: m_context->PSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
-		case DXUP_GEOMETRY_SHADER: m_context->GSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
+		case DXUP_VERTEX_SHADER: m_context->VSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
+		case DXUP_PIXEL_SHADER: m_context->PSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
+		case DXUP_GEOMETRY_SHADER: m_context->GSSetConstantBuffers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
 		}
 	}
 
 	void D3D10Device::SetShaderResources(UINT StartSlot, UINT NumViews, ID3D10ShaderResourceView * const * pObj, DXUP_SHADER_TYPE type)
 	{
-		std::vector<ID3D11ShaderResourceView*> DX11ShaderResourceViews;
-		DX11ShaderResourceViews.reserve(NumViews);
+		DXUP_Assert(NumViews < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT);
+
+		ID3D11ShaderResourceView* DX11ShaderResourceViews[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT];
+
 		for (UINT i = 0; i < NumViews; i++)
-		{
-			auto* dxupSRV = static_cast<D3D10ShaderResourceView*>(pObj[i]);
-			DX11ShaderResourceViews.push_back(dxupSRV->GetD3D11Interface());
-		}
+			DX11ShaderResourceViews[i] = ToD3D11(ShaderResourceView, pObj[i]);
 
 		switch (type)
 		{
-		case DXUP_VERTEX_SHADER: m_context->VSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews.data()); return;
-		case DXUP_PIXEL_SHADER: m_context->PSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews.data()); return;
-		case DXUP_GEOMETRY_SHADER: m_context->GSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews.data()); return;
+		case DXUP_VERTEX_SHADER: m_context->VSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews); return;
+		case DXUP_PIXEL_SHADER: m_context->PSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews); return;
+		case DXUP_GEOMETRY_SHADER: m_context->GSSetShaderResources(StartSlot, NumViews, DX11ShaderResourceViews); return;
 		}
 	}
 
 	void D3D10Device::SetSamplers(UINT StartSlot, UINT NumBuffers, ID3D10SamplerState * const * ppConstantBuffers, DXUP_SHADER_TYPE type)
 	{
-		std::vector<ID3D11SamplerState*> DX11ConstantBuffers;
-		DX11ConstantBuffers.reserve(NumBuffers);
+		DXUP_Assert(NumBuffers < D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT);
+
+		ID3D11SamplerState* DX11ConstantBuffers[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
+
 		for (UINT i = 0; i < NumBuffers; i++)
-		{
-			auto* dxupCB = static_cast<D3D10SamplerState*>(ppConstantBuffers[i]);
-			DX11ConstantBuffers.push_back(dxupCB->GetD3D11Interface());
-		}
+			DX11ConstantBuffers[i] = ToD3D11(SamplerState, ppConstantBuffers[i]);
 
 		switch (type)
 		{
-		case DXUP_VERTEX_SHADER: m_context->VSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
-		case DXUP_PIXEL_SHADER: m_context->PSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
-		case DXUP_GEOMETRY_SHADER: m_context->GSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers.data()); return;
+		case DXUP_VERTEX_SHADER: m_context->VSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
+		case DXUP_PIXEL_SHADER: m_context->PSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
+		case DXUP_GEOMETRY_SHADER: m_context->GSSetSamplers(StartSlot, NumBuffers, DX11ConstantBuffers); return;
 		}
 
 	}

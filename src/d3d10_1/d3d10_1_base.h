@@ -102,6 +102,18 @@ namespace dxup
 		}
 	};
 
+	template <typename D3D10, typename DXUP, typename D3D11>
+	D3D11* ToD3D11Internal(D3D10* d3d10)
+	{
+		if (!d3d10)
+			return nullptr;
+
+		DXUP* dxup = static_cast<DXUP*>(d3d10);
+		return dxup->GetD3D11Interface();
+	}
+
+#define ToD3D11(x, y) ToD3D11Internal< ID3D10##x , D3D10##x , ID3D11##x >(y)
+
 	template <typename T>
 	void GetBaseResource(ID3D10Resource** ppResource, T* d3d10)
 	{

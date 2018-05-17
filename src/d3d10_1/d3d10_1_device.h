@@ -1,12 +1,10 @@
 #pragma once
 
-#include <mutex>
-#include <vector>
-
 #include "d3d10_1_base.h"
 #include "d3d10_1_include.h"
 
-namespace dxup {
+namespace dxup
+{
 	class D3D10Buffer;
 	class D3D10Counter;
 	class D3D10DeviceContext;
@@ -282,7 +280,7 @@ namespace dxup {
 		ID3D11DeviceContext1* m_context;
 
 		UINT TextFilterSize[2];
-		std::vector<UINT> m_soOffsets;
+		UINT m_soOffsets[D3D11_SO_STREAM_COUNT];
 	};
 
 	template <typename IDX10, typename IDX11>
