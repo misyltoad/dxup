@@ -1,6 +1,6 @@
 # DXUP
 ## A D3D10 -> D3D11 Translation Layer
-![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/61mhejmwu4lah9mq?retina=true)
+[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/61mhejmwu4lah9mq?retina=true)](https://ci.appveyor.com/project/Joshua-Ashton/dxup)
 
 ### What's the point?
  - The main reason is for [DXVK](https://github.com/doitsujin/dxvk), a d3d11->Vulkan translation layer. I'm sure where you can see where this is going...
