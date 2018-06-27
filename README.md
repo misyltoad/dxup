@@ -2,6 +2,8 @@
 ## A D3D10 -> D3D11 Translation Layer
 Click this for builds: [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/61mhejmwu4lah9mq?retina=true)](https://ci.appveyor.com/project/Joshua-Ashton/dxup)
 
+Important! To get the d3d10 dll to go with the d3d10_1. Symlink d3d10 to be d3d10_1.
+
 ### What's the point?
  - The main reason is for [DXVK](https://github.com/doitsujin/dxvk), a d3d11->Vulkan translation layer. I'm sure where you can see where this is going...
  - You can use this if you're a lazy gamedev and want to get access to some d3d11 features by querying the interfaces.
