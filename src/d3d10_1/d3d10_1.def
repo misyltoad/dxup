@@ -1,5 +1,7 @@
 LIBRARY D3D10_1.DLL
-EXPORTS  
+EXPORTS
+    D3D10CreateDevice
+    D3D10CreateDeviceAndSwapChain
     D3D10CreateDevice1
     D3D10CreateDeviceAndSwapChain1
 	D3D10CreateEffectFromMemory
@@ -16,6 +18,7 @@ EXPORTS
 	D3D10CompileShader
 	D3D10CreateBlob
 	D3D10GetInputSignatureBlob
+	D3D10GetOutputSignatureBlob
 	D3D10CreateEffectPoolFromMemory
 	D3D10DisassembleShader
 	RevertToOldImplementation

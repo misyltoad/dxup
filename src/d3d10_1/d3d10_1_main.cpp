@@ -3,6 +3,10 @@
 #include "d3d10_1_device.h"
 #include "../dxgi/dxgi_swapchain.h"
 
+#include <D3Dcommon.h>
+#include <D3Dcompiler.h>
+#include <D3D10Effect.h>
+
 extern "C"
 {
 	using namespace dxup;
@@ -99,5 +103,143 @@ extern "C"
 		*ppDevice = new D3D10Device(pDX11Device1);
 
 		return result;
+	}
+
+	const char* STDMETHODCALLTYPE D3D10GetVertexShaderProfile(ID3D10Device *device)
+	{
+		return "vs_4_1";
+	}
+
+	const char* STDMETHODCALLTYPE D3D10GetGeometryShaderProfile(ID3D10Device *device)
+	{
+		return "gs_4_1";
+	}
+
+	const char* STDMETHODCALLTYPE D3D10GetPixelShaderProfile(ID3D10Device *device)
+	{
+		return "ps_4_1";
+	}
+
+	bool STDMETHODCALLTYPE IsDXUP()
+	{
+		return true;
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10CreateBlob(SIZE_T size, LPD3D10BLOB *ppBuffer)
+	{
+		return D3DCreateBlob(size, ppBuffer);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10GetInputSignatureBlob(const void* pShaderBytecode, SIZE_T bytecodeLength, ID3D10Blob** ppSignatureBlob)
+	{
+		return D3DGetInputSignatureBlob(pShaderBytecode, bytecodeLength, ppSignatureBlob);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10GetOutputSignatureBlob(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10Blob **ppSignatureBlob)
+	{
+		return D3DGetOutputSignatureBlob(pShaderBytecode, BytecodeLength, ppSignatureBlob);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10ReflectShader(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10ShaderReflection **ppReflector)
+	{
+		return D3DReflect(pShaderBytecode, BytecodeLength, __uuidof(ID3D10ShaderReflection), (void**)ppReflector);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10CompileShader(LPCSTR pSrcData, SIZE_T SrcDataSize, LPCSTR pFileName, const D3D10_SHADER_MACRO* pDefines, LPD3D10INCLUDE pInclude, LPCSTR pFunctionName, LPCSTR pProfile, UINT Flags, ID3D10Blob** ppShader, ID3D10Blob** ppErrorMsgs)
+	{
+		return D3DCompile(pSrcData, SrcDataSize, pFileName, pDefines, pInclude, pFunctionName, pProfile, Flags, 0, ppShader, ppErrorMsgs);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10CreateEffectFromMemory(void *data, SIZE_T data_size, UINT flags, ID3D10Device *device, ID3D10EffectPool *effect_pool, ID3D10Effect **effect)
+	{
+		DXUP_Log(Warn, "Stub: D3D10CreateEffectFromMemory");
+		return E_NOTIMPL;
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10CompileEffectFromMemory(
+		void                     *pData,
+		SIZE_T                   DataLength,
+		LPCSTR                   pSrcFileName,
+		CONST D3D10_SHADER_MACRO *pDefines,
+		ID3D10Include            *pInclude,
+		UINT                     HLSLFlags,
+		UINT                     FXFlags,
+		ID3D10Blob               **ppCompiledEffect,
+		ID3D10Blob               **ppErrors
+	)
+	{
+		DXUP_Log(Warn, "Stub: D3D10CompileEffectFromMemory");
+		return E_NOTIMPL;
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10CreateEffectPoolFromMemory(void *data, SIZE_T data_size, UINT fx_flags, ID3D10Device *device, ID3D10EffectPool **effect_pool)
+	{
+		DXUP_Log(Warn, "Stub: D3D10CreateEffectPoolFromMemory");
+		return E_NOTIMPL;
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10DisassembleEffect(ID3D10Effect *pEffect, BOOL EnableColorCode, ID3D10Blob** ppDisassembly)
+	{
+		return D3DDisassemble10Effect(pEffect, 0, ppDisassembly);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10DisassembleShader(const void *pShader, SIZE_T BytecodeLength, BOOL EnableColorCode, LPCSTR pComments, ID3D10Blob **ppDisassembly)
+	{
+		return D3DDisassemble(pShader, BytecodeLength, 0, pComments, ppDisassembly);
+	}
+
+	HRESULT STDMETHODCALLTYPE D3D10PreprocessShader(
+		LPCSTR             pSrcData,
+		SIZE_T             SrcDataSize,
+		LPCSTR             pFileName,
+		const D3D10_SHADER_MACRO *pDefines,
+		LPD3D10INCLUDE     pInclude,
+		ID3D10Blob         **ppShaderText,
+		ID3D10Blob         **ppErrorMsgs)
+	{
+		return D3DPreprocess(pSrcData, SrcDataSize, pFileName, pDefines, pInclude, ppShaderText, ppErrorMsgs);
+	}
+
+	// Unknown params & returntype
+	void STDMETHODCALLTYPE D3D10GetVersion()
+	{
+		DXUP_Log(Warn, "Stub: D3D10GetVersion");
+	}
+
+	void STDMETHODCALLTYPE D3D10RegisterLayers()
+	{
+		DXUP_Log(Warn, "Stub: D3D10RegisterLayers");
+	}
+
+	void STDMETHODCALLTYPE RevertToOldImplementation()
+	{
+		DXUP_Log(Warn, "Stub: RevertToOldImplementation");
+	}
+
+	HRESULT __stdcall D3D10CreateDevice
+	(
+		IDXGIAdapter      *pAdapter,
+		D3D10_DRIVER_TYPE DriverType,
+		HMODULE           Software,
+		UINT              Flags,
+		UINT              SDKVersion,
+		ID3D10Device      **ppDevice
+	)
+	{
+		return D3D10CreateDevice1(pAdapter, DriverType, Software, Flags, D3D10_FEATURE_LEVEL_10_0, SDKVersion, (ID3D10Device1**)ppDevice);
+	}
+
+	HRESULT __stdcall D3D10CreateDeviceAndSwapChain(
+		IDXGIAdapter         *pAdapter,
+		D3D10_DRIVER_TYPE    DriverType,
+		HMODULE              Software,
+		UINT                 Flags,
+		UINT                 SDKVersion,
+		DXGI_SWAP_CHAIN_DESC *pSwapChainDesc,
+		IDXGISwapChain       **ppSwapChain,
+		ID3D10Device         **ppDevice
+	)
+	{
+		return D3D10CreateDeviceAndSwapChain1(pAdapter, DriverType, Software, Flags, D3D10_FEATURE_LEVEL_10_0, SDKVersion, pSwapChainDesc, ppSwapChain, (ID3D10Device1**)ppDevice);
 	}
 }

@@ -11,8 +11,17 @@ public:
 	DXGIWrapper()
 	{
 		HMODULE dxgiModule = LoadLibraryA("dxgi_original.dll");
+
+		HMODULE dxgiModuleWindows = LoadLibraryA("C:\\Windows\\System32\\dxgi.dll");
+		if (!dxgiModuleWindows)
+			dxgiModuleWindows = LoadLibraryA("C:\\Windows\\SysWOW64\\dxgi.dll");
+
+		CreateDXGIFactory1Function = nullptr;
+
 		if (dxgiModule)
 			CreateDXGIFactory1Function = (CreateDXGIFactory1Func)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
+		else
+			CreateDXGIFactory1Function = (CreateDXGIFactory1Func)GetProcAddress(dxgiModuleWindows, "CreateDXGIFactory1");
 	}
 
 	CreateDXGIFactory1Func CreateDXGIFactory1Function;
