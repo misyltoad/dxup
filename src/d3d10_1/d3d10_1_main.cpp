@@ -3,9 +3,9 @@
 #include "d3d10_1_device.h"
 #include "../dxgi/dxgi_swapchain.h"
 
-#include <D3Dcommon.h>
-#include <D3Dcompiler.h>
-#include <D3D10Effect.h>
+#include <d3dcommon.h>
+#include <d3dcompiler.h>
+#include <d3d10effect.h>
 
 extern "C"
 {
@@ -142,7 +142,9 @@ extern "C"
 
 	HRESULT STDMETHODCALLTYPE D3D10ReflectShader(const void *pShaderBytecode, SIZE_T BytecodeLength, ID3D10ShaderReflection **ppReflector)
 	{
-		return D3DReflect(pShaderBytecode, BytecodeLength, __uuidof(ID3D10ShaderReflection), (void**)ppReflector);
+		// Work around dodgy mingw headers.
+		const GUID ID3D10ShaderReflectionGUID = {0xc530ad7d, 0x9b16, 0x4395, {0xa9, 0x79, 0xba, 0x2e, 0xcf, 0xf8, 0x3a, 0xdd}};
+		return D3DReflect(pShaderBytecode, BytecodeLength, /*__uuidof(ID3D10ShaderReflection)*/ ID3D10ShaderReflectionGUID, (void**)ppReflector);
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10CompileShader(LPCSTR pSrcData, SIZE_T SrcDataSize, LPCSTR pFileName, const D3D10_SHADER_MACRO* pDefines, LPD3D10INCLUDE pInclude, LPCSTR pFunctionName, LPCSTR pProfile, UINT Flags, ID3D10Blob** ppShader, ID3D10Blob** ppErrorMsgs)
@@ -180,7 +182,12 @@ extern "C"
 
 	HRESULT STDMETHODCALLTYPE D3D10DisassembleEffect(ID3D10Effect *pEffect, BOOL EnableColorCode, ID3D10Blob** ppDisassembly)
 	{
-		return D3DDisassemble10Effect(pEffect, 0, ppDisassembly);
+		#ifndef __GNUC__
+			return D3DDisassemble10Effect(pEffect, 0, ppDisassembly);
+		#else
+			DXUP_Log(Warn, "Stub: D3D10DisassembleEffect [Linux]");
+			return E_NOTIMPL;
+		#endif
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10DisassembleShader(const void *pShader, SIZE_T BytecodeLength, BOOL EnableColorCode, LPCSTR pComments, ID3D10Blob **ppDisassembly)

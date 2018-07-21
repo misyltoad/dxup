@@ -2,6 +2,7 @@ dxgi_src = [
   'dxgi_factory.cpp',
   'dxgi_main.cpp',
   'dxgi_swapchain.cpp',
+  '../dxup_guids.cpp'
 ]
 
 dxgi_dll = shared_library('dxgi', dxgi_src,
@@ -9,7 +10,7 @@ dxgi_dll = shared_library('dxgi', dxgi_src,
   dependencies        : [ d3d10_1_dep ],
   install             : true,
   vs_module_defs      : 'dxgi.def',
-  cpp_args			  : '-DDXUP_DXGI_EXPORTS',
+  cpp_args	      : '-DDXUP_DXGI_EXPORTS',
   override_options    : ['cpp_std='+dxup_cpp_std])
 
 dxgi_dep = declare_dependency(

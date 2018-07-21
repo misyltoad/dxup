@@ -5,16 +5,16 @@ namespace dxup
 {
 	D3D10Query::D3D10Query(const D3D10_QUERY_DESC* pDesc, D3D10Device* pDevice, ID3D11Query* pQuery)
 	{
-		SetBase((ID3D11Predicate*)pQuery);
-		m_device = pDevice;
-		m_desc = *pDesc;
+		this->SetBase((ID3D11Predicate*)pQuery);
+		this->m_device = pDevice;
+		this->m_desc = *pDesc;
 	}
 
 	D3D10Query::D3D10Query(const D3D10_QUERY_DESC* pDesc, D3D10Device* pDevice, ID3D11Predicate* pPredictate)
 	{
-		SetBase(pPredictate);
-		m_device = pDevice;
-		m_desc = *pDesc;
+		this->SetBase(pPredictate);
+		this->m_device = pDevice;
+		this->m_desc = *pDesc;
 	}
 
 	HRESULT D3D10Query::QueryInterface(REFIID riid, void** ppvObject)
@@ -26,15 +26,15 @@ namespace dxup
 			|| riid == __uuidof(ID3D10Asynchronous)
 			|| riid == __uuidof(ID3D10Query))
 		{
-			AddRef();
+			this->AddRef();
 			*ppvObject = this;
 			return S_OK;
 		}
 
 		if (riid == __uuidof(ID3D10Predicate)
-			&& m_desc.Query == D3D10_QUERY_OCCLUSION_PREDICATE) 
+			&& this->m_desc.Query == D3D10_QUERY_OCCLUSION_PREDICATE) 
 		{
-			AddRef();
+			this->AddRef();
 			*ppvObject = this;
 			return S_OK;
 		}
@@ -45,21 +45,21 @@ namespace dxup
 
 	UINT D3D10Query::GetDataSize()
 	{
-		return m_base->GetDataSize();
+		return this->m_base->GetDataSize();
 	}
 
 	void D3D10Query::Begin(void)
 	{
-		m_device->GetD3D11Context()->Begin(m_base);
+		this->m_device->GetD3D11Context()->Begin(this->m_base);
 	}
 
 	void D3D10Query::End(void)
 	{
-		m_device->GetD3D11Context()->End(m_base);
+		this->m_device->GetD3D11Context()->End(this->m_base);
 	}
 
 	HRESULT D3D10Query::GetData(void* pData, UINT DataSize, UINT GetDataFlags)
 	{
-		return m_device->GetD3D11Context()->GetData(m_base, pData, DataSize, GetDataFlags);
+		return this->m_device->GetD3D11Context()->GetData(this->m_base, pData, DataSize, GetDataFlags);
 	}
 }

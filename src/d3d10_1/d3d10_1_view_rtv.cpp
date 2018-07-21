@@ -10,10 +10,10 @@ namespace dxup
 		, m_cachedResource11(nullptr)
 	{
 		if (pDesc)
-			m_desc = *pDesc;
+			this->m_desc = *pDesc;
 
-		m_device = pDevice;
-		SetBase(pRTV);
+		this->m_device = pDevice;
+		this->SetBase(pRTV);
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10RenderTargetView::QueryInterface(REFIID riid, void** ppvObject)
@@ -24,7 +24,7 @@ namespace dxup
 			|| riid == __uuidof(ID3D10DeviceChild)
 			|| riid == __uuidof(ID3D10View)
 			|| riid == __uuidof(ID3D10RenderTargetView)) {
-			AddRef();
+			this->AddRef();
 			*ppvObject = this;
 			return S_OK;
 		}

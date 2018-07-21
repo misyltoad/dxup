@@ -12,9 +12,9 @@ namespace dxup
 	public:
 		D3D10State(const DX10DescType* pDesc, D3D10Device* pDevice, DX11InterfaceType* pState)
 		{
-			m_device = pDevice;
-			SetBase(pState);
-			m_desc = *pDesc;
+			this->m_device = pDevice;
+			this->SetBase(pState);
+			this->m_desc = *pDesc;
 		}
 
 		HRESULT STDMETHODCALLTYPE QueryInterface(
@@ -27,12 +27,12 @@ namespace dxup
 				|| riid == __uuidof(ID3D10DeviceChild)
 				|| riid == __uuidof(DX10InterfaceType))
 			{
-				AddRef();
+				this->AddRef();
 				*ppvObject = this;
 				return S_OK;
 			}
 
-			return m_base->QueryInterface(riid, ppvObject);
+			return this->m_base->QueryInterface(riid, ppvObject);
 		}
 	};
 

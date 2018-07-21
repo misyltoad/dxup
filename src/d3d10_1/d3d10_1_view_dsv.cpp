@@ -10,10 +10,10 @@ namespace dxup
 		, m_cachedResource11(nullptr)
 	{
 		if (pDesc)
-			m_desc = *pDesc;
+			this->m_desc = *pDesc;
 
-		m_device = pDevice;
-		SetBase(pDSV);
+		this->m_device = pDevice;
+		this->SetBase(pDSV);
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10DepthStencilView::QueryInterface(REFIID riid, void** ppvObject)
@@ -24,7 +24,7 @@ namespace dxup
 			|| riid == __uuidof(ID3D10DeviceChild)
 			|| riid == __uuidof(ID3D10View)
 			|| riid == __uuidof(ID3D10DepthStencilView)) {
-			AddRef();
+			this->AddRef();
 			*ppvObject = this;
 			return S_OK;
 		}

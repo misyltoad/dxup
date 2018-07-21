@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <map>
 #include <assert.h>
+#include "d3d10_1_wrappers.h"
 
 namespace dxup
 {
@@ -14,9 +15,14 @@ namespace dxup
 #define DXUP_EXPORT __declspec(dllimport)
 #endif
 
-	MIDL_INTERFACE("907bf281-ea3c-43b4-a8e4-9f231107b4ff")
+#ifndef _MSC_VER
+#define DXUP_DEFINE_GUID(iface) template<> inline GUID const& __mingw_uuidof<iface> () { return iface::guid; }
+#endif
+
+	MIDL_INTERFACE("2ec54fe1-3185-40aa-9a32-7e634a8823f2")
 	D3D10Map
 	{
+		static const GUID guid;
 	};
 
 	template<typename DX10Interface, typename DX11Interface>
@@ -25,22 +31,22 @@ namespace dxup
 	public:
 		void SetBase(DX11Interface* pNewBase)
 		{
-			m_base = pNewBase;
+			this->m_base = pNewBase;
 		}
 
 		DX11Interface* GetBase()
 		{
-			return m_base;
+			return this->m_base;
 		}
 
 		ULONG STDMETHODCALLTYPE AddRef()
 		{
-			return m_base->AddRef();
+			return this->m_base->AddRef();
 		}
 
 		ULONG STDMETHODCALLTYPE Release()
 		{
-			ULONG RefCount = m_base->Release();
+			ULONG RefCount = this->m_base->Release();
 			if (RefCount == 0)
 				delete this;
 
@@ -52,7 +58,7 @@ namespace dxup
 			if (!this)
 				return nullptr;
 
-			return m_base;
+			return this->m_base;
 		}
 
 		const DX11Interface* GetD3D11Interface() const
@@ -60,7 +66,7 @@ namespace dxup
 			if (!this)
 				return nullptr;
 
-			return m_base;
+			return this->m_base;
 		}
 
 	protected:
@@ -76,7 +82,7 @@ namespace dxup
 			UINT    *pDataSize,
 			void    *pData)
 		{
-			return m_base->GetPrivateData(guid, pDataSize, pData);
+			return this->m_base->GetPrivateData(guid, pDataSize, pData);
 		}
 
 		void SetBase(DX11Interface* pNewBase)
@@ -91,14 +97,14 @@ namespace dxup
 			UINT    DataSize,
 			const void    *pData)
 		{
-			return m_base->SetPrivateData(guid, DataSize, pData);
+			return this->m_base->SetPrivateData(guid, DataSize, pData);
 		}
 
 		HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(
 			REFGUID  guid,
 			const IUnknown *pUnknown)
 		{
-			return m_base->SetPrivateDataInterface(guid, pUnknown);
+			return this->m_base->SetPrivateDataInterface(guid, pUnknown);
 		}
 	};
 
@@ -131,7 +137,7 @@ namespace dxup
 
 			if (!d3d10->m_cachedResource10 || !d3d10->m_cachedResource11 || d3d10->m_cachedResource11 != pD3D11Tex)
 			{
-				d3d10->m_cachedResource10 = new D3D10Texture2D(pD3D11Tex);
+				d3d10->m_cachedResource10 = Wrap::Texture2D(pD3D11Tex);
 				d3d10->m_cachedResource11 = pD3D11Tex;
 			}
 
@@ -141,3 +147,12 @@ namespace dxup
 		}
 	}
 }
+
+#ifdef _MSC_VER
+	namespace dxup
+	{
+		struct __declspec(uuid("2ec54fe1-3185-40aa-9a32-7e634a8823f2")) D3D10Map;
+	}
+#else
+	DXUP_DEFINE_GUID(dxup::D3D10Map);
+#endif

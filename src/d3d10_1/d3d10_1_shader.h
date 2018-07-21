@@ -12,8 +12,8 @@ namespace dxup
 	public:
 		D3D10Shader(D3D10Device* device, DX11Interface* dx11)
 		{
-			m_device = device;
-			SetBase(dx11);
+			this->m_device = device;
+			this->SetBase(dx11);
 		}
 
 		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject)
@@ -24,12 +24,12 @@ namespace dxup
 				|| riid == __uuidof(ID3D10DeviceChild)
 				|| riid == __uuidof(DX10Interface))
 			{
-				AddRef();
+				this->AddRef();
 				*ppvObject = this;
 				return S_OK;
 			}
 
-			return m_base->QueryInterface(riid, ppvObject);
+			return this->m_base->QueryInterface(riid, ppvObject);
 		}
 	};
 

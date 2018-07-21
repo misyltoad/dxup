@@ -5,8 +5,8 @@ namespace dxup
 {
 	D3D10InputLayout::D3D10InputLayout(D3D10Device* pDevice, ID3D11InputLayout* pInputLayout)
 	{
-		m_device = pDevice;
-		SetBase(pInputLayout);
+		this->m_device = pDevice;
+		this->SetBase(pInputLayout);
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10InputLayout::QueryInterface(REFIID riid, void** ppvObject)
@@ -17,7 +17,7 @@ namespace dxup
 			|| riid == __uuidof(ID3D10DeviceChild)
 			|| riid == __uuidof(ID3D10InputLayout))
 		{
-			AddRef();
+			this->AddRef();
 			*ppvObject = this;
 			return S_OK;
 		}

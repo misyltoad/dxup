@@ -5,9 +5,9 @@ namespace dxup {
 
 	D3D10Buffer::D3D10Buffer(const D3D10_BUFFER_DESC* pDesc, D3D10Device* pDevice, ID3D11Buffer* pBuffer)
 	{
-		m_desc = *pDesc;
-		m_device = pDevice;
-		SetBase(pBuffer);
+		this->m_desc = *pDesc;
+		this->m_device = pDevice;
+		this->SetBase(pBuffer);
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10Buffer::QueryInterface(REFIID riid, void** ppvObject)
@@ -19,8 +19,8 @@ namespace dxup {
 			|| riid == __uuidof(ID3D10Resource)
 			|| riid == __uuidof(ID3D10Buffer)) 
 		{
-			AddRef();
-			*ppvObject = m_base;
+			this->AddRef();
+			*ppvObject = this->m_base;
 			return S_OK;
 		}
 
@@ -31,26 +31,26 @@ namespace dxup {
 
 	UINT STDMETHODCALLTYPE D3D10Buffer::GetEvictionPriority()
 	{
-		return m_base->GetEvictionPriority();
+		return this->m_base->GetEvictionPriority();
 	}
 
 
 	void STDMETHODCALLTYPE D3D10Buffer::SetEvictionPriority(UINT EvictionPriority)
 	{
-		return m_base->SetEvictionPriority(EvictionPriority);
+		return this->m_base->SetEvictionPriority(EvictionPriority);
 	}
 
 
 	void STDMETHODCALLTYPE D3D10Buffer::GetType(D3D10_RESOURCE_DIMENSION* pResourceDimension)
 	{
-		m_base->GetType((D3D11_RESOURCE_DIMENSION*)(pResourceDimension));
+		this->m_base->GetType((D3D11_RESOURCE_DIMENSION*)(pResourceDimension));
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10Buffer::Map(D3D10_MAP MapType, UINT MapFlags, void ** ppData)
 	{
 		D3D11_MAPPED_SUBRESOURCE subres;
 		subres.pData = nullptr;
-		HRESULT result = m_device->GetD3D11Context()->Map(m_base, 0, (D3D11_MAP)MapType, MapFlags, &subres);
+		HRESULT result = this->m_device->GetD3D11Context()->Map(this->m_base, 0, (D3D11_MAP)MapType, MapFlags, &subres);
 		if (ppData)
 			*ppData = subres.pData;
 		return result;
@@ -58,6 +58,6 @@ namespace dxup {
 
 	void STDMETHODCALLTYPE D3D10Buffer::Unmap(void)
 	{
-		m_device->GetD3D11Context()->Unmap(m_base, 0);
+		this->m_device->GetD3D11Context()->Unmap(this->m_base, 0);
 	}
 }

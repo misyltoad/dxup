@@ -11,11 +11,11 @@ namespace dxup
 	public:
 		void STDMETHODCALLTYPE GetDevice(ID3D10Device **ppDevice)
 		{
-			m_device->AddRef();
-			*ppDevice = m_device;
+			this->m_device->AddRef();
+			*ppDevice = this->m_device;
 		}
 	protected:
-		D3D10Device * m_device;
+		D3D10Device* m_device;
 
 	};
 
@@ -32,7 +32,7 @@ namespace dxup
 	public:
 		void STDMETHODCALLTYPE GetDesc1(DX10DescType* pDesc)
 		{
-			*pDesc = m_desc;
+			*pDesc = this->m_desc;
 		}
 	};
 
@@ -42,7 +42,7 @@ namespace dxup
 	public:
 		void STDMETHODCALLTYPE GetDesc(DX10DescType* pDesc)
 		{
-			*pDesc = m_desc;
+			*pDesc = this->m_desc;
 		}
 	};
 }

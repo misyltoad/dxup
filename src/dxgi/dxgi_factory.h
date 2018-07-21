@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dxgi1_3.h>
+#include <dxgi1_2.h>
 
 #ifndef NO_MAP
 #define NO_MAP

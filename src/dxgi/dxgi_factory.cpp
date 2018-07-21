@@ -6,7 +6,7 @@ namespace dxup
 {
 	DXGIFactory::DXGIFactory(IDXGIFactory1* base)
 	{
-		m_base = base;
+		this->m_base = base;
 	}
 
 
@@ -22,13 +22,13 @@ namespace dxup
 			return S_OK;
 		}
 
-		return m_base->QueryInterface(riid, ppvObject);
+		return this->m_base->QueryInterface(riid, ppvObject);
 	}
 
 
 	HRESULT STDMETHODCALLTYPE DXGIFactory::GetParent(REFIID riid, void** ppParent)
 	{
-		return m_base->GetParent(riid, ppParent);
+		return this->m_base->GetParent(riid, ppParent);
 	}
 
 
@@ -36,7 +36,7 @@ namespace dxup
 		HMODULE         Module,
 		IDXGIAdapter**  ppAdapter)
 	{
-		return m_base->CreateSoftwareAdapter(Module, ppAdapter);
+		return this->m_base->CreateSoftwareAdapter(Module, ppAdapter);
 	}
 
 
@@ -49,7 +49,7 @@ namespace dxup
 
 		auto* dxupDevice = static_cast<D3D10Device*>(pDevice);
 
-		HRESULT result = m_base->CreateSwapChain(dxupDevice->GetD3D11Interface(), pDesc, &originalSwapchain);
+		HRESULT result = this->m_base->CreateSwapChain(dxupDevice->GetD3D11Interface(), pDesc, &originalSwapchain);
 
 		if (originalSwapchain)
 		{
@@ -67,7 +67,7 @@ namespace dxup
 		UINT            Adapter,
 		IDXGIAdapter**  ppAdapter)
 	{
-		return m_base->EnumAdapters(Adapter, ppAdapter);
+		return this->m_base->EnumAdapters(Adapter, ppAdapter);
 	}
 
 
@@ -75,24 +75,24 @@ namespace dxup
 		UINT            Adapter,
 		IDXGIAdapter1** ppAdapter)
 	{
-		return m_base->EnumAdapters1(Adapter, ppAdapter);
+		return this->m_base->EnumAdapters1(Adapter, ppAdapter);
 	}
 
 
 	HRESULT STDMETHODCALLTYPE DXGIFactory::GetWindowAssociation(HWND *pWindowHandle)
 	{
-		return m_base->GetWindowAssociation(pWindowHandle);
+		return this->m_base->GetWindowAssociation(pWindowHandle);
 	}
 
 
 	HRESULT STDMETHODCALLTYPE DXGIFactory::MakeWindowAssociation(HWND WindowHandle, UINT Flags)
 	{
-		return m_base->MakeWindowAssociation(WindowHandle, Flags);
+		return this->m_base->MakeWindowAssociation(WindowHandle, Flags);
 	}
 
 
 	BOOL STDMETHODCALLTYPE DXGIFactory::IsCurrent()
 	{
-		return m_base->IsCurrent();
+		return this->m_base->IsCurrent();
 	}
 }
