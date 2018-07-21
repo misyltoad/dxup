@@ -7,8 +7,8 @@ fi
 
 DXUP_VERSION="$1"
 DXUP_SRC_DIR=`dirname $(readlink -f $0)`
-DXUP_BUILD_DIR=$(realpath "$2")"/dxvk-$DXUP_VERSION"
-DXUP_ARCHIVE_PATH=$(realpath "$2")"/dxvk-$DXUP_VERSION.tar.gz"
+DXUP_BUILD_DIR=$(realpath "$2")"/dxup-$DXUP_VERSION"
+DXUP_ARCHIVE_PATH=$(realpath "$2")"/dxup-$DXUP_VERSION.tar.gz"
 
 function build_arch {
   export WINEARCH="win$1"
@@ -29,11 +29,9 @@ function build_arch {
 
   mkdir "$DXUP_BUILD_DIR/x$1"
 
-  cp "$DXUP_BUILD_DIR/install.$1/bin/d3d10.dll" "$DXUP_BUILD_DIR/x$1/d3d10.dll"
-  cp "$DXUP_BUILD_DIR/install.$1/bin/d3d10core.dll" "$DXUP_BUILD_DIR/x$1/d3d10core.dll"
   cp "$DXUP_BUILD_DIR/install.$1/bin/d3d10_1.dll" "$DXUP_BUILD_DIR/x$1/d3d10_1.dll"
-  cp "$DXUP_BUILD_DIR/install.$1/bin/d3d10_1core.dll" "$DXUP_BUILD_DIR/x$1/d3d10_1core.dll"
-  cp "$DXUP_BUILD_DIR/install.$1/bin/setup_dxvk.sh" "$DXUP_BUILD_DIR/x$1/setup_dxvk.sh"
+  cp "$DXUP_BUILD_DIR/install.$1/bin/dxgi.dll" "$DXUP_BUILD_DIR/x$1/dxgi.dll"
+  cp "$DXUP_BUILD_DIR/install.$1/bin/setup_dxup.sh" "$DXUP_BUILD_DIR/x$1/setup_dxup.sh"
   
   rm -R "$DXUP_BUILD_DIR/wine.$1"
   rm -R "$DXUP_BUILD_DIR/build.$1"
@@ -42,8 +40,8 @@ function build_arch {
 
 function package {
   cd "$DXUP_BUILD_DIR/.."
-  tar -czf "$DXUP_ARCHIVE_PATH" "dxvk-$DXUP_VERSION"
-  rm -R "dxvk-$DXUP_VERSION"
+  tar -czf "$DXUP_ARCHIVE_PATH" "dxup-$DXUP_VERSION"
+  rm -R "dxup-$DXUP_VERSION"
 }
 
 build_arch 64

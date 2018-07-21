@@ -4,6 +4,7 @@ export WINEDEBUG=-all
 
 dlls_dir=`dirname "$(readlink -f $0)"`
 build_arch='@arch@'
+link_dll='d3d10_1'
 
 if [ $build_arch == "x64" ]; then
     wine=wine64
@@ -116,7 +117,7 @@ function checkOverride {
         ret=2
     fi
     echo -n "    [2/2] Checking link to $1.dll... "
-    if [ "$(readlink -f "$unix_sys_path/$1.dll")" == "$(readlink -f "$dlls_dir/$1.dll")" ]; then
+    if [ "$(readlink -f "$unix_sys_path/$1.dll")" == "$(readlink -f "$dlls_dir/$link_dll.dll")" ]; then
         echo -e '\e[1;32mOK\e[0m.'
     else
         echo -e '\e[1;31mnot set\e[0m.'
@@ -133,8 +134,8 @@ function createOverride {
         exit 1
     fi
     echo -e "$(sed -e 's|\r||g' <<< "\\e[1;32m$out\\e[0m.")"
-    echo -n "    [2/2] Creating link to $1.dll... "
-    ln -sf "$dlls_dir/$1.dll" "$unix_sys_path/$1.dll"
+    echo -n "    [2/2] Creating link from $link_dll.dll to $1.dll... "
+    ln -sf "$dlls_dir/$link_dll.dll" "$unix_sys_path/$1.dll"
     if [ $? -eq 0 ]; then
         echo -e '\e[1;32mDone\e[0m.'
     else
@@ -160,18 +161,24 @@ check)
     ;;
 esac
 
-echo '[1/7] d3d10:'
+echo '[1/8] d3d10:'
+link_dll='d3d10_1'
 $fun d3d10
-echo '[2/7] d3d10_1:'
+echo '[2/8] d3d10_1:'
 $fun d3d10_1
-echo '[3/7] d3d10_original:'
-$fun d3d10_original
-echo '[4/7] dxgi:'
-$fun dxgi
-echo '[5/7] dxgi_original:'
-$fun dxgi_original
-echo '[5/7] d3d11:'
-$fun d3d11
-echo '[7/7] d3dx10_43:'
+echo '[3/8] d3dx10_43:'
 $fun d3dx10_43
+echo '[4/8] d3d10core:'
+$fun d3d10core
+echo '[5/8] d3d10_1core:'
+$fun d3d10_1core
+echo '[6/8] dxgi:'
+link_dll='dxgi'
+$fun dxgi
+echo '[7/8] dxgi_original:'
+link_dll='dxgi_original'
+$fun dxgi_original
+echo '[8/8] d3d11:'
+link_dll='d3d11'
+$fun d3d11
 exit $ret
