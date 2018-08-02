@@ -14,11 +14,12 @@ d3d10_1_src = [
   '../dxup_guids.cpp'
 ]
 
-d3d10_1_dll = shared_library('d3d10_1', d3d10_1_src,
+d3d10_1_dll = shared_library('d3d10_1'+dll_ext, d3d10_1_src,
   name_prefix         : '',
   install             : true,
   dependencies        : [ lib_d3d11, lib_d3dcompiler_47 ],
-  vs_module_defs      : 'd3d10_1.def',
+  objects             : not dxup_msvc ? 'd3d10_1'+def_spec_ext : [],
+  vs_module_defs      : 'd3d10_1'+def_spec_ext,
   cpp_args            : '-DDXUP_EXPORTS',
   override_options    : ['cpp_std='+dxup_cpp_std])
 

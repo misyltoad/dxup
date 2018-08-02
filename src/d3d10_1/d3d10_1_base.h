@@ -16,7 +16,13 @@ namespace dxup
 #endif
 
 #ifndef _MSC_VER
-#define DXUP_DEFINE_GUID(iface) template<> inline GUID const& __mingw_uuidof<iface> () { return iface::guid; }
+# ifdef __WINE__
+#   define DXUP_DEFINE_GUID(iface) \
+      template<> inline GUID const& __wine_uuidof<iface> () { return iface::guid; }
+# else
+#   define DXUP_DEFINE_GUID(iface) \
+      template<> inline GUID const& __mingw_uuidof<iface> () { return iface::guid; }
+# endif
 #endif
 
 	MIDL_INTERFACE("2ec54fe1-3185-40aa-9a32-7e634a8823f2")
