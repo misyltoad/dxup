@@ -10,7 +10,7 @@ environment:
       builder: msbuild
       compiler: cl
       toolchain: vs2017
-      arch: x64
+      arch: x86_64
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       
     - frontend: meson
@@ -23,7 +23,7 @@ environment:
 install:
   - set PATH=C:\Python35\scripts;%PATH%
   - pip3 install meson
-  - if "%arch%" == "x64" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
+  - if "%arch%" == "x86_64" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
   - if "%arch%" == "x86" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat")
   
 before_build:
