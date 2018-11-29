@@ -1,7 +1,7 @@
 clone_folder: C:\Projects\DXUP
 shallow_clone: true
 
-version: 0.{build}
+version: 0.00-{build}
 
 environment:
   parallel: true
