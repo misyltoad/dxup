@@ -36,13 +36,13 @@ extern "C"
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10CreateDevice1(
-		_In_  IDXGIAdapter         *pAdapter,
-		_In_  D3D10_DRIVER_TYPE    DriverType,
-		_In_  HMODULE              Software,
-		_In_  UINT                 Flags,
-		_In_  D3D10_FEATURE_LEVEL1 HardwareLevel,
-		_In_  UINT                 SDKVersion,
-		_Out_ ID3D10Device1        **ppDevice
+		IDXGIAdapter         *pAdapter,
+		D3D10_DRIVER_TYPE    DriverType,
+		HMODULE              Software,
+		UINT                 Flags,
+		D3D10_FEATURE_LEVEL1 HardwareLevel,
+		UINT                 SDKVersion,
+		ID3D10Device1        **ppDevice
 	)
 	{
 		ID3D11Device* pDX11Device = nullptr;
@@ -68,7 +68,7 @@ extern "C"
 	}
 
 	HRESULT STDMETHODCALLTYPE D3D10CreateDeviceAndSwapChain1(
-		_In_opt_ IDXGIAdapter *pAdapter,
+		IDXGIAdapter *pAdapter,
 		D3D10_DRIVER_TYPE DriverType,
 		HMODULE Software,
 		UINT Flags,
