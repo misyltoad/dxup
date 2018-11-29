@@ -6,11 +6,22 @@ dlls_dir=`dirname "$(readlink -f $0)"`
 build_arch='@arch@'
 link_dll='d3d10_1'
 
-if [ $build_arch == "x64" ]; then
+if [ $build_arch == "x86_64" ]; then
     wine=wine64
+    dll_arch="x64"
 else
     wine=wine
+    dll_arch="x32"
 fi
+
+# Symlink to DXVK if not done already
+if [ ! -L "$dlls_dir/d3d11.dll" ]; then
+    ln -sfn "/usr/share/dxvk/$dll_arch/d3d11.dll" "$dlls_dir/d3d11.dll"
+fi
+if [ ! -L "$dlls_dir/dxgi_original.dll" ]; then
+    ln -sfn "/usr/share/dxvk/$dll_arch/dxgi.dll" "$dlls_dir/dxgi_original.dll"
+fi
+
 
 quiet=false
 assume=
