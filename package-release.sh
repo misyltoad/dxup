@@ -33,7 +33,7 @@ function build_arch {
   cp "$DXUP_BUILD_DIR/install.$1/bin/dxgi.dll" "$DXUP_BUILD_DIR/x$1/dxgi.dll"
   cp "$DXUP_BUILD_DIR/install.$1/bin/setup_dxup.sh" "$DXUP_BUILD_DIR/x$1/setup_dxup.sh"
   
-  rm -R "$DXUP_BUILD_DIR/wine.$1"
+
   rm -R "$DXUP_BUILD_DIR/build.$1"
   rm -R "$DXUP_BUILD_DIR/install.$1"
 }

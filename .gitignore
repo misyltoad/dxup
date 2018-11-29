@@ -1,2 +1,9 @@
 build
 build32
+*.vcxproj
+*.filters
+*.vpc_crc
+*.sentinel
+Release
+Debug
+.vscode
