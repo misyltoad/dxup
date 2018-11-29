@@ -17,6 +17,13 @@ if dxup_compiler.get_id() == 'msvc'
 	add_global_arguments('/std:' + dxup_cpp_std, language : 'cpp')
 endif
 
+
+if (cpu_family == 'x86_64')
+  dxup_library_path = meson.source_root() + '/lib'
+else
+  dxup_library_path = meson.source_root() + '/lib32'
+endif
+
 code = '''#ifndef __WINE__
 #error 1
 #endif'''
