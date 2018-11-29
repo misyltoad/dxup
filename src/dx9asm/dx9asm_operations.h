@@ -1,7 +1,6 @@
 #pragma once
 
 #include "dx9asm_meta.h"
-#include "dx9asm_translator.h"
 #include "../util/fixed_buffer.h"
 #include "dx9asm_operand.h"
 #include <vector>
@@ -9,6 +8,9 @@
 namespace dxapex {
 
   namespace dx9asm {
+
+    class ShaderCodeTranslator;
+    class DX9Operation;
 
     namespace implicitflag {
       const uint32_t negate = 1;

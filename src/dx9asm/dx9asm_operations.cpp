@@ -1,5 +1,6 @@
 #include "dx9asm_operations.h"
 #include "dx9asm_util.h"
+#include "dx9asm_translator.h"
 
 namespace dxapex {
 

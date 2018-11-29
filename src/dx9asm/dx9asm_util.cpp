@@ -46,13 +46,13 @@ namespace dxapex {
       switch (operand.getRegType()) {
       case D3DSPR_TEMP: dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
       case D3DSPR_INPUT: dxbcType = D3D10_SB_OPERAND_TYPE_INPUT; break;
-      case D3DSPR_CONST: 
+      case D3DSPR_CONST: {
         const uint32_t constantBufferIndex = 0;
         uint32_t dataWithDummyId[2] = { constantBufferIndex, 0 };
         newMapping.dxbcOperand.setData(dataWithDummyId, 2);
         newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
         newMapping.dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
-        dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER; break;
+        dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER; } break;
       case D3DSPR_ADDR: dxbcType = D3D10_SB_OPERAND_TYPE_RESOURCE; break;
       case D3DSPR_RASTOUT:
       case D3DSPR_ATTROUT:

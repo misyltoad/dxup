@@ -2,6 +2,7 @@
 
 #include "dx9asm_meta.h"
 #include "dx9asm_util.h"
+#include "dxbc_helpers.h"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
@@ -9,8 +10,6 @@
 namespace dxapex {
 
   namespace dx9asm {
-
-    class DXBCOperand;
     
     class ITranslatedShaderDXBC : public IUnknown {
 
