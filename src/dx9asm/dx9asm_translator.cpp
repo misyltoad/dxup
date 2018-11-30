@@ -149,8 +149,6 @@ namespace dxapex {
       }
 
       void push(std::vector<uint32_t>& obj) {
-        obj.reserve(obj.size() + size);
-
         obj.push_back(name);
         obj.push_back(size);
       }
@@ -162,8 +160,6 @@ namespace dxapex {
       }
 
       void push(std::vector<uint32_t>& obj) {
-        obj.reserve(obj.size() + size);
-
         obj.push_back(name);
         obj.push_back(size);
       }
@@ -175,8 +171,6 @@ namespace dxapex {
       }
 
       void push(std::vector<uint32_t>& obj) {
-        obj.reserve(obj.size() + size);
-
         obj.push_back(name);
         obj.push_back(size);
       }
@@ -193,8 +187,6 @@ namespace dxapex {
       }
 
       void push(std::vector<uint32_t>& obj) {
-        obj.reserve(obj.size() + size);
-
         obj.push_back(name);
         obj.push_back(size);
         obj.push_back(versionAndType);
@@ -215,8 +207,6 @@ namespace dxapex {
       }
 
       void push(std::vector<uint32_t>& obj) {
-        obj.reserve(obj.size() + size);
-
         obj.push_back(name);
         obj.push_back(size);
       }
@@ -225,6 +215,9 @@ namespace dxapex {
     class ShaderBytecode {
     public:
       ShaderBytecode(ShaderCodeTranslator& shdrCode) {
+        // Should be enough to avoid any extra allocations.
+        m_bytecode.reserve(4096 + shdrCode.getCode().size());
+
         pushObjectAsBytes(DXBCHeader());
 
         getHeader()->chunkOffsets[chunks::RDEF] = getByteSize();
