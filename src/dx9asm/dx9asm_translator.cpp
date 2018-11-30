@@ -112,6 +112,8 @@ namespace dxapex {
         token = nextToken();
       }
 
+      DXBCOperation{ D3D10_SB_OPCODE_RET, false }.push(*this);
+
       return true;
     }
 
