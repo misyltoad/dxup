@@ -69,7 +69,7 @@ namespace dxapex {
 
       for (uint32_t col = 0; col < operation.getMatrixColumns(); col++) {
         DXBCOperation dxbcOperation{operation};
-
+         
         for (uint32_t i = 0; i < operation.operandCount(); i++) {
           const DX9Operand* operand = operation.getOperandByIndex(i);
 
@@ -147,7 +147,7 @@ namespace dxapex {
 
     struct RDEF : public Chunk {
       RDEF(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('R', 'D', 'E', 'F') }  {
-        size = sizeof(RDEF);
+        size = sizeof(RDEF) - sizeof(Chunk);
       }
 
       void push(std::vector<uint32_t>& obj) {
@@ -158,7 +158,7 @@ namespace dxapex {
 
     struct ISGN : public Chunk {
       ISGN(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('I', 'S', 'G', 'N') } {
-        size = sizeof(ISGN);
+        size = sizeof(ISGN) - sizeof(Chunk);
       }
 
       void push(std::vector<uint32_t>& obj) {
@@ -169,7 +169,7 @@ namespace dxapex {
 
     struct OSGN : public Chunk {
       OSGN(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('O', 'S', 'G', 'N') } {
-        size = sizeof(OSGN);
+        size = sizeof(OSGN) - sizeof(Chunk);
       }
 
       void push(std::vector<uint32_t>& obj) {
@@ -184,8 +184,8 @@ namespace dxapex {
         versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 4, 0);
         code = &shdrCode.getCode();
 
-        size = sizeof(SHDR) - sizeof(code) + (code->size() * sizeof(uint32_t));
-        dwordCount = sizeof(versionAndType) + sizeof(dwordCount) + (code->size() * sizeof(uint32_t));
+        size = (sizeof(SHDR) + (code->size() * sizeof(uint32_t))) - sizeof(Chunk) - sizeof(code);
+        dwordCount = size / sizeof(uint32_t);
       }
 
       void push(std::vector<uint32_t>& obj) {
@@ -205,7 +205,7 @@ namespace dxapex {
 
     struct STAT : public Chunk {
       STAT(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('S', 'T', 'A', 'T') } {
-        size = sizeof(STAT);
+        size = sizeof(STAT) - sizeof(Chunk);
       }
 
       void push(std::vector<uint32_t>& obj) {
