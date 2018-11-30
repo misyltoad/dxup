@@ -106,6 +106,10 @@ namespace dxapex {
       bool handleComment(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
 
+      inline std::vector<uint32_t>& getCode() {
+        return m_dxbcCode;
+      }
+
     private:
       bool handleUniqueOperation(DX9Operation& operation);
 

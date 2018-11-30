@@ -114,6 +114,155 @@ namespace dxapex {
 
       return true;
     }
+
+    namespace chunks {
+      enum {
+        RDEF = 0,
+        ISGN = 1,
+        OSGN,
+        SHDR,
+        STAT,
+        Count
+      };
+    }
+
+    struct DXBCHeader {
+      uint32_t dxbc = MAKEFOURCC('D', 'X', 'B', 'C');
+      uint32_t checksum[4] = { 0 };
+      uint32_t unknown = 1;
+      uint32_t size = 0; // Set later.
+      uint32_t chunkCount = chunks::Count;
+      uint32_t chunkOffsets[chunks::Count] = { 0 }; // Set later.
+    };
+
+    struct Chunk {
+      Chunk(uint32_t name)
+        : name(name) {}
+
+      uint32_t name = MAKEFOURCC('I', 'V', 'L', 'D');
+      uint32_t size = 0; // Set Later
+    };
+
+    struct RDEF : public Chunk {
+      RDEF(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('R', 'D', 'E', 'F') }  {
+        size = sizeof(RDEF);
+      }
+
+      void push(std::vector<uint32_t>& obj) {
+        obj.reserve(obj.size() + size);
+
+        obj.push_back(name);
+        obj.push_back(size);
+      }
+    };
+
+    struct ISGN : public Chunk {
+      ISGN(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('I', 'S', 'G', 'N') } {
+        size = sizeof(ISGN);
+      }
+
+      void push(std::vector<uint32_t>& obj) {
+        obj.reserve(obj.size() + size);
+
+        obj.push_back(name);
+        obj.push_back(size);
+      }
+    };
+
+    struct OSGN : public Chunk {
+      OSGN(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('O', 'S', 'G', 'N') } {
+        size = sizeof(OSGN);
+      }
+
+      void push(std::vector<uint32_t>& obj) {
+        obj.reserve(obj.size() + size);
+
+        obj.push_back(name);
+        obj.push_back(size);
+      }
+    };
+
+    struct SHDR : public Chunk {
+      SHDR(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('S', 'H', 'D', 'R') } {
+
+        versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 4, 0);
+        code = &shdrCode.getCode();
+
+        size = sizeof(SHDR) - sizeof(code) + (code->size() * sizeof(uint32_t));
+        dwordCount = sizeof(versionAndType) + sizeof(dwordCount) + (code->size() * sizeof(uint32_t));
+      }
+
+      void push(std::vector<uint32_t>& obj) {
+        obj.reserve(obj.size() + size);
+
+        obj.push_back(name);
+        obj.push_back(size);
+        obj.push_back(versionAndType);
+        obj.push_back(dwordCount);
+
+        for (size_t i = 0; i < code->size(); i++)
+          obj.push_back((*code)[i]);
+      }
+
+      uint32_t versionAndType;
+      uint32_t dwordCount;
+      const std::vector<uint32_t>* code;
+    };
+
+    struct STAT : public Chunk {
+      STAT(ShaderCodeTranslator& shdrCode) : Chunk{ MAKEFOURCC('S', 'T', 'A', 'T') } {
+        size = sizeof(STAT);
+      }
+
+      void push(std::vector<uint32_t>& obj) {
+        obj.reserve(obj.size() + size);
+
+        obj.push_back(name);
+        obj.push_back(size);
+      }
+    };
+    
+    class ShaderBytecode {
+    public:
+      ShaderBytecode(ShaderCodeTranslator& shdrCode) {
+        pushObjectAsBytes(DXBCHeader());
+
+        getHeader()->chunkOffsets[chunks::RDEF] = getByteSize();
+        RDEF(shdrCode).push(m_bytecode);
+
+        getHeader()->chunkOffsets[chunks::ISGN] = getByteSize();
+        ISGN(shdrCode).push(m_bytecode);
+
+        getHeader()->chunkOffsets[chunks::OSGN] = getByteSize();
+        OSGN(shdrCode).push(m_bytecode);
+
+        getHeader()->chunkOffsets[chunks::SHDR] = getByteSize();
+        SHDR(shdrCode).push(m_bytecode);
+
+        getHeader()->chunkOffsets[chunks::STAT] = getByteSize();
+        STAT(shdrCode).push(m_bytecode);
+
+        getHeader()->size = getByteSize();
+        // Do Checksum Here
+      }
+
+      DXBCHeader* getHeader() {
+        return (DXBCHeader*) &m_bytecode[0];
+      }
+
+      uint32_t getByteSize() {
+        return m_bytecode.size() * sizeof(uint32_t);
+      }
+
+      template <typename T>
+      void pushObjectAsBytes(T& thing) {
+        uint32_t* ptrThing = (uint32_t*) &thing;
+        for (uint32_t i = 0; i < sizeof(T) / sizeof(uint32_t); i++)
+          m_bytecode.push_back( *(ptrThing + i) );
+      }
+    private:
+      std::vector<uint32_t> m_bytecode;
+    };
   
     void toDXBC(const uint32_t* dx9asm, ITranslatedShaderDXBC** dxbc) {
       InitReturnPtr(dxbc);
@@ -123,6 +272,8 @@ namespace dxapex {
         log::fail("Failed to translate shader fatally!");
         return;
       }
+
+      
     }
 
   }
