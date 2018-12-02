@@ -21,13 +21,13 @@ namespace dxapex {
 
   template <typename T>
   void pushAlignedString(std::vector<T>& vec, std::string str) {
-    size_t len = str.length();
-    len += len % sizeof(T);
+    size_t len = str.length() + 1; // for NULL terminator
+    size_t paddedLen = len + len % sizeof(T);
 
     size_t curSize = data.size();
-    data.resize(vec.size() + (len / sizeof(T)) );
-    std::memset(&data[curSize], 0, len);
-    std::memcpy(&data[curSize], str.base(), str.length());
+    data.resize( vec.size() + (paddedLen / sizeof(T)) );
+    std::memset(&data[curSize], 0xAB, paddedLen); // FXC pads with 0xAB
+    std::memcpy(&data[curSize], str.c_str(), len);
   }
 
 }
