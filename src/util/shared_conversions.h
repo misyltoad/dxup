@@ -1,10 +1,11 @@
 #include <d3d9.h>
+#include <string>
 
 namespace dxapex {
 
     namespace convert {
 
-        const char* declUsage(D3DDECLUSAGE usage);
+        const std::string& declUsage(D3DDECLUSAGE usage);
 
     }
 

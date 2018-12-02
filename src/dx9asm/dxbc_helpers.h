@@ -47,14 +47,18 @@ namespace dxapex {
         m_dataCount = count;
       }
 
-
+      // I'm not a fan of this & here. ~ Josh
       inline uint32_t& getRegNumber() {
         if (m_registerType == D3D10_SB_OPERAND_TYPE_IMMEDIATE32) {
           log::fail("Attempted to get the register of a literal!");
-          return 0;
+          return m_dummy;
         }
 
         return m_data[m_dataCount - 1];
+      }
+
+      inline const uint32_t getRegNumber() const {
+        return getRegNumber();
       }
 
       inline void addInstructionSize(uint32_t& instructionSize) {
@@ -78,6 +82,7 @@ namespace dxapex {
       uint32_t m_extension = 0;
       uint32_t m_data[4] = { 0 };
       uint32_t m_dataCount = 0;
+      uint32_t m_dummy = 0;
       bool m_hasExtension = false;
     };
 

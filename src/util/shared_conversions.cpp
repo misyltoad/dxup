@@ -2,7 +2,7 @@
 
 namespace dxapex {
 
-  const char* declUsage(D3DDECLUSAGE usage) {
+  const std::string& declUsage(D3DDECLUSAGE usage) {
 
     switch (usage) {
     case D3DDECLUSAGE_POSITION: return "POSITION";

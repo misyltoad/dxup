@@ -94,7 +94,7 @@ namespace dxapex {
       }
 
       inline uint32_t getUsageIndex() const {
-        return (getToken() & D3DSP_DCL_USAGEINDEX_MASK) >> D3DSP_DCL_USAGEINDEX_SHIFT
+        return (getToken() & D3DSP_DCL_USAGEINDEX_MASK) >> D3DSP_DCL_USAGEINDEX_SHIFT;
       }
 
       inline D3DSHADER_PARAM_SRCMOD_TYPE getModifier() const {

@@ -2,6 +2,7 @@
 #include "dx9asm_translator.h"
 #include "../util/fourcc.h"
 #include "../util/misc_helpers.h"
+#include "../util/config.h"
 #include "../util/shared_conversions.h"
 #include "dxbc_stats.h"
 #include <string>
@@ -33,7 +34,13 @@ namespace dxapex {
       uint32_t size;
     };
 
-    struct RDEFChunk {
+    struct Chunk {
+      inline uint32_t getSize(std::vector<uint32_t>& obj) {
+        return obj.size() - sizeof(ChunkHeader);
+      }
+    };
+
+    struct RDEFChunk : public Chunk {
       ChunkHeader header;
 
       RDEFChunk(ShaderCodeTranslator& shdrCode)
@@ -41,19 +48,15 @@ namespace dxapex {
         
       }
 
-      inline uint32_t getSize() {
-        return 0;
-      }
-
       inline void push(std::vector<uint32_t>& obj) {
-        header.size = getSize();
-
         header.push(obj);
+
+        header.size = getSize(obj);
       }
     };
 
     template<bool Output>
-    struct IOSGNChunk {
+    struct IOSGNChunk : Chunk {
       ChunkHeader header;
 
       struct IOSGNElement {
@@ -81,7 +84,8 @@ namespace dxapex {
             continue;
 
           IOSGNElement element;
-          elementNames.push_back(convert::declUsage(mapping.dclInfo.usage));
+          const std::string& semanticName = convert::declUsage(mapping.dclInfo.usage);
+          semanticNames.push_back(&semanticName);
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
           elements.push_back(element);
@@ -96,13 +100,7 @@ namespace dxapex {
         return Output;
       }
 
-      inline uint32_t getSize() {
-        return 0;
-      }
-
-      // remove get size
       inline void push(std::vector<uint32_t>& obj) {
-        header.size = getSize();
         elementCount = elements.size();
 
         header.push(obj);
@@ -110,59 +108,55 @@ namespace dxapex {
         obj.push_back(elementCount);
         obj.push_back(magicEightBall);
 
-        elementStart = &obj[obj.size() - 1];
+        IOSGNElement* elementStart = (IOSGNElement*) nextPtr(obj);
 
         for (IOSGNElement& element : elements)
-          pushObject(element, obj);
+          pushObject(obj, element);
 
-        for (size_t i = 0; i < elementNames.size(); i++) {
-          elementStart[i].nameOffset = obj.size();
-          pushAlignedString(elementName, obj);
+        for (size_t i = 0; i < semanticNames.size(); i++) {
+          elementStart[i].nameOffset = getSize(obj);
+          pushAlignedString(obj, *semanticNames[i]);
         }
+
+        header.size = getSize(obj);
       }
 
       uint32_t elementCount;
       uint32_t magicEightBall = 8; // Reply hazy, try again. ~ Josh
 
       std::vector<IOSGNElement> elements;
-      std::vector<std::string&> elementNames;
-      IOSGNElement* elementStart;
+      std::vector<const std::string*> semanticNames;
     };
 
-    struct SHDRChunk {
+    struct SHDRChunk : public Chunk {
       ChunkHeader header;
 
       SHDRChunk(ShaderCodeTranslator& shdrCode)
         : header{ fourcc("SHDR") } {
-        versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 4, 0);
         code = &shdrCode.getCode();
       }
 
-      inline uint32_t getSize() {
-        return sizeof(versionAndType) +
-               sizeof(dwordCount) +
-               code->size() * sizeof(uint32_t);
-      }
-
       inline void push(std::vector<uint32_t>& obj) {
-        header.size = getSize();
-        dwordCount = getSize() / sizeof(uint32_t);
 
         header.push(obj);
 
         obj.push_back(versionAndType);
         obj.push_back(dwordCount);
+        uint32_t* dwordCountPtr = lastPtr(obj);
        
         for (size_t i = 0; i < code->size(); i++)
           obj.push_back((*code)[i]);
+
+        header.size = getSize(obj);
+        *dwordCountPtr = header.size / sizeof(uint32_t);
       }
 
-      uint32_t versionAndType;
-      uint32_t dwordCount;
+      uint32_t versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 4, 0);
+      uint32_t dwordCount = 0;
       const std::vector<uint32_t>* code;
     };
 
-    struct STATChunk {
+    struct STATChunk : public Chunk {
       ChunkHeader header;
 
       STATChunk(ShaderCodeTranslator& shdrCode)
@@ -170,15 +164,11 @@ namespace dxapex {
 
       }
 
-      inline uint32_t getSize() {
-        return sizeof(data);
-      }
-
       inline void push(std::vector<uint32_t>& obj) {
-        header.size = getSize();
-
         header.push(obj);
         pushObject(obj, data);
+
+        header.size = getSize(obj);
       }
 
       STATData data;

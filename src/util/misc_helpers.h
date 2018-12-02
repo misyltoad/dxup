@@ -20,14 +20,24 @@ namespace dxapex {
   }
 
   template <typename T>
-  void pushAlignedString(std::vector<T>& vec, std::string str) {
+  T* lastPtr(std::vector<T>& vec) {
+    return &vec[vec.size() - 1];
+  }
+
+  template <typename T>
+  T* nextPtr(std::vector<T>& vec) {
+    return &vec[vec.size()];
+  }
+
+  template <typename T>
+  void pushAlignedString(std::vector<T>& vec, const std::string& str) {
     size_t len = str.length() + 1; // for NULL terminator
     size_t paddedLen = len + len % sizeof(T);
 
-    size_t curSize = data.size();
-    data.resize( vec.size() + (paddedLen / sizeof(T)) );
-    std::memset(&data[curSize], 0xAB, paddedLen); // FXC pads with 0xAB
-    std::memcpy(&data[curSize], str.c_str(), len);
+    uint32_t* end = nextPtr(vec);
+    vec.resize( vec.size() + (paddedLen / sizeof(T)) );
+    std::memset(end, 0xAB, paddedLen); // FXC pads with 0xAB
+    std::memcpy(end, str.c_str(), len);
   }
 
 }
