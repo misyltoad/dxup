@@ -89,6 +89,14 @@ namespace dxapex {
         return (D3DSHADER_PARAM_REGISTER_TYPE)(((getToken() & D3DSP_REGTYPE_MASK2) >> D3DSP_REGTYPE_SHIFT2) | ((getToken() & D3DSP_REGTYPE_MASK) >> D3DSP_REGTYPE_SHIFT));
       }
 
+      inline D3DDECLUSAGE getUsage() const {
+        return (D3DDECLUSAGE) (getToken() & D3DSP_DCL_USAGEINDEX_MASK);
+      }
+
+      inline uint32_t getUsageIndex() const {
+        return (getToken() & D3DSP_DCL_USAGEINDEX_MASK) >> D3DSP_DCL_USAGEINDEX_SHIFT
+      }
+
       inline D3DSHADER_PARAM_SRCMOD_TYPE getModifier() const {
         if (!isSrc()) {
           log::warn("You can't get the modifier of a dst register!");

@@ -20,7 +20,7 @@ namespace dxapex {
         {"callnz",  D3DSIO_CALLNZ, 1, {Label, Src0}, {}},
         {"crs",     D3DSIO_CRS, 1, {Dst, Src0, Src1}, {}},
         {"comment", D3DSIO_COMMENT, 1, {VaradicOperandCount}, {}, &ShaderCodeTranslator::handleComment},
-        {"dcl",     D3DSIO_DCL, 1, {UsageToken, Dst}, {D3D10_SB_OPCODE_NOP, 0}},
+        {"dcl",     D3DSIO_DCL, 1, {UsageToken, Dst}, {}, &ShaderCodeTranslator::handleDcl},
         {"def",     D3DSIO_DEF, 1, {Dst, Vec4}, {}, &ShaderCodeTranslator::handleDef},
         {"defb",    D3DSIO_DEFB, 1, {Dst, Bool}, {}},
         {"defi",    D3DSIO_DEFI, 1, {Dst, Integer}, {}},

@@ -2,6 +2,7 @@
 
 #include "d3d9_includes.h"
 #include "../util/log.h"
+#include "../util/shared_conversions.h"
 
 namespace dxapex {
 

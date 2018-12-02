@@ -14,9 +14,6 @@ namespace dxapex {
     uint32_t byteCodeLength(const uint32_t* dx9asm);
 
     uint32_t opcode(uint32_t token);
-
-    void convertRegTypeAndNum(ShaderCodeTranslator& state, DXBCOperand& dstOperand, const DX9Operand& operand, uint32_t regOffset);
-
   }
 
 }

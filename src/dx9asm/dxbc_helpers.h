@@ -47,6 +47,16 @@ namespace dxapex {
         m_dataCount = count;
       }
 
+
+      inline uint32_t& getRegNumber() {
+        if (m_registerType == D3D10_SB_OPERAND_TYPE_IMMEDIATE32) {
+          log::fail("Attempted to get the register of a literal!");
+          return 0;
+        }
+
+        return m_data[m_dataCount - 1];
+      }
+
       inline void addInstructionSize(uint32_t& instructionSize) {
         doPass(&instructionSize, nullptr);
       }

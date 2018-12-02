@@ -15,8 +15,6 @@ namespace dxapex {
       Pixel
     };
 
-    const uint32_t CTAB_CONSTANT = MAKEFOURCC('C', 'T', 'A', 'B');
-
     struct CTHeader
     {
       uint32_t size;

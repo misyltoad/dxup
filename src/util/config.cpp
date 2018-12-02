@@ -23,6 +23,7 @@ namespace dxapex {
 		  initVar(var::EmitNop, "DXAPEX_EMITNOP", "0");
           initVar(var::DebugDevice, "DXAPEX_DEBUGDEVICE", "0");
           initVar(var::ShaderSpew, "DXAPEX_SHADERSPEW", "0");
+          initVar(var::UnimplementedFatal, "DXAPEX_UNIMPLEMENTEDFATAL", "0");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {

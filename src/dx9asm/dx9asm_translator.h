@@ -31,6 +31,11 @@ namespace dxapex {
       uint32_t dx9Type;
       uint32_t dx9Id;
       DXBCOperand dxbcOperand;
+      struct {
+        bool hasUsage;
+        D3DDECLUSAGE usage;
+        uint32_t usageIndex;
+      } dclInfo;
     };
 
     class DX9Operation;
@@ -72,38 +77,62 @@ namespace dxapex {
         m_dxbcCode.push_back(token);
       }
 
-      const RegisterMapping* getRegisterMapping(uint32_t type, uint32_t index) const {
-        for (const RegisterMapping& mapping : m_registerMap) {
+      inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
+        return getRegisterMapping(operand);
+      }
+
+      inline RegisterMapping* getRegisterMapping(const DX9Operand& operand) {
+        return getRegisterMapping(operand.getRegType(), operand.getRegNumber());
+      }
+
+      inline const RegisterMapping* getRegisterMapping(uint32_t type, uint32_t index) const {
+        return getRegisterMapping(type, index);
+      }
+
+      inline RegisterMapping* getRegisterMapping(uint32_t type, uint32_t index) {
+        for (RegisterMapping& mapping : m_registerMap) {
           if (mapping.dx9Type == type && mapping.dx9Id == index)
             return &mapping;
         }
         return nullptr;
       }
 
-      void addRegisterMapping(bool generateDXBCId, RegisterMapping& mapping) {
+      inline uint32_t getHighestIdForDXBCType(uint32_t type) {
+        uint32_t highestIdForType = 0;
+        for (const RegisterMapping& lum : m_registerMap) {
+          const DXBCOperand& lumOperand = lum.dxbcOperand;
+          if (lumOperand.m_registerType == type)
+            highestIdForType = max(highestIdForType, lumOperand.getRegNumber());
+        }
+
+        return highestIdForType;
+      }
+
+      RegisterMapping* lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset = 0);
+
+      inline void addRegisterMapping(bool generateDXBCId, RegisterMapping& mapping) {
         DXBCOperand& dxbcOperand = mapping.dxbcOperand;
-        uint32_t dataIndex = dxbcOperand.m_dataCount - 1;
+        uint32_t& regNumber = dxbcOperand.getRegNumber();
         if (generateDXBCId) {
-          uint32_t highestIdForType = 0;
-          for (const RegisterMapping& lum : m_registerMap) {
-            const DXBCOperand& lumOperand = lum.dxbcOperand;
-            if (lumOperand.m_registerType == dxbcOperand.m_registerType && dxbcOperand.m_dataCount < 4)
-              highestIdForType = max(highestIdForType, lumOperand.m_data[lumOperand.m_dataCount - 1]);
-          }
+          uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.m_registerType);
 
           highestIdForType++;
-          dxbcOperand.m_data[dataIndex] = highestIdForType;
+          regNumber = highestIdForType;
         }
 
         m_registerMap.push_back(mapping);
+      }
+
+      inline std::vector<RegisterMapping>& getRegisterMappings() {
+        return m_registerMap;
       }
 
       bool handleOperation(uint32_t token);
 
       bool translate();
 
-
       bool handleComment(DX9Operation& operation);
+      bool handleDcl(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
 
       inline std::vector<uint32_t>& getCode() {
