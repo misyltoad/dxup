@@ -25,8 +25,8 @@ namespace dxapex {
         getHeader()->chunkOffsets[chunks::OSGN] = getByteSize();
         IOSGNChunk<true>(shdrCode).push(m_bytecode);
 
-        getHeader()->chunkOffsets[chunks::SHDR] = getByteSize();
-        SHDRChunk(shdrCode).push(m_bytecode);
+        getHeader()->chunkOffsets[chunks::SHEX] = getByteSize();
+        SHEXChunk(shdrCode).push(m_bytecode);
 
         getHeader()->chunkOffsets[chunks::STAT] = getByteSize();
         STATChunk(shdrCode).push(m_bytecode);

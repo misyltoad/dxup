@@ -16,7 +16,7 @@ namespace dxapex {
         RDEF = 0,
         ISGN = 1,
         OSGN,
-        SHDR,
+        SHEX,
         STAT,
         Count
       };
@@ -128,11 +128,11 @@ namespace dxapex {
       std::vector<const std::string*> semanticNames;
     };
 
-    struct SHDRChunk : public Chunk {
+    struct SHEXChunk : public Chunk {
       ChunkHeader header;
 
-      SHDRChunk(ShaderCodeTranslator& shdrCode)
-        : header{ fourcc("SHDR") } {
+      SHEXChunk(ShaderCodeTranslator& shdrCode)
+        : header{ fourcc("SHEX") } {
         code = &shdrCode.getCode();
       }
 
@@ -151,7 +151,7 @@ namespace dxapex {
         *dwordCountPtr = header.size / sizeof(uint32_t);
       }
 
-      uint32_t versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 4, 0);
+      uint32_t versionAndType = ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 5, 0);
       uint32_t dwordCount = 0;
       const std::vector<uint32_t>* code;
     };
