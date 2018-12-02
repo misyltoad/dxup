@@ -4,6 +4,7 @@
 #include "../util/misc_helpers.h"
 #include "../util/shared_conversions.h"
 #include "dxbc_stats.h"
+#include <string>
 
 namespace dxapex {
 
@@ -99,6 +100,7 @@ namespace dxapex {
         return 0;
       }
 
+      // remove get size
       inline void push(std::vector<uint32_t>& obj) {
         header.size = getSize();
         elementCount = elements.size();
@@ -107,13 +109,24 @@ namespace dxapex {
         
         obj.push_back(elementCount);
         obj.push_back(magicEightBall);
+
+        elementStart = &obj[obj.size() - 1];
+
+        for (IOSGNElement& element : elements)
+          pushObject(element, obj);
+
+        for (size_t i = 0; i < elementNames.size(); i++) {
+          elementStart[i].nameOffset = obj.size();
+          pushAlignedString(elementName, obj);
+        }
       }
 
       uint32_t elementCount;
       uint32_t magicEightBall = 8; // Reply hazy, try again. ~ Josh
 
       std::vector<IOSGNElement> elements;
-      std::vector<const char*> elementNames;
+      std::vector<std::string&> elementNames;
+      IOSGNElement* elementStart;
     };
 
     struct SHDRChunk {
