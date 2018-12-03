@@ -186,6 +186,7 @@ namespace dxapex {
 
     PendingCursorUpdate m_pendingCursorUpdate = { 0 };
     INT m_priority = 0;
+    DWORD m_fvf = 0;
     BOOL m_softwareVertexProcessing = 0;
   };
 

@@ -56,7 +56,7 @@ namespace dxapex {
     };
 
     template<bool Output>
-    struct IOSGNChunk : Chunk {
+    struct IOSGNChunk : public Chunk {
       ChunkHeader header;
 
       struct IOSGNElement {

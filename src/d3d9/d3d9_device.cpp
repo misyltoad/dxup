@@ -778,7 +778,7 @@ namespace dxapex {
     while (!vertexElementEqual(*pVertexElements, lastElement)) {
       D3D11_INPUT_ELEMENT_DESC desc = { 0 };
       
-      desc.SemanticName = convert::declUsage((D3DDECLUSAGE)pVertexElements->Usage);
+      desc.SemanticName = convert::declUsage((D3DDECLUSAGE)pVertexElements->Usage).c_str();
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements->Type);
       desc.AlignedByteOffset = pVertexElements->Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
@@ -789,8 +789,9 @@ namespace dxapex {
       pVertexElements++;
     }
 
-    // Generate me on the fly!
-    //m_device->CreateInputLayout(&inputElements[0], inputElements.size(), )
+
+    //Com<ID3D11InputLayout> layout;
+    //m_device->CreateInputLayout(&inputElements[0], inputElements.size(), nullptr, 0, &layout);
 
     return D3D_OK;
   }
@@ -803,11 +804,14 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetFVF(DWORD FVF) {
-    log::stub("Direct3DDevice9Ex::SetFVF");
+    m_fvf = FVF;
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetFVF(DWORD* pFVF) {
-    log::stub("Direct3DDevice9Ex::GetFVF");
+    if (pFVF == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *pFVF = m_fvf;
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader) {

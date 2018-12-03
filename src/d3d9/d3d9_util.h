@@ -22,8 +22,6 @@ namespace dxapex {
 
     DXGI_FORMAT declType(D3DDECLTYPE type);
 
-    const char* declUsage(D3DDECLUSAGE usage);
-
     void color(D3DCOLOR color, FLOAT* d3d11Color);
   }
 
