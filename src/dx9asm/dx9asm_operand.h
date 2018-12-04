@@ -90,7 +90,7 @@ namespace dxapex {
       }
 
       inline D3DDECLUSAGE getUsage() const {
-        return (D3DDECLUSAGE) (getToken() & D3DSP_DCL_USAGEINDEX_MASK);
+        return (D3DDECLUSAGE) (getToken() & D3DSP_DCL_USAGE_MASK);
       }
 
       inline uint32_t getUsageIndex() const {

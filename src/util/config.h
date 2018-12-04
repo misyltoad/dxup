@@ -9,6 +9,7 @@ namespace dxapex {
       EmitNop,
       DebugDevice,
       ShaderSpew,
+      ShaderDump,
       UnimplementedFatal,
       Count,
     };

@@ -57,8 +57,17 @@ namespace dxapex {
         return m_data[m_dataCount - 1];
       }
 
-      inline const uint32_t getRegNumber() const {
-        return getRegNumber();
+      inline bool isLiteral() const {
+        return m_registerType == D3D10_SB_OPERAND_TYPE_IMMEDIATE32;
+      }
+
+      inline uint32_t getRegNumber() const {
+        if (isLiteral()) {
+          log::fail("Attempted to get the register of a literal!");
+          return m_dummy;
+        }
+
+        return m_data[m_dataCount - 1];
       }
 
       inline void addInstructionSize(uint32_t& instructionSize) {

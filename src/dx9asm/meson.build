@@ -6,9 +6,10 @@ dx9asm_src = files([
   'dx9asm_operand.cpp',
   'dx9asm_unique_operations.cpp',
   'dx9asm_standard_operations.cpp',
-  'dx9asm_bytecode.cpp',
+  'dxbc_bytecode.cpp',
   'dx9asm_register_mapping.cpp',
-  'dxbc_helpers.cpp'
+  'dxbc_helpers.cpp',
+  '../extern/gpuopen/DXBCChecksum.cpp'
 ])
 
 dx9asm_lib = static_library('dx9asm', dx9asm_src,

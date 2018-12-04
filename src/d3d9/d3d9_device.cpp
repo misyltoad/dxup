@@ -7,6 +7,7 @@
 #include "d3d9_shaders.h"
 #include "../dx9asm/dx9asm_translator.h"
 #include "../dx9asm/dx9asm_util.h"
+#include "../util/config.h"
 
 namespace dxapex {
 
@@ -815,8 +816,28 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader) {
-    dx9asm::ITranslatedShaderDXBC* translatedShader = nullptr;
-    dx9asm::toDXBC((const uint32_t*)pFunction, &translatedShader);
+    dx9asm::ShaderBytecode* bytecode = nullptr;
+    dx9asm::toDXBC((const uint32_t*)pFunction, &bytecode);
+
+    if (config::getBool(config::ShaderDump)) {
+      static int32_t shaderNum = 0;
+
+      char name[64];
+      snprintf(name, 64, "shader_%d.bin", shaderNum);
+
+      FILE* file = fopen(name, "wb");
+      fwrite(bytecode->getBytecode(), 1, bytecode->getByteSize(), file);
+      fclose(file);
+
+      shaderNum++;
+    }
+
+    Com<ID3D11VertexShader> shader;
+    HRESULT result = m_device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, &shader);
+    if (FAILED(result)) {
+      log::fail("Shader translation failed!");
+      return D3DERR_INVALIDCALL;
+    }
     
     return D3D_OK;
   }

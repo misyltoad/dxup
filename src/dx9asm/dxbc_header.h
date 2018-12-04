@@ -5,6 +5,17 @@ namespace dxapex {
 
   namespace dx9asm {
 
+    namespace chunks {
+      enum {
+        RDEF = 0,
+        ISGN = 1,
+        OSGN,
+        SHEX,
+        STAT,
+        Count
+      };
+    }
+
     struct DXBCHeader {
       uint32_t dxbc = fourcc("DXBC");
       uint32_t checksum[4] = { 0 };

@@ -6,26 +6,13 @@
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
+#include "dxbc_bytecode.h"
 
 namespace dxapex {
 
   namespace dx9asm {
-    
-    class ITranslatedShaderDXBC : public IUnknown {
 
-    public:
-
-      virtual void GetDXBCBytecode(uint32_t* code, uint32_t* size) = 0;
-      virtual uint32_t GetConstantByteOffset(uint32_t constant) = 0;
-      virtual ShaderType GetShaderType() = 0;
-
-    };
-
-    void toDXBC(const uint32_t* dx9asm, ITranslatedShaderDXBC** dxbc);
-
-    struct Vec4Type {
-      uint32_t valueTokens[4];
-    };
+    void toDXBC(const uint32_t* dx9asm, ShaderBytecode** dxbc);
 
     struct RegisterMapping {
       uint32_t dx9Type;
@@ -112,8 +99,8 @@ namespace dxapex {
 
       inline void addRegisterMapping(bool generateDXBCId, RegisterMapping& mapping) {
         DXBCOperand& dxbcOperand = mapping.dxbcOperand;
-        uint32_t& regNumber = dxbcOperand.getRegNumber();
         if (generateDXBCId) {
+          uint32_t& regNumber = dxbcOperand.getRegNumber();
           uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.m_registerType);
 
           highestIdForType++;

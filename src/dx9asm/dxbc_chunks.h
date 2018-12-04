@@ -1,26 +1,17 @@
 #pragma once
-#include "dx9asm_translator.h"
 #include "../util/fourcc.h"
 #include "../util/misc_helpers.h"
 #include "../util/config.h"
 #include "../util/shared_conversions.h"
+#include "dx9asm_translator.h"
+#include "dxbc_header.h"
 #include "dxbc_stats.h"
+#include "dxbc_shaderflags.h"
 #include <string>
 
 namespace dxapex {
 
   namespace dx9asm {
-
-    namespace chunks {
-      enum {
-        RDEF = 0,
-        ISGN = 1,
-        OSGN,
-        SHEX,
-        STAT,
-        Count
-      };
-    }
 
     struct ChunkHeader {
       ChunkHeader(uint32_t name) : name{ name }, size{ 0 } {}
@@ -34,29 +25,59 @@ namespace dxapex {
       uint32_t size;
     };
 
-    struct Chunk {
-      inline uint32_t getSize(std::vector<uint32_t>& obj) {
-        return obj.size() - sizeof(ChunkHeader);
+    template <uint32_t ChunkType>
+    struct BaseChunk {
+      BaseChunk(ShaderBytecode& bytecode) : m_bytecode{ bytecode } {}
+
+      inline uint32_t getSize() {
+        uint32_t offset = m_bytecode.getHeader()->chunkOffsets[ChunkType];
+        uint32_t totalSize = m_bytecode.getByteSize();
+        uint32_t chunkSizeWithHeader = totalSize - offset;
+        return chunkSizeWithHeader - (uint32_t)(sizeof(ChunkHeader));
       }
+
+      ShaderBytecode& m_bytecode;
     };
 
-    struct RDEFChunk : public Chunk {
+    struct RDEFChunk : public BaseChunk<chunks::RDEF> {
       ChunkHeader header;
 
-      RDEFChunk(ShaderCodeTranslator& shdrCode)
-        : header{ fourcc("RDEF") } {
+      RDEFChunk(ShaderBytecode& bytecode)
+        : BaseChunk<chunks::RDEF>{bytecode}, header{ fourcc("RDEF") } {
         
       }
 
-      inline void push(std::vector<uint32_t>& obj) {
+      inline void push() {
+        auto& obj = m_bytecode.getBytecodeVector();
         header.push(obj);
 
-        header.size = getSize(obj);
+        header.size = getSize();
       }
+
+      uint32_t constantBufferCount = 1;
+      uint32_t constantBufferDescOffset = 0; // Set later
+      uint32_t resourceBindingCount = 1;
+      uint32_t resourceBindingDescOffset = 0; // Set later
+      uint8_t minorVersion = 0;
+      uint8_t majorVersion = 5;
+      uint16_t programType = 0xFFEE; // Vertex Shader
+      uint32_t flags = dxbcShaderFlags::NoPreshader; // NoPreshader
+      uint32_t creatorOffset = 0;
+
+      // SM5
+
+      uint32_t rd11 = fourcc("rd11");
+      uint32_t unknown1 = 60;
+      uint32_t unknown2 = 24;
+      uint32_t unknown3 = 32;
+      uint32_t unknown4 = 40;
+      uint32_t unknown5 = 36;
+      uint32_t unknown6 = 12;
+      uint32_t interfaceSlotCount = 0;
     };
 
-    template<bool Output>
-    struct IOSGNChunk : public Chunk {
+    template<uint32_t ChunkType>
+    struct IOSGNChunk : public BaseChunk<ChunkType> {
       ChunkHeader header;
 
       struct IOSGNElement {
@@ -69,18 +90,21 @@ namespace dxapex {
         uint32_t rwMask = 0b1111;
       };
 
-      IOSGNChunk(ShaderCodeTranslator& shdrCode)
-        : header{ Output ? fourcc("OSGN") : fourcc("ISGN") } {
+      IOSGNChunk(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode)
+        : BaseChunk<ChunkType>{ bytecode }, header{ ChunkType == chunks::OSGN ? fourcc("OSGN") : fourcc("ISGN") } {
 
         std::vector<RegisterMapping>& mappings = shdrCode.getRegisterMappings();
         for (const RegisterMapping& mapping : mappings) {
           if (!mapping.dclInfo.hasUsage)
             continue;
 
-          bool valid = mapping.dx9Type == D3DSPR_INPUT && isInput() ||
-                       mapping.dx9Type == D3DSPR_OUTPUT && isOutput();
+          bool valid = mapping.dx9Type == D3DSPR_INPUT && ChunkType == chunks::ISGN ||
+                       mapping.dx9Type == D3DSPR_OUTPUT && ChunkType == chunks::OSGN;
 
           if (!valid)
+            continue;
+
+          if (mapping.dxbcOperand.isLiteral())
             continue;
 
           IOSGNElement element;
@@ -92,15 +116,8 @@ namespace dxapex {
         }
       }
 
-      inline bool isInput() {
-        return !Output;
-      }
-
-      inline bool isOutput() {
-        return Output;
-      }
-
-      inline void push(std::vector<uint32_t>& obj) {
+      inline void push() {
+        auto& obj = m_bytecode.getBytecodeVector();
         elementCount = elements.size();
 
         header.push(obj);
@@ -114,11 +131,11 @@ namespace dxapex {
           pushObject(obj, element);
 
         for (size_t i = 0; i < semanticNames.size(); i++) {
-          elementStart[i].nameOffset = getSize(obj);
+          elementStart[i].nameOffset = getSize();
           pushAlignedString(obj, *semanticNames[i]);
         }
 
-        header.size = getSize(obj);
+        header.size = getSize();
       }
 
       uint32_t elementCount;
@@ -128,16 +145,16 @@ namespace dxapex {
       std::vector<const std::string*> semanticNames;
     };
 
-    struct SHEXChunk : public Chunk {
+    struct SHEXChunk : public BaseChunk<chunks::SHEX> {
       ChunkHeader header;
 
-      SHEXChunk(ShaderCodeTranslator& shdrCode)
-        : header{ fourcc("SHEX") } {
+      SHEXChunk(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode)
+        : BaseChunk<chunks::SHEX>{ bytecode }, header{ fourcc("SHEX") } {
         code = &shdrCode.getCode();
       }
 
-      inline void push(std::vector<uint32_t>& obj) {
-
+      inline void push() {
+        auto& obj = m_bytecode.getBytecodeVector();
         header.push(obj);
 
         obj.push_back(versionAndType);
@@ -147,7 +164,7 @@ namespace dxapex {
         for (size_t i = 0; i < code->size(); i++)
           obj.push_back((*code)[i]);
 
-        header.size = getSize(obj);
+        header.size = getSize();
         *dwordCountPtr = header.size / sizeof(uint32_t);
       }
 
@@ -156,19 +173,20 @@ namespace dxapex {
       const std::vector<uint32_t>* code;
     };
 
-    struct STATChunk : public Chunk {
+    struct STATChunk : public BaseChunk<chunks::STAT> {
       ChunkHeader header;
 
-      STATChunk(ShaderCodeTranslator& shdrCode)
-        : header{ fourcc("STAT") } {
+      STATChunk(ShaderBytecode& bytecode)
+        : BaseChunk<chunks::STAT>{ bytecode }, header{ fourcc("STAT") } {
 
       }
 
-      inline void push(std::vector<uint32_t>& obj) {
+      inline void push() {
+        auto& obj = m_bytecode.getBytecodeVector();
         header.push(obj);
         pushObject(obj, data);
 
-        header.size = getSize(obj);
+        header.size = getSize();
       }
 
       STATData data;

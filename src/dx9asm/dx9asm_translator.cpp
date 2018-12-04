@@ -2,6 +2,7 @@
 #include "dx9asm_operations.h"
 #include "../util/config.h"
 #include "../util/misc_helpers.h"
+#include "dxbc_bytecode.h"
 
 namespace dxapex {
 
@@ -40,8 +41,13 @@ namespace dxapex {
       return true;
     }
   
-    void toDXBC(const uint32_t* dx9asm, ITranslatedShaderDXBC** dxbc) {
+    void toDXBC(const uint32_t* dx9asm, ShaderBytecode** dxbc) {
       InitReturnPtr(dxbc);
+
+      if (dxbc == nullptr) {
+        log::fail("toDXBC called with null ShaderBytecode to return.");
+        return;
+      }
 
       ShaderCodeTranslator translator{dx9asm};
       if (!translator.translate()) {
@@ -49,7 +55,7 @@ namespace dxapex {
         return;
       }
 
-      
+      *dxbc = new ShaderBytecode{translator};
     }
 
   }

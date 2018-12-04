@@ -12,7 +12,7 @@ namespace dxapex {
 
   public:
 
-    Direct3DShader9(uint32_t* code, dx9asm::ITranslatedShaderDXBC* dxbc) 
+    Direct3DShader9(uint32_t* code) //dx9asm::ITranslatedShaderDXBC* dxbc) 
       : m_dxbc{ dxbc }  {
 
       m_d3d9code.resize(dx9asm::byteCodeLength(code));
@@ -33,7 +33,7 @@ namespace dxapex {
 
     std::vector<uint32_t> m_d3d9code;
 
-    Com<dx9asm::ITranslatedShaderDXBC> m_dxbc;
+    //Com<dx9asm::ITranslatedShaderDXBC> m_dxbc;
 
   };
 
