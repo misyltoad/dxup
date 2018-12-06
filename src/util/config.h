@@ -7,7 +7,7 @@ namespace dxapex {
 
     enum var {
       EmitNop,
-      DebugDevice,
+      Debug,
       ShaderSpew,
       ShaderDump,
       UnimplementedFatal,

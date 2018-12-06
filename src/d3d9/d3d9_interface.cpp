@@ -1,5 +1,6 @@
 #include "d3d9_interface.h"
 #include "d3d9_device.h"
+#include "../util/config.h"
 #include <vector>
 
 namespace dxapex {
@@ -141,9 +142,8 @@ namespace dxapex {
 
     UINT Flags = D3D11_CREATE_DEVICE_DISABLE_GPU_TIMEOUT | D3D11_CREATE_DEVICE_BGRA_SUPPORT; // Why isn't this a default?! ~ Josh
 
-#ifdef _DEBUG
-    Flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
+    if (config::getBool(config::Debug))
+      Flags |= D3D11_CREATE_DEVICE_DEBUG;
 
     D3D_FEATURE_LEVEL FeatureLevels[] =
     {
@@ -155,7 +155,6 @@ namespace dxapex {
       D3D_FEATURE_LEVEL_9_1,
     };
     D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_0;
-
 
     ID3D11Device* pDX11Device = nullptr;
     ID3D11DeviceContext* pImmediateContext = nullptr;
@@ -175,6 +174,27 @@ namespace dxapex {
 
     if (FAILED(Result))
       return D3DERR_DEVICELOST;
+
+    if (config::getBool(config::Debug)) {
+      Com<ID3D11Debug> d3dDebug;
+      if (SUCCEEDED(pDX11Device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug))) {
+        Com<ID3D11InfoQueue> d3dInfoQueue;
+        if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue))) {
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+
+          std::array<D3D11_MESSAGE_ID, 1> messagesToHide = {
+          D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+          };
+
+          D3D11_INFO_QUEUE_FILTER filter;
+          memset(&filter, 0, sizeof(filter));
+          filter.DenyList.NumIDs = messagesToHide.size();
+          filter.DenyList.pIDList = &messagesToHide[0];
+          d3dInfoQueue->AddStorageFilterEntries(&filter);
+        }
+      }
+    }
 
     D3DDEVICE_CREATION_PARAMETERS CreationParameters;
     CreationParameters.AdapterOrdinal = Adapter;
