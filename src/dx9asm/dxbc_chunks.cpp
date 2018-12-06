@@ -33,16 +33,16 @@ namespace dxapex {
       struct VariableInfo {
         uint32_t nameOffset;
         uint32_t startOffset;
-        uint32_t size;
-        uint32_t flags = 2; // Used.
+        uint32_t size = 4;
+        uint32_t flags = D3D_SVF_USED;
         uint32_t typeOffset;
         uint32_t defaultValueOffset;
 
         // DX11
-        uint32_t startTexture;
-        uint32_t textureSize;
-        uint32_t startSampler;
-        uint32_t samplerSize;
+        uint32_t startTexture = 0;
+        uint32_t textureSize = 0;
+        uint32_t startSampler = 0;
+        uint32_t samplerSize = 0;
       };
 
       template <typename T>
@@ -70,10 +70,10 @@ namespace dxapex {
         uint32_t constantBufferCount = cbufferVariableCount == 0 ? 0 : 1;
 
         obj.push_back(constantBufferCount); // [PUSH] Constant Buffer Count
-        uint32_t* constantBufferDescOffset = nextPtr(obj);
+        PlaceholderPtr<uint32_t> constantBufferDescOffset{ "[RDEF] Constant Buffer Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Constant Buffer Desc Offset
         obj.push_back(1); // [PUSH] Resource Binding Count
-        uint32_t* resourceBindingDescOffset = nextPtr(obj);
+        PlaceholderPtr<uint32_t>  resourceBindingDescOffset{ "[RDEF] Resource Binding Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Resource Binding Desc Offset
 
         uint32_t versionInfo = 0xFFFE << 16; // Vertex Shader
@@ -99,6 +99,7 @@ namespace dxapex {
         //}
 
         // Just one for now...
+        constantBufferDescOffset = getChunkSize();
         if (constantBufferCount != 0) {
           // Constant Buffer
           PlaceholderPtr<uint32_t> cbufNameOffset{ "[RDEF] Constant Buffer Variable Count", nextPtr(obj) };
@@ -113,9 +114,42 @@ namespace dxapex {
 
           cbufVariableOffset = getChunkSize(bytecode);
 
+          VariableInfo* variables = (VariableInfo*)nextPtr(obj);
+          forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+            VariableInfo info;
+            info.startOffset = i * 4;
+            pushObject(obj, info);
+          });
+
+          float defaultValue = 0.0f;
+          uint32_t defaultValueOffset = getChunkSize(bytecode);
+          uint32_t* defaultValueToken = (uint32_t*)&defaultValue;
+          obj.push_back(*defaultValueToken); // [PUSH] Default Value for our Constants
+
+          // Variable Type (they're all the same for now, no bool yet)
+          uint32_t variableTypeOffset = getChunkSize(bytecode);
+
+          #pragma pack(0)
+          struct {
+            uint8_t varClass = D3D10_SVC_VECTOR;
+            uint8_t varType = D3D10_SVT_FLOAT;
+            uint8_t rows = 0;
+            uint8_t columns = 0;
+            uint8_t arrayCount = 0;
+            uint8_t structureCount = 0;
+            uint16_t byteOffsetToFirst = 0;
+          } VariableType;
+          pushObject(obj, VariableType);
 
           forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-            // TODO: Finish variable descriptions.
+            VariableInfo& info = variables[i];
+            info.defaultValueOffset = defaultValueOffset;
+            info.typeOffset = variableTypeOffset;
+
+            char name[4];
+            snprintf(name, 4, "c%d", i);
+            info.nameOffset = getChunkSize(bytecode);
+            pushAlignedString(obj, name);
           });
 
           cbufNameOffset = getChunkSize(bytecode);
@@ -176,7 +210,7 @@ namespace dxapex {
         uint32_t nameOffset;
         uint32_t semanticIndex;
         uint32_t systemValueType = 0;
-        uint32_t componentType = 3; // <-- Floating Point 
+        uint32_t componentType = D3D_SVT_FLOAT;
         uint32_t registerIndex;
         uint32_t mask = 0;
       };
