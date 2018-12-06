@@ -16,13 +16,22 @@ namespace dxapex {
       , m_set{ false }
     {}
 
-    const T& getValue() const {
+    inline const T& getValue() const {
       return *m_ptr;
     }
 
-    void setValue(const T& val) {
+    inline T& setValue(const T& val) {
       *m_ptr = val;
       m_set = true;
+      return *m_ptr;
+    }
+
+    inline const T& operator*() const {
+      return getValue();
+    }
+
+    inline T& operator=(const T& val) {
+      return setValue(val);
     }
 
     ~PlaceholderPtr() {

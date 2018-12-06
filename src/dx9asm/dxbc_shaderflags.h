@@ -26,7 +26,7 @@ namespace dxapex {
       const uint32_t OptimizationLevel2 = 49152;
       const uint32_t OptimizationLevel3 = 32768;
       const uint32_t Reserved16 = 65536;
-      const uint32_t WarningsAreErrors = 262144
+      const uint32_t WarningsAreErrors = 262144;
       const uint32_t Reserved17 = 131072;
 
     }

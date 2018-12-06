@@ -18,6 +18,7 @@ namespace dxapex {
       uint32_t dx9Type;
       uint32_t dx9Id;
       DXBCOperand dxbcOperand;
+
       struct {
         bool hasUsage;
         D3DDECLUSAGE usage;

@@ -17,19 +17,19 @@ namespace dxapex {
       pushObject(m_bytecode, DXBCHeader());
 
       getHeader()->chunkOffsets[chunks::RDEF] = getByteSize();
-      RDEFChunk(*this).push();
+      writeRDEF(*this, shdrCode);
 
       getHeader()->chunkOffsets[chunks::ISGN] = getByteSize();
-      IOSGNChunk<chunks::ISGN>(*this, shdrCode).push();
+      writeISGN(*this, shdrCode);
 
       getHeader()->chunkOffsets[chunks::OSGN] = getByteSize();
-      IOSGNChunk<chunks::OSGN>(*this, shdrCode).push();
+      writeOSGN(*this, shdrCode);
 
       getHeader()->chunkOffsets[chunks::SHEX] = getByteSize();
-      SHEXChunk(*this, shdrCode).push();
+      writeSHEX(*this, shdrCode);
 
       getHeader()->chunkOffsets[chunks::STAT] = getByteSize();
-      STATChunk(*this).push();
+      writeSTAT(*this, shdrCode);
 
       getHeader()->size = getByteSize();
       
