@@ -21,6 +21,7 @@ namespace dxapex {
         uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(m_registerType) |
           ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(m_dimension) |
           ENCODE_D3D10_SB_OPERAND_EXTENDED(m_hasExtension) |
+          ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(D3D10_SB_OPERAND_4_COMPONENT) |
           m_swizzleOrWritemask;
 
         for (uint32_t i = 0; i < m_representations; i++)

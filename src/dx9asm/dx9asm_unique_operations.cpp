@@ -51,7 +51,7 @@ namespace dxapex {
       vec4->getValues(data);
       mapping.dxbcOperand.setData(data, 4);
       for (uint32_t i = 0; i < 4; i++)
-        mapping.dxbcOperand.setRepresentation(i, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+        mapping.dxbcOperand.setRepresentation(i, 0);
 
       mapping.dxbcOperand.setSwizzleOrWritemask(noSwizzle);
 
