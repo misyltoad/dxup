@@ -124,9 +124,11 @@ namespace dxapex {
             pushObject(obj, info);
           });
 
-          float defaultValue = 0.0f;
+          struct {
+            float values[4] = { 0 };
+          } defaultValues;
           uint32_t defaultValueOffset = getChunkSize(bytecode);
-          pushObject(obj, defaultValue); // [PUSH] Default Value for our Constants
+          pushObject(obj, defaultValues); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
           #pragma pack(1)
