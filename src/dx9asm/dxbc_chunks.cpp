@@ -295,6 +295,7 @@ namespace dxapex {
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
+          element.systemValueType = mapping.dclInfo.usage == D3DDECLUSAGE_POSITION ? D3D_NAME_POSITION : D3D_NAME_UNDEFINED;
           pushObject(obj, element);
         });
 
