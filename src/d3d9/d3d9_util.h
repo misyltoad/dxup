@@ -18,7 +18,7 @@ namespace dxapex {
 
     void lockFlags(D3DPOOL pool, UINT lockFlags, UINT* d3d11Flags, D3D11_MAP* d3d11MapType);
 
-    UINT primitiveData(D3DPRIMITIVETYPE type, UINT count);
+    UINT primitiveData(D3DPRIMITIVETYPE type, UINT count, D3D_PRIMITIVE_TOPOLOGY& topology);
 
     DXGI_FORMAT declType(D3DDECLTYPE type);
 

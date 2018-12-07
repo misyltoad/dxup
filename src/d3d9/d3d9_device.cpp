@@ -736,8 +736,10 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
-    UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount);
+    D3D_PRIMITIVE_TOPOLOGY topology;
+    UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
 
+    m_context->IASetPrimitiveTopology(topology);
     m_context->Draw(drawCount, StartVertex);
 
     return D3D_OK;

@@ -133,17 +133,18 @@ namespace dxapex {
       return structureCount;
     }
 
-    UINT primitiveData(D3DPRIMITIVETYPE type, UINT count)
+    UINT primitiveData(D3DPRIMITIVETYPE type, UINT count, D3D_PRIMITIVE_TOPOLOGY& topology)
     {
       switch (type) {
 
       default:
-      case D3DPT_POINTLIST: return count;
-      case D3DPT_LINELIST: return count * 2;
-      case D3DPT_LINESTRIP: return count + 1;
-      case D3DPT_TRIANGLELIST: return count * 3;
-      case D3DPT_TRIANGLESTRIP: return count + 2;
-      case D3DPT_TRIANGLEFAN: return count + 2;
+        log::warn("Unknown topology used.");
+      case D3DPT_TRIANGLELIST: topology = D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST; return count * 3;
+      case D3DPT_POINTLIST: topology = D3D10_PRIMITIVE_TOPOLOGY_POINTLIST; return count;
+      case D3DPT_LINELIST: topology = D3D10_PRIMITIVE_TOPOLOGY_LINELIST; return count * 2;
+      case D3DPT_LINESTRIP: topology = D3D10_PRIMITIVE_TOPOLOGY_LINESTRIP; return count + 1;
+      case D3DPT_TRIANGLESTRIP: topology = D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP; return count + 2;
+      case D3DPT_TRIANGLEFAN: log::warn("Topology D3DPT_TRIANGLEFAN used."); topology = D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP; return count + 2;
 
       }
     }
