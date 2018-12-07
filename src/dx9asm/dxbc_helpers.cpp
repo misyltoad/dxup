@@ -16,34 +16,34 @@ namespace dxapex {
       calculateDXBCModifiers(*this, operation, operand);
     }
 
-    void DXBCOperand::doPass(uint32_t* instructionSize, ShaderCodeTranslator* translator) {
-      if (translator != nullptr) {
+    void DXBCOperand::doPass(uint32_t* instructionSize, std::vector<uint32_t>* code) {
+      if (code != nullptr) {
         uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(m_registerType) |
           ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(m_dimension) |
           ENCODE_D3D10_SB_OPERAND_EXTENDED(m_hasExtension) |
-          ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(D3D10_SB_OPERAND_4_COMPONENT) |
+          ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(m_components == 4 ? D3D10_SB_OPERAND_4_COMPONENT : m_components == 1 ? D3D10_SB_OPERAND_1_COMPONENT : D3D10_SB_OPERAND_0_COMPONENT) |
           m_swizzleOrWritemask;
 
         for (uint32_t i = 0; i < m_representations; i++)
           header |= ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(i, m_representation[i]);
 
-        translator->push(header);
+        code->push_back(header);
       }
       
       if (instructionSize != nullptr)
         (*instructionSize)++;
 
       if (m_hasExtension) {
-        if (translator != nullptr)
-          translator->push(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_extension));
+        if (code != nullptr)
+          code->push_back(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_extension));
 
         if (instructionSize != nullptr)
           (*instructionSize)++;
       }
 
       for (uint32_t i = 0; i < m_dataCount; i++) {
-        if (translator != nullptr)
-          translator->push(m_data[i]);
+        if (code != nullptr)
+          code->push_back(m_data[i]);
 
         if (instructionSize != nullptr)
           (*instructionSize)++;
@@ -56,17 +56,25 @@ namespace dxapex {
              ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize);
     }
 
-    void DXBCOperation::push(ShaderCodeTranslator& translator) {
+    void DXBCOperation::push(std::vector<uint32_t>& code) {
       uint32_t instructionSize = 1; // Opcode Token
 
-      // Pass 1 - Size
-      for (size_t i = 0; i < m_operands.size(); i++)
-       m_operands[i].addInstructionSize(instructionSize); 
+      if (m_lengthOverride == -1) {
+        // Pass 1 - Size
+        for (size_t i = 0; i < m_operands.size(); i++)
+          m_operands[i].addInstructionSize(instructionSize);
+      }
+      else
+        instructionSize = m_lengthOverride;
 
       // Pass 2 - Push
-      translator.push(genOpToken(instructionSize));
+      code.push_back(genOpToken(instructionSize));
       for (size_t i = 0; i < m_operands.size(); i++)
-       m_operands[i].push(translator);
+        m_operands[i].push(code);
+    }
+
+    void DXBCOperation::push(ShaderCodeTranslator& translator) {
+      push(translator.getCode());
     }
   }
 

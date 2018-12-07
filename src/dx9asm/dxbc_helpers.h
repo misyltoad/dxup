@@ -18,8 +18,20 @@ namespace dxapex {
 
       DXBCOperand(ShaderCodeTranslator& state, const DX9Operation& operation, const DX9Operand& operand, uint32_t regOffset);
 
+      DXBCOperand(uint32_t regType, uint32_t dimension) {
+        m_registerType = regType;
+        m_dimension = dimension;
+      }
+
       inline uint32_t getRegisterType() const {
         return m_registerType;
+      }
+
+      inline DXBCOperand& setupLiteral(uint32_t components) {
+        m_components = components;
+        for (uint32_t i = 0; i < 4; i++)
+          setRepresentation(i, 0);
+        return *this;
       }
 
       inline void setRegisterType(uint32_t regType) {
@@ -42,13 +54,15 @@ namespace dxapex {
       inline void stripExtension() {
         m_hasExtension = false;
       }
-      inline void setData(const uint32_t* data, uint32_t count) {
+      inline DXBCOperand& setData(const uint32_t* data, uint32_t count) {
         if (count > 4) {
           log::fail("Setting more data than buffer for operand allows!");
           count = 4;
         }
         std::memcpy(m_data, data, count * sizeof(uint32_t));
         m_dataCount = count;
+
+        return *this;
       }
 
       // I'm not a fan of this & here. ~ Josh
@@ -78,13 +92,13 @@ namespace dxapex {
         doPass(&instructionSize, nullptr);
       }
 
-      inline void push(ShaderCodeTranslator& translator) {
-        doPass(nullptr, &translator);
+      inline void push(std::vector<uint32_t>& code) {
+        doPass(nullptr, &code);
       }
 
     protected:
       friend class ShaderCodeTranslator;
-      void doPass(uint32_t* instructionSize, ShaderCodeTranslator* translator);
+      void doPass(uint32_t* instructionSize, std::vector<uint32_t>* code);
 
       // TODO: We could remove these next 3 later on and do encoding straight away. ~ Josh
       uint32_t m_registerType = 0;
@@ -92,6 +106,7 @@ namespace dxapex {
       uint32_t m_representation[4] = { 0 };
       uint32_t m_representations = 0;
       uint32_t m_swizzleOrWritemask = 0;
+      uint32_t m_components = 4;
       uint32_t m_extension = 0;
       uint32_t m_data[4] = { 0 };
       uint32_t m_dataCount = 0;
@@ -101,8 +116,12 @@ namespace dxapex {
 
     class DXBCOperation {
     public:
-      DXBCOperation(uint32_t opcode, bool saturate)
-        : m_opcode{ opcode }, m_saturate{ saturate } { m_operands.reserve(4); }
+      DXBCOperation(uint32_t opcode, bool saturate, uint32_t lengthOverride = -1)
+        : m_opcode{ opcode }, m_saturate{ saturate }, m_lengthOverride{ lengthOverride } {
+
+        if (m_lengthOverride == -1)
+          m_operands.reserve(4);
+      }
 
       DXBCOperation(const DX9Operation& operation)
         : DXBCOperation{ operation.getImplicitInfo().dxbcOpcode, operation.saturate() } {}
@@ -113,14 +132,18 @@ namespace dxapex {
       inline void setSaturate(bool saturate) {
         m_saturate = saturate;
       }
-      inline void appendOperand(const DXBCOperand& operand) {
+      inline DXBCOperation& appendOperand(const DXBCOperand& operand) {
         m_operands.push_back(operand);
+        return *this;
       }
+
+      void push(std::vector<uint32_t>& code);
       void push(ShaderCodeTranslator& translator);
     private:
       uint32_t genOpToken(uint32_t instructionSize);
 
       uint32_t m_opcode = 0;
+      uint32_t m_lengthOverride = -1;
       bool m_saturate = false;
       std::vector<DXBCOperand> m_operands;
     };

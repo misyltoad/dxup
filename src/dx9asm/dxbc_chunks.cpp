@@ -195,6 +195,16 @@ namespace dxapex {
     };
 
     class SHEXChunk : public BaseChunk<chunks::SHEX> {
+      void writeDcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
+        auto& obj = bytecode.getBytecodeVector();
+
+        // Temps
+        {
+          DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
+          obj.push_back(shdrCode.getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_TEMP) + 1); // Followed by DWORD count of temps. Not an operand!
+        }
+      }
+
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
         auto& obj = bytecode.getBytecodeVector();
 
@@ -205,6 +215,8 @@ namespace dxapex {
 
         PlaceholderPtr<uint32_t> dwordCount{ "[SHEX] Dword Count", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Dword Count
+
+        writeDcls(bytecode, shdrCode);
 
         for (uint32_t token : shdrCode.getCode())
           obj.push_back(token);

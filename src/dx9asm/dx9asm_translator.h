@@ -61,10 +61,6 @@ namespace dxapex {
         return (getHeaderToken() & 0xFFFF0000) == 0xFFFF0000 ? ShaderType::Pixel : ShaderType::Vertex;
       }
 
-      inline void push(uint32_t token) {
-        m_dxbcCode.push_back(token);
-      }
-
       inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
         return getRegisterMapping(operand);
       }
