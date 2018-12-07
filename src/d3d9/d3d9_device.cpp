@@ -8,6 +8,7 @@
 #include "../dx9asm/dx9asm_translator.h"
 #include "../dx9asm/dx9asm_util.h"
 #include "../util/config.h"
+#include "../util/d3dcompiler_helpers.h"
 
 namespace dxapex {
 
@@ -819,8 +820,10 @@ namespace dxapex {
     dx9asm::ShaderBytecode* bytecode = nullptr;
     dx9asm::toDXBC((const uint32_t*)pFunction, &bytecode);
 
+    static int32_t shaderNum = 0;
+    shaderNum++;
+
     if (config::getBool(config::ShaderDump)) {
-      static int32_t shaderNum = 0;
 
       char name[64];
       snprintf(name, 64, "shader_%d.bin", shaderNum);
@@ -828,8 +831,6 @@ namespace dxapex {
       FILE* file = fopen(name, "wb");
       fwrite(bytecode->getBytecode(), 1, bytecode->getByteSize(), file);
       fclose(file);
-
-      shaderNum++;
     }
 
     Com<ID3D11VertexShader> shader;
@@ -837,6 +838,29 @@ namespace dxapex {
     if (FAILED(result)) {
       log::fail("Shader translation failed!");
       return D3DERR_INVALIDCALL;
+    }
+
+    if (config::getBool(config::ShaderDump)) {
+      char comments[2048];
+      Com<ID3DBlob> blob;
+
+      HRESULT result = S_OK;
+
+      if (!d3dcompiler::disassemble(&result, bytecode->getBytecode(), bytecode->getByteSize(), D3D_DISASM_ENABLE_COLOR_CODE, comments, &blob))
+        log::warn("Failed to load d3dcompiler module for disassembly.");
+
+      if (FAILED(result))
+        log::warn("Failed to disassemble generated shader!");
+
+      if (blob != nullptr) {
+
+        char name[64];
+        snprintf(name, 64, "shader_%d.html", shaderNum);
+
+        FILE* file = fopen(name, "wb");
+        fwrite(blob->GetBufferPointer(), 1, blob->GetBufferSize(), file);
+        fclose(file);
+      }
     }
     
     return D3D_OK;
