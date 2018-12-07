@@ -108,7 +108,7 @@ namespace dxapex {
         : DXBCOperation{ operation.getImplicitInfo().dxbcOpcode, operation.saturate() } {}
 
       inline void setOpcode(uint32_t opcode) {
-        m_opcode = false;
+        m_opcode = opcode;
       }
       inline void setSaturate(bool saturate) {
         m_saturate = saturate;
@@ -120,8 +120,8 @@ namespace dxapex {
     private:
       uint32_t genOpToken(uint32_t instructionSize);
 
-      uint32_t m_opcode;
-      bool m_saturate;
+      uint32_t m_opcode = 0;
+      bool m_saturate = false;
       std::vector<DXBCOperand> m_operands;
     };
 

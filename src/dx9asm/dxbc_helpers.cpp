@@ -17,23 +17,24 @@ namespace dxapex {
     }
 
     void DXBCOperand::doPass(uint32_t* instructionSize, ShaderCodeTranslator* translator) {
-      uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(m_registerType) |
-                        ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(m_dimension) |
-                        ENCODE_D3D10_SB_OPERAND_EXTENDED(m_hasExtension) |
-                        m_swizzleOrWritemask;
+      if (translator != nullptr) {
+        uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(m_registerType) |
+          ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(m_dimension) |
+          ENCODE_D3D10_SB_OPERAND_EXTENDED(m_hasExtension) |
+          m_swizzleOrWritemask;
 
-      for (uint32_t i = 0; i < m_representations; i++)
-        header |= ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(i, m_representation[i]);
+        for (uint32_t i = 0; i < m_representations; i++)
+          header |= ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(i, m_representation[i]);
 
-      if (translator != nullptr)
         translator->push(header);
+      }
       
       if (instructionSize != nullptr)
         (*instructionSize)++;
 
       if (m_hasExtension) {
         if (translator != nullptr)
-          translator->push(ENCODE_D3D10_SB_EXTENDED_OPERAND_TYPE(D3D10_SB_EXTENDED_OPERAND_MODIFIER) | ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_extension));
+          translator->push(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_extension));
 
         if (instructionSize != nullptr)
           (*instructionSize)++;

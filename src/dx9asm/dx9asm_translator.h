@@ -85,8 +85,8 @@ namespace dxapex {
         return nullptr;
       }
 
-      inline uint32_t getHighestIdForDXBCType(uint32_t type) {
-        uint32_t highestIdForType = 0;
+      inline int32_t getHighestIdForDXBCType(uint32_t type) {
+        int32_t highestIdForType = -1;
         for (const RegisterMapping& lum : m_registerMap) {
           const DXBCOperand& lumOperand = lum.dxbcOperand;
           if (lumOperand.m_registerType == type)
@@ -102,7 +102,7 @@ namespace dxapex {
         DXBCOperand& dxbcOperand = mapping.dxbcOperand;
         if (generateDXBCId) {
           uint32_t& regNumber = dxbcOperand.getRegNumber();
-          uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.m_registerType);
+          int32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.m_registerType);
 
           highestIdForType++;
           regNumber = highestIdForType;

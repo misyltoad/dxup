@@ -20,7 +20,7 @@ namespace dxapex {
       newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
       newMapping.dxbcOperand.setExtension(false);
       uint32_t dummyId = 0;
-      newMapping.dxbcOperand.setData(&dummyId, 0);
+      newMapping.dxbcOperand.setData(&dummyId, 1);
 
       uint32_t dxbcType = 0;
 

@@ -129,11 +129,10 @@ namespace dxapex {
           pushObject(obj, defaultValue); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
-          uint32_t variableTypeOffset = getChunkSize(bytecode);
           #pragma pack(1)
           struct {
-            uint16_t varClass = D3D10_SVC_VECTOR;
-            uint16_t varType = D3D10_SVT_FLOAT;
+            uint16_t varClass = D3D_SVC_VECTOR;
+            uint16_t varType = D3D_SVT_FLOAT;
             uint16_t rows = 0;
             uint16_t columns = 0;
             uint16_t arrayCount = 0;
@@ -148,10 +147,10 @@ namespace dxapex {
             uint32_t unknown3 = 0;
             uint32_t parentNameOffset = 0;
           } variableType;
+          uint32_t variableTypeOffset = getChunkSize(bytecode);
           pushObject(obj, variableType);
 
           // Resource Binding
-          resourceBindingDescOffset = getChunkSize(bytecode);
           #pragma pack(1)
           struct ResourceBinding {
             uint32_t nameOffset;
@@ -164,6 +163,7 @@ namespace dxapex {
             uint32_t flags = 0;
           } resourceBinding;
           ResourceBinding* binding = (ResourceBinding*)nextPtr(obj);
+          resourceBindingDescOffset = getChunkSize(bytecode);
           pushObject(obj, resourceBinding);
 
           // Push and Fixup Strings
@@ -175,10 +175,10 @@ namespace dxapex {
             info.defaultValueOffset = defaultValueOffset;
             info.typeOffset = variableTypeOffset;
 
-            char name[4];
-            snprintf(name, 4, "c%d", i);
+            char name[6];
+            snprintf(name, 6, "c%d", i);
             info.nameOffset = getChunkSize(bytecode);
-            pushAlignedString(obj, name);
+            pushAlignedString(obj, name, strlen(name));
           });
 
           cbufNameOffset = getChunkSize(bytecode);
@@ -186,8 +186,7 @@ namespace dxapex {
         }
 
         creatorOffset = getChunkSize(bytecode);
-        //pushAlignedString(obj, u8"🐸"); // [PUSH] Creator (ribbit.)
-        pushAlignedString(obj, "fuck off slimshader"); // [PUSH] Creator (ribbit.)
+        pushAlignedString(obj, ":frog:"); // [PUSH] Creator (ribbit.)
 
         headerChunkSize = getChunkSize(bytecode);
       }
