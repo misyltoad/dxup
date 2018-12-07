@@ -34,7 +34,7 @@ namespace dxapex {
       struct VariableInfo {
         uint32_t nameOffset;
         uint32_t startOffset;
-        uint32_t size = 4;
+        uint32_t size = 4 * sizeof(float);
         uint32_t flags = D3D_SVF_USED;
         uint32_t typeOffset;
         uint32_t defaultValueOffset;
@@ -133,8 +133,8 @@ namespace dxapex {
           struct {
             uint16_t varClass = D3D_SVC_VECTOR;
             uint16_t varType = D3D_SVT_FLOAT;
-            uint16_t rows = 0;
-            uint16_t columns = 0;
+            uint16_t rows = 1;
+            uint16_t columns = 4;
             uint16_t arrayCount = 0;
             uint16_t structureCount = 0;
             uint32_t byteOffsetToFirst = 0;
