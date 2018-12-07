@@ -12,6 +12,7 @@ namespace dxapex {
 
   namespace dx9asm {
 
+    #pragma pack(1)
     struct ChunkHeader {
       ChunkHeader(uint32_t name) : name{ name }, size{ 0 } {}
 

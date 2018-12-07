@@ -30,6 +30,7 @@ namespace dxapex {
     };
 
     class RDEFChunk : public BaseChunk<chunks::RDEF> {
+      #pragma pack(1)
       struct VariableInfo {
         uint32_t nameOffset;
         uint32_t startOffset;
@@ -97,12 +98,14 @@ namespace dxapex {
         obj.push_back(0); // [PUSH] Interface Slot Count
 
         //}
-
+        
         // Just one for now...
-        constantBufferDescOffset = getChunkSize();
+        constantBufferDescOffset = getChunkSize(bytecode);
         if (constantBufferCount != 0) {
           // Constant Buffer
           PlaceholderPtr<uint32_t> cbufNameOffset{ "[RDEF] Constant Buffer Variable Count", nextPtr(obj) };
+          obj.push_back(0); // [PUSH] CBuf Name Offset
+
           obj.push_back(cbufferVariableCount); // [PUSH] CBuf Variable Count
 
           PlaceholderPtr<uint32_t> cbufVariableOffset{ "[RDEF] Constant Buffer Variable Offset", nextPtr(obj) };
@@ -123,23 +126,49 @@ namespace dxapex {
 
           float defaultValue = 0.0f;
           uint32_t defaultValueOffset = getChunkSize(bytecode);
-          uint32_t* defaultValueToken = (uint32_t*)&defaultValue;
-          obj.push_back(*defaultValueToken); // [PUSH] Default Value for our Constants
+          pushObject(obj, defaultValue); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
           uint32_t variableTypeOffset = getChunkSize(bytecode);
-
-          #pragma pack(0)
+          #pragma pack(1)
           struct {
-            uint8_t varClass = D3D10_SVC_VECTOR;
-            uint8_t varType = D3D10_SVT_FLOAT;
-            uint8_t rows = 0;
-            uint8_t columns = 0;
-            uint8_t arrayCount = 0;
-            uint8_t structureCount = 0;
-            uint16_t byteOffsetToFirst = 0;
-          } VariableType;
-          pushObject(obj, VariableType);
+            uint16_t varClass = D3D10_SVC_VECTOR;
+            uint16_t varType = D3D10_SVT_FLOAT;
+            uint16_t rows = 0;
+            uint16_t columns = 0;
+            uint16_t arrayCount = 0;
+            uint16_t structureCount = 0;
+            uint32_t byteOffsetToFirst = 0;
+
+            // DX11
+
+            uint32_t parentTypeOffset = 0;
+            uint32_t unknown1 = 0;
+            uint32_t unknown2 = 0;
+            uint32_t unknown3 = 0;
+            uint32_t parentNameOffset = 0;
+          } variableType;
+          pushObject(obj, variableType);
+
+          // Resource Binding
+          resourceBindingDescOffset = getChunkSize(bytecode);
+          #pragma pack(1)
+          struct ResourceBinding {
+            uint32_t nameOffset;
+            uint32_t bindingType = 0; // cbuffer
+            uint32_t returnType = 0; // na
+            uint32_t rvd = 0; // na
+            uint32_t samples = 0;
+            uint32_t bindPoint = 0;
+            uint32_t bindCount = 1;
+            uint32_t flags = 0;
+          } resourceBinding;
+          ResourceBinding* binding = (ResourceBinding*)nextPtr(obj);
+          pushObject(obj, resourceBinding);
+
+          // Push and Fixup Strings
+          binding->nameOffset = getChunkSize(bytecode);
+          pushAlignedString(obj, "dx9_constant_buffer");
 
           forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
             VariableInfo& info = variables[i];

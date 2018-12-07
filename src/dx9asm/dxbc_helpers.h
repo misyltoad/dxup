@@ -18,7 +18,7 @@ namespace dxapex {
 
       DXBCOperand(ShaderCodeTranslator& state, const DX9Operation& operation, const DX9Operand& operand, uint32_t regOffset);
 
-      inline uint32_t getRegisterType() {
+      inline uint32_t getRegisterType() const {
         return m_registerType;
       }
 
