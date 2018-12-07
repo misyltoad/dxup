@@ -120,7 +120,7 @@ namespace dxapex {
           VariableInfo* variables = (VariableInfo*)nextPtr(obj);
           forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
             VariableInfo info;
-            info.startOffset = i * 4;
+            info.startOffset = i * 4 * sizeof(float);
             pushObject(obj, info);
           });
 
