@@ -12,7 +12,7 @@ namespace dxapex {
         return mapping;
 
       RegisterMapping newMapping;
-      newMapping.dclInfo.hasUsage = false;
+      newMapping.dclInfo.type = UsageType::None;
       newMapping.dx9Id = operand.getRegNumber() + regOffset;
       newMapping.dx9Type = operand.getRegType();
 
@@ -35,12 +35,38 @@ namespace dxapex {
         newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
         newMapping.dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
         dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER; } break;
-      case D3DSPR_ADDR: dxbcType = D3D10_SB_OPERAND_TYPE_RESOURCE; break;
-      case D3DSPR_RASTOUT:
+      case D3DSPR_ADDR: dxbcType = D3D10_SB_OPERAND_TYPE_RESOURCE; break; // D3DSPR_TEXTURE
+      case D3DSPR_RASTOUT: {
+        newMapping.dclInfo.type = UsageType::Output;
+
+        if (newMapping.dx9Id == D3DSRO_POSITION)
+          newMapping.dclInfo.usage = D3DDECLUSAGE_POSITION;
+        else if (newMapping.dx9Id == D3DSRO_FOG)
+          newMapping.dclInfo.usage = D3DDECLUSAGE_FOG;
+        else if (newMapping.dx9Id == D3DSRO_POINT_SIZE)
+          newMapping.dclInfo.usage = D3DDECLUSAGE_PSIZE;
+
+        newMapping.dclInfo.usageIndex = 0;
+
+        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+
+      } break;
+      case D3DSPR_TEXCRDOUT: {
+        newMapping.dclInfo.type = UsageType::Output;
+        newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
+        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+
+        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+      } break;
+      case D3DSPR_COLOROUT: {
+        newMapping.dclInfo.type = UsageType::Output;
+        newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
+        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+
+        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+      } break;
       case D3DSPR_ATTROUT:
-      case D3DSPR_TEXCRDOUT: dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT; break;
       case D3DSPR_CONSTINT:
-      case D3DSPR_COLOROUT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:
       case D3DSPR_CONST2:

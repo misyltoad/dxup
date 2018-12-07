@@ -245,8 +245,8 @@ namespace dxapex {
       // Pack properly for DXBC formatting...
       struct IOSGNElement {
         IOSGNElement() {
-          mask |= 0b1111;
-          mask |= 0b1111 << 8;
+          if (ChunkType == chunks::ISGN)
+            mask = 0xFFFFFFFF;
         }
 
         uint32_t nameOffset;
@@ -261,11 +261,8 @@ namespace dxapex {
       void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
         uint32_t i = 0;
         for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
-          if (!mapping.dclInfo.hasUsage)
-            continue;
-
-          bool valid = mapping.dx9Type == D3DSPR_INPUT && ChunkType == chunks::ISGN ||
-                       mapping.dx9Type == D3DSPR_OUTPUT && ChunkType == chunks::OSGN;
+          bool valid = mapping.dclInfo.type == UsageType::Input && ChunkType == chunks::ISGN ||
+                       mapping.dclInfo.type == UsageType::Output && ChunkType == chunks::OSGN;
 
           if (!valid)
             continue;

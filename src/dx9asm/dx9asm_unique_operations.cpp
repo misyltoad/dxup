@@ -30,7 +30,7 @@ namespace dxapex {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
       RegisterMapping* mapping = lookupOrCreateRegisterMapping(*dst);
-      mapping->dclInfo.hasUsage = true;
+      mapping->dclInfo.type = dst->getRegType() == D3DSPR_INPUT ? UsageType::Input : UsageType::Output;
       mapping->dclInfo.usage = usageToken->getUsage();
       mapping->dclInfo.usageIndex = usageToken->getUsageIndex();
       
