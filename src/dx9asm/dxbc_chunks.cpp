@@ -182,7 +182,7 @@ namespace dxapex {
           });
 
           cbufNameOffset = getChunkSize(bytecode);
-          pushAlignedString(obj, "dx9_mapped_constant");
+          pushAlignedString(obj, "dx9_mapped_constants");
         }
 
         creatorOffset = getChunkSize(bytecode);

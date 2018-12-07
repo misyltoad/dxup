@@ -86,11 +86,19 @@ namespace dxapex {
       }
 
       inline int32_t getHighestIdForDXBCType(uint32_t type) {
-        int32_t highestIdForType = -1;
+        const uint32_t invalidId = UINT32_MAX;
+
+        uint32_t highestIdForType = invalidId;
+
         for (const RegisterMapping& lum : m_registerMap) {
           const DXBCOperand& lumOperand = lum.dxbcOperand;
-          if (lumOperand.m_registerType == type)
+
+          if (lumOperand.getRegisterType() == type) {
             highestIdForType = max(highestIdForType, lumOperand.getRegNumber());
+
+            if (highestIdForType == invalidId)
+              highestIdForType = lumOperand.getRegNumber();
+          }
         }
 
         return highestIdForType;
