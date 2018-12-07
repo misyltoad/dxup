@@ -10,7 +10,7 @@ namespace dxapex {
       {Src0, 1},
       {Src1, 1},
       {Src2, 1},
-      {Vec4, 1},
+      {Vec4, 4},
       {Label, 1},
       {Bool, 1},
       {Integer, 1},
