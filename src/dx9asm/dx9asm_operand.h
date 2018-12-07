@@ -145,11 +145,11 @@ namespace dxapex {
       }
 
       inline void getValues(float* asFloats) const {
-        std::memcpy(asFloats, m_dx9tokens, 4);
+        std::memcpy(asFloats, m_dx9tokens, 4 * sizeof(uint32_t));
       }
 
       inline void getValues(uint32_t* asTokens) const {
-        std::memcpy(asTokens, m_dx9tokens, 4);
+        std::memcpy(asTokens, m_dx9tokens, 4 * sizeof(uint32_t));
       }
     private:
 
