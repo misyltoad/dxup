@@ -6,7 +6,7 @@ namespace dxapex {
   namespace convert {
 
     std::array<std::string, 15> dclUsageMap = {
-      "POSITION",
+      "SV_Position",
       "BLENDWEIGHT",
       "BLENDINDICES",
       "NORMAL",
@@ -14,12 +14,12 @@ namespace dxapex {
       "TEXCOORD",
       "TANGENT",
       "BINORMAL",
-      "TESSFACTOR",
+      "SV_TessFactor",
       "POSITIONT",
       "COLOR",
       "FOG",
-      "DEPTH",
-      "SAMPLE",
+      "SV_Depth",
+      "SV_SampleIndex",
       "UNKNOWN"
     };
 
