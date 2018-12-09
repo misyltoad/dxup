@@ -59,7 +59,7 @@ namespace dxapex {
     void DXBCOperation::push(std::vector<uint32_t>& code) {
       uint32_t instructionSize = 1; // Opcode Token
 
-      if (m_lengthOverride == -1) {
+      if (m_lengthOverride == UINT32_MAX) {
         // Pass 1 - Size
         for (size_t i = 0; i < m_operands.size(); i++)
           m_operands[i].addInstructionSize(instructionSize);
@@ -68,7 +68,7 @@ namespace dxapex {
         instructionSize = m_lengthOverride;
 
       // Pass 2 - Push
-      code.push_back(genOpToken(instructionSize));
+      code.push_back(genOpToken(instructionSize + m_lengthOffset));
       for (size_t i = 0; i < m_operands.size(); i++)
         m_operands[i].push(code);
     }

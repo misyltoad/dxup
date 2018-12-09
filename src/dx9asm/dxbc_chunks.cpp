@@ -1,6 +1,7 @@
 ﻿#include "dxbc_chunks.h"
 #include "dxbc_shaderflags.h"
 #include "../util/placeholder_ptr.h"
+#include "dx9asm_operation_helpers.h"
 
 namespace dxapex {
 
@@ -29,6 +30,42 @@ namespace dxapex {
 
     };
 
+    template <typename T>
+    void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
+      uint32_t i = 0;
+      for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
+        if (mapping.dxbcOperand.getRegisterType() != D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
+          continue;
+
+        func(mapping, i);
+        i++;
+      }
+    }
+
+    constexpr bool isInput(uint32_t ChunkType) {
+      return ChunkType == chunks::ISGN;
+    }
+
+    template <bool Input, typename T>
+    void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
+      uint32_t i = 0;
+      for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
+        bool valid = mapping.dclInfo.type == UsageType::Input && Input ||
+                     mapping.dclInfo.type == UsageType::Output && !Input;
+
+        if (!valid)
+          continue;
+
+        if (mapping.dxbcOperand.isLiteral()) {
+          log::warn("IO is a literal..?");
+          continue;
+        }
+
+        func(mapping, i);
+        i++;
+      }
+    }
+
     class RDEFChunk : public BaseChunk<chunks::RDEF> {
       #pragma pack(1)
       struct VariableInfo {
@@ -45,18 +82,6 @@ namespace dxapex {
         uint32_t startSampler = 0;
         uint32_t samplerSize = 0;
       };
-
-      template <typename T>
-      void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
-        uint32_t i = 0;
-        for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
-          if (mapping.dxbcOperand.getRegisterType() != D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
-            continue;
-
-          func(mapping, i);
-          i++;
-        }
-      }
 
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
         auto& obj = bytecode.getBytecodeVector();
@@ -195,6 +220,35 @@ namespace dxapex {
     };
 
     class SHEXChunk : public BaseChunk<chunks::SHEX> {
+
+      template <bool Input>
+      void writeIODcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
+        auto& obj = bytecode.getBytecodeVector();
+        forEachValidElement<Input>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+          uint32_t siv = convert::sysValue(mapping.dclInfo.usage);
+          const bool hasSiv = siv != D3D_NAME_UNDEFINED;
+
+          uint32_t opcode = 0;
+          
+          if (Input)
+            opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_SIV : D3D10_SB_OPCODE_DCL_INPUT;
+          else
+            opcode = hasSiv ? D3D10_SB_OPCODE_DCL_OUTPUT_SIV : D3D10_SB_OPCODE_DCL_OUTPUT;
+
+          uint32_t lengthOffset = hasSiv ? 1 : 0;
+
+          DXBCOperand operand = mapping.dxbcOperand;
+          operand.setSwizzleOrWritemask(writeAll);
+
+          DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset }
+            .appendOperand(operand)
+            .push(obj);
+
+          if (hasSiv)
+            obj.push_back(siv);
+        });
+      }
+
       void writeDcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
 
@@ -203,6 +257,24 @@ namespace dxapex {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
           obj.push_back(shdrCode.getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_TEMP) + 1); // Followed by DWORD count of temps. Not an operand!
         }
+
+        // Input
+        writeIODcls<true>(bytecode, shdrCode);
+
+        // Output
+        writeIODcls<false>(bytecode, shdrCode);
+
+        // Constant Buffer
+        {
+          const uint32_t constantBuffer = 0;
+          const uint32_t cbufferCount = 0;
+
+          uint32_t data[2] = { constantBuffer , cbufferCount };
+          DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
+            .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setData(data, 2))
+            .push(obj);
+        }
+
       }
 
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
@@ -258,26 +330,6 @@ namespace dxapex {
         uint32_t mask = 0;
       };
 
-      template <typename T>
-      void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
-        uint32_t i = 0;
-        for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
-          bool valid = mapping.dclInfo.type == UsageType::Input && ChunkType == chunks::ISGN ||
-                       mapping.dclInfo.type == UsageType::Output && ChunkType == chunks::OSGN;
-
-          if (!valid)
-            continue;
-
-          if (mapping.dxbcOperand.isLiteral()) {
-            log::warn("IO is a literal..?");
-            continue;
-          }
-
-          func(mapping, i);
-          i++;
-        }
-      }
-
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
         auto& obj = bytecode.getBytecodeVector();
 
@@ -290,7 +342,7 @@ namespace dxapex {
 
         IOSGNElement* elementStart = (IOSGNElement*)nextPtr(obj);
 
-        forEachValidElement(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+        forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
           IOSGNElement element;
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
@@ -300,7 +352,7 @@ namespace dxapex {
         });
 
         uint32_t count = 0;
-        forEachValidElement(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+        forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
           elementStart[i].nameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, convert::declUsage(mapping.dclInfo.usage));
 

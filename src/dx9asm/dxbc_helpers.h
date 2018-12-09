@@ -116,10 +116,10 @@ namespace dxapex {
 
     class DXBCOperation {
     public:
-      DXBCOperation(uint32_t opcode, bool saturate, uint32_t lengthOverride = -1)
-        : m_opcode{ opcode }, m_saturate{ saturate }, m_lengthOverride{ lengthOverride } {
+      DXBCOperation(uint32_t opcode, bool saturate, uint32_t lengthOverride = UINT32_MAX, uint32_t lengthOffset = 0)
+        : m_opcode{ opcode }, m_saturate{ saturate }, m_lengthOverride{ lengthOverride }, m_lengthOffset{ lengthOffset } {
 
-        if (m_lengthOverride == -1)
+        if (m_lengthOverride == UINT32_MAX)
           m_operands.reserve(4);
       }
 
@@ -143,7 +143,8 @@ namespace dxapex {
       uint32_t genOpToken(uint32_t instructionSize);
 
       uint32_t m_opcode = 0;
-      uint32_t m_lengthOverride = -1;
+      uint32_t m_lengthOverride = UINT32_MAX;
+      uint32_t m_lengthOffset = 0;
       bool m_saturate = false;
       std::vector<DXBCOperand> m_operands;
     };
