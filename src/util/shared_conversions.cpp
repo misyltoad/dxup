@@ -37,8 +37,7 @@ namespace dxapex {
       case D3DDECLUSAGE_TESSFACTOR: return D3D_NAME_FINAL_TRI_EDGE_TESSFACTOR;
       case D3DDECLUSAGE_DEPTH: return D3D_NAME_DEPTH;
       case D3DDECLUSAGE_SAMPLE: return D3D_NAME_SAMPLE_INDEX;
-      default:
-        return 0;
+      default: return D3D_NAME_UNDEFINED;
       }
     }
 
