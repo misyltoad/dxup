@@ -1,7 +1,7 @@
 ﻿#include "dxbc_chunks.h"
 #include "dxbc_shaderflags.h"
 #include "../util/placeholder_ptr.h"
-#include "dx9asm_operation_helpers.h"
+#include "dx9asm_modifiers.h"
 
 namespace dxapex {
 

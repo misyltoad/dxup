@@ -1,5 +1,5 @@
 #include "dx9asm_translator.h"
-#include "dx9asm_operation_helpers.h"
+#include "dx9asm_modifiers.h"
 #include "../util/fourcc.h"
 #include "../util/config.h"
 

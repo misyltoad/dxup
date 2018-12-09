@@ -1,6 +1,5 @@
 #include "dxbc_bytecode.h"
 #include "dx9asm_translator.h"
-#include "dx9asm_operation_helpers.h"
 #include "dxbc_chunks.h"
 #include "dxbc_header.h"
 #include "../util/misc_helpers.h"

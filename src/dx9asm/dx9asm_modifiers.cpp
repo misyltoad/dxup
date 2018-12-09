@@ -1,5 +1,4 @@
 #include "dx9asm_modifiers.h"
-#include "dx9asm_operation_helpers.h"
 #include "dx9asm_operations.h"
 #include "dx9asm_translator.h"
 #include "dxbc_helpers.h"
