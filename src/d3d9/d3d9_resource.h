@@ -48,7 +48,7 @@ namespace dxapex {
       return d3d9LockFlags & D3DLOCK_DONOTWAIT ? D3D11_MAP_FLAG_DO_NOT_WAIT : 0;
     }
 
-    D3D11_MAP CalcMapType(UINT d3d9LockFlags) {
+    D3D11_MAP CalcMapType(UINT d3d9Usage, UINT d3d9LockFlags) {
       if (m_usage & D3DUSAGE_DYNAMIC) {
         if (d3d9LockFlags & D3DLOCK_NOOVERWRITE)
           return D3D11_MAP_WRITE_NO_OVERWRITE;
@@ -59,6 +59,9 @@ namespace dxapex {
 
       if (d3d9LockFlags & D3DLOCK_READONLY)
         return D3D11_MAP_READ;
+
+      if (d3d9Usage & D3DUSAGE_WRITEONLY)
+        return D3D11_MAP_WRITE;
 
       return D3D11_MAP_READ_WRITE;
     }
