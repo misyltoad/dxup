@@ -16,11 +16,14 @@ namespace dxapex {
     D3DDEVTYPE deviceType;
   };
 
+  struct InternalRenderState;
+
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
   public:
 
     Direct3DDevice9Ex(DeviceInitData* deviceData);
+    virtual ~Direct3DDevice9Ex();
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppv) override;
 
@@ -164,9 +167,17 @@ namespace dxapex {
     void GetContext(ID3D11DeviceContext** context);
     void GetD3D11Device(ID3D11Device** device);
 
+    void RefreshInputLayout();
+
+    bool CanDraw();
+    bool CanRefreshInputLayout();
+
   private:
 
     std::array< Com<IDirect3DSwapChain9Ex>, D3DPRESENT_BACK_BUFFERS_MAX_EX > m_swapchains;
+
+    InternalRenderState* m_state;
+
     Com<ID3D11Device> m_device;
     Com<IDXGIAdapter> m_adapter;
     Com<ID3D11DeviceContext> m_context;

@@ -7,12 +7,17 @@
 
 namespace dxapex {
 
-  template <dx9asm::ShaderType Type, typename Base>
+  struct InputLink {
+    Com<ID3D11InputLayout> inputLayout;
+    Com<IDirect3DVertexDeclaration9> vertexDcl;
+  };
+
+  template <dx9asm::ShaderType Type, typename D3D11Shader, typename Base>
   class Direct3DShader9 final : public D3D9DeviceUnknown<Base> {
 
   public:
 
-    Direct3DShader9(Direct3DDevice9Ex* device, const DWORD* code, ID3D11VertexShader* shader, dx9asm::ShaderBytecode* translation)
+    Direct3DShader9(Direct3DDevice9Ex* device, const DWORD* code, D3D11Shader* shader, dx9asm::ShaderBytecode* translation)
       : m_shader { shader }
       , m_translation{ translation }
       , D3D9DeviceUnknown<Base>(device) {
@@ -51,13 +56,41 @@ namespace dxapex {
       return E_NOINTERFACE;
     }
 
+    const dx9asm::ShaderBytecode* GetTranslation() const {
+      return m_translation;
+    }
+
+    void GetD3D11Shader(D3D11Shader** shader) {
+      if (shader != nullptr)
+        *shader = ref(m_shader);
+    }
+
+    void LinkInput(ID3D11InputLayout* inputLayout, IDirect3DVertexDeclaration9* vertDcl) {
+      m_inputLinks.push_back(InputLink{ inputLayout, vertDcl });
+    }
+
+    void GetLinkedInput(IDirect3DVertexDeclaration9* vertDcl, ID3D11InputLayout** inputLayout) {
+      if (inputLayout == nullptr || vertDcl == nullptr)
+        return;
+
+      InitReturnPtr(inputLayout);
+
+      for (InputLink& link : m_inputLinks) {
+        if (link.vertexDcl == vertDcl)
+          *inputLayout = ref(link.inputLayout);
+      }
+
+      return;
+    }
+
   private:
 
+    std::vector<InputLink> m_inputLinks;
     std::vector<uint32_t> m_dx9asm;
-    Com<ID3D11VertexShader> m_shader;
-    dx9asm::ShaderBytecode* m_translation;
+    Com<D3D11Shader> m_shader;
+    const dx9asm::ShaderBytecode* m_translation;
   };
 
-  using Direct3DVertexShader9 = Direct3DShader9<dx9asm::ShaderType::Vertex, IDirect3DVertexShader9>;
+  using Direct3DVertexShader9 = Direct3DShader9<dx9asm::ShaderType::Vertex, ID3D11VertexShader, IDirect3DVertexShader9>;
 
 }

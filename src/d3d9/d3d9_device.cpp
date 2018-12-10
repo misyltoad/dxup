@@ -9,8 +9,15 @@
 #include "../dx9asm/dx9asm_util.h"
 #include "../util/config.h"
 #include "../util/d3dcompiler_helpers.h"
+#include "d3d9_vertexdeclaration.h"
 
 namespace dxapex {
+
+  struct InternalRenderState{
+    Com<Direct3DVertexShader9> vertexShader;
+    Com<Direct3DVertexDeclaration9> vertexDecl;
+    bool isValid = false;
+  };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(DeviceInitData* data)
     : m_adapter(data->adapter)
@@ -19,7 +26,8 @@ namespace dxapex {
     , m_parent(data->parent)
     , m_flags(0)
     , m_creationParameters(*data->creationParameters) 
-    , m_deviceType(data->deviceType) {
+    , m_deviceType(data->deviceType)
+    , m_state{ new InternalRenderState }{
     if (data->ex)
       m_flags |= DeviceFlag_Ex;
 
@@ -46,6 +54,10 @@ namespace dxapex {
 
     if (!FAILED(result))
       SetRenderTarget(0, backbuffer.ptr());
+  }
+
+  Direct3DDevice9Ex::~Direct3DDevice9Ex() {
+    delete m_state;
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::QueryInterface(REFIID riid, LPVOID* ppv) {
@@ -735,6 +747,11 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
+    if (!CanDraw()) {
+      log::warn("Invalid internal render state achieved.");
+      return D3D_OK; // Lies!
+    }
+
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
 
@@ -768,6 +785,7 @@ namespace dxapex {
     D3DVERTEXELEMENT9 lastElement = D3DDECL_END();
 
     std::vector<D3D11_INPUT_ELEMENT_DESC> inputElements;
+    std::vector<D3DVERTEXELEMENT9> d3d9Elements;
 
     auto vertexElementEqual = [] (const D3DVERTEXELEMENT9& a, const D3DVERTEXELEMENT9& b) {
       return  a.Method == b.Method &&
@@ -778,28 +796,84 @@ namespace dxapex {
               a.UsageIndex == b.UsageIndex;
     };
 
-    while (!vertexElementEqual(*pVertexElements, lastElement)) {
-      D3D11_INPUT_ELEMENT_DESC desc = { 0 };
-      
-      desc.SemanticName = convert::declUsage((D3DDECLUSAGE)pVertexElements->Usage).c_str();
-      desc.Format = convert::declType((D3DDECLTYPE)pVertexElements->Type);
-      desc.AlignedByteOffset = pVertexElements->Offset;
-      desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-      desc.InputSlot = pVertexElements->UsageIndex;
-      
-      inputElements.push_back(desc);
+    size_t count;
+    {
+      const D3DVERTEXELEMENT9* counter = pVertexElements;
+      while (!vertexElementEqual(*counter, lastElement))
+        counter++;
 
-      pVertexElements++;
+      count = counter - pVertexElements;
     }
 
+    d3d9Elements.resize(count);
+    inputElements.reserve(count);
 
-    //Com<ID3D11InputLayout> layout;
-    //m_device->CreateInputLayout(&inputElements[0], inputElements.size(), nullptr, 0, &layout);
+    std::memcpy(&d3d9Elements[0], pVertexElements, sizeof(D3DVERTEXELEMENT9) * count);
+
+    for (size_t i = 0; i < count; i++) {
+      D3D11_INPUT_ELEMENT_DESC desc = { 0 };
+      
+      desc.SemanticName = convert::declUsage((D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
+      desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
+      desc.AlignedByteOffset = pVertexElements[i].Offset;
+      desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+      desc.InputSlot = pVertexElements[i].UsageIndex;
+      
+      inputElements.push_back(desc);
+    }
+
+    *ppDecl = ref(new Direct3DVertexDeclaration9(this, inputElements, d3d9Elements));
 
     return D3D_OK;
   }
+
+  bool Direct3DDevice9Ex::CanDraw() {
+    return CanRefreshInputLayout() && m_state->isValid;
+  }
+
+  bool Direct3DDevice9Ex::CanRefreshInputLayout() {
+    if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
+      return false;
+
+    return true;
+  }
+
+  void Direct3DDevice9Ex::RefreshInputLayout() {
+    if (!CanRefreshInputLayout())
+      return;
+
+    auto& elements = m_state->vertexDecl->GetD3D11Descs();
+    auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
+
+    Com<ID3D11InputLayout> layout;
+    m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr(), &layout);
+
+    if (layout == nullptr) {
+      m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
+
+      if (layout != nullptr)
+        m_state->vertexShader->LinkInput(layout.ptr(), m_state->vertexDecl.ptr());
+    }
+
+    if (layout == nullptr) {
+      m_state->isValid = false;
+      return;
+    }
+
+    m_state->isValid = true;
+
+    Com<ID3D11VertexShader> d3d11VertexShader;
+    m_state->vertexShader->GetD3D11Shader(&d3d11VertexShader);
+
+    m_context->IASetInputLayout(layout.ptr());
+    m_context->VSSetShader(d3d11VertexShader.ptr(), nullptr, 0);
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
-    log::stub("Direct3DDevice9Ex::SetVertexDeclaration");
+    m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
+
+    RefreshInputLayout();
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
@@ -874,7 +948,10 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
-    log::stub("Direct3DDevice9Ex::SetVertexShader");
+    m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
+
+    RefreshInputLayout();
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShader(IDirect3DVertexShader9** ppShader) {
