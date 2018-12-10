@@ -87,7 +87,7 @@ namespace dxapex {
         return nullptr;
       }
 
-      inline uint32_t getHighestIdForDXBCType(uint32_t type) {
+      inline uint32_t getHighestIdForDXBCType(uint32_t type) const {
         const uint32_t invalidId = UINT32_MAX;
 
         uint32_t highestIdForType = invalidId;
@@ -104,6 +104,10 @@ namespace dxapex {
         }
 
         return highestIdForType;
+      }
+
+      inline uint32_t getDXBCTypeCount(uint32_t type) const {
+        return getHighestIdForDXBCType(type) + 1;
       }
 
       RegisterMapping* lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset = 0);

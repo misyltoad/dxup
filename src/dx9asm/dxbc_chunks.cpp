@@ -255,7 +255,7 @@ namespace dxapex {
         // Temps
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
-          obj.push_back(shdrCode.getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_TEMP) + 1); // Followed by DWORD count of temps. Not an operand!
+          obj.push_back(shdrCode.getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP)); // Followed by DWORD count of temps. Not an operand!
         }
 
         // Input
@@ -267,7 +267,7 @@ namespace dxapex {
         // Constant Buffer
         {
           const uint32_t constantBuffer = 0;
-          const uint32_t cbufferCount = shdrCode.getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER) + 1;
+          const uint32_t cbufferCount = shdrCode.getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
           uint32_t data[2] = { constantBuffer , cbufferCount };
           DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
