@@ -267,7 +267,7 @@ namespace dxapex {
         // Constant Buffer
         {
           const uint32_t constantBuffer = 0;
-          const uint32_t cbufferCount = 0;
+          const uint32_t cbufferCount = shdrCode.getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER) + 1;
 
           uint32_t data[2] = { constantBuffer , cbufferCount };
           DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
