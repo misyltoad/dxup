@@ -70,7 +70,26 @@ namespace dxapex {
 
     void GetD3D11Texture2D(ID3D11Texture2D** buffer);
 
+    inline void SetSubresourceMapped(UINT subresource) {
+      m_mappedSubresources |= 1 << subresource;
+    }
+    inline void SetSubresourceUnmapped(UINT subresource) {
+      m_unmappedSubresources |= 1 << subresource;
+    }
+    inline uint64_t GetChangedSubresources() {
+      return m_mappedSubresources;
+    }
+    inline bool CanPushStaging() {
+      return ((m_mappedSubresources - m_unmappedSubresources) == 0);
+    }
+    inline void ResetSubresourceMapInfo() {
+      m_mappedSubresources = 0;
+      m_unmappedSubresources = 0;
+    }
+
   private:
+    uint64_t m_mappedSubresources;
+    uint64_t m_unmappedSubresources;
     std::vector<Com<IDirect3DSurface9>> m_surfaces;
   };
 

@@ -122,6 +122,10 @@ namespace dxapex {
       if (FAILED(result))
         return D3DERR_INVALIDCALL;
 
+      Com<Direct3DTexture9> d3d9Texture;
+      GetD3D9Texture(&d3d9Texture);
+      d3d9Texture->SetSubresourceMapped(m_subresource);
+
       pLockedRect->pBits = resource.pData;
       pLockedRect->Pitch = resource.RowPitch;
 
@@ -142,8 +146,13 @@ namespace dxapex {
     Com<ID3D11Texture2D> mappedTexture;
     GetD3D11MappedTexture(&mappedTexture);
 
-    if (mappedTexture != nullptr)
+    Com<Direct3DTexture9> d3d9Texture;
+    GetD3D9Texture(&d3d9Texture);
+
+    if (mappedTexture != nullptr) {
       context->Unmap(mappedTexture.ptr(), m_subresource);
+      d3d9Texture->SetSubresourceUnmapped(m_subresource);
+    }
     else if (m_surface != nullptr)
       m_surface->Unmap();
 
@@ -166,7 +175,13 @@ namespace dxapex {
         box.back = 1;
       }
 
-      context->CopySubresourceRegion(texture.ptr(), m_subresource, box.left, box.top, 0, stagingTexture.ptr(), m_subresource, m_useRect ? &box : nullptr);
+      if (d3d9Texture->CanPushStaging()) {
+        uint64_t delta = d3d9Texture->GetChangedSubresources();
+        for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
+          if ( delta & (1 << i) )
+            context->CopySubresourceRegion(texture.ptr(), i, box.left, box.top, 0, stagingTexture.ptr(), i, m_useRect ? &box : nullptr);
+        }
+      }
     }
 
     return D3D_OK;
