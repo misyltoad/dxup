@@ -12,7 +12,7 @@ namespace dxapex {
     if (desc.Usage != D3D11_USAGE_DYNAMIC) {
       // See comment in d3d9_vertexbuffer.cpp
 
-      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      desc.CPUAccessFlags = usage & D3DUSAGE_WRITEONLY ? D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
       desc.Usage = D3D11_USAGE_STAGING;
 
       Com<ID3D11Device> device;

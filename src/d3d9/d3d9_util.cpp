@@ -88,8 +88,11 @@ namespace dxapex {
     }
 
     UINT cpuFlags(D3DPOOL pool, UINT usage) {
-      if (convert::usage(pool, usage) == D3D11_USAGE_DYNAMIC)
+      if (convert::usage(pool, usage) == D3D11_USAGE_DYNAMIC) {
+        if (usage & D3DUSAGE_WRITEONLY)
+          return D3D11_CPU_ACCESS_WRITE;
         return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      }
 
       return 0;
     }
