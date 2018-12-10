@@ -23,4 +23,12 @@ namespace dxapex {
     void color(D3DCOLOR color, FLOAT* d3d11Color);
   }
 
+  template <typename T>
+  void makeStaging(T& desc, UINT d3d9Usage) {
+    desc.CPUAccessFlags = d3d9Usage & D3DUSAGE_WRITEONLY ? D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+    desc.Usage = D3D11_USAGE_STAGING;
+    desc.BindFlags = 0;
+    desc.MiscFlags = 0;
+  }
+
 }
