@@ -54,9 +54,8 @@ namespace dxapex {
     if (ppv == nullptr)
       return E_POINTER;
 
-    if (riid == __uuidof(IDirect3DDevice9Ex) || riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IUnknown)) {
+    if (riid == __uuidof(IDirect3DDevice9Ex) || riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IUnknown))
       *ppv = ref(this);
-    }
 
     return E_NOINTERFACE;
   }
@@ -841,6 +840,8 @@ namespace dxapex {
       log::fail("Shader translation failed!");
       return D3DERR_INVALIDCALL;
     }
+
+    *ppShader = ref(new Direct3DVertexShader9(this, pFunction, shader.ptr(), bytecode));
 
     if (config::getBool(config::ShaderDump)) {
       char comments[2048];

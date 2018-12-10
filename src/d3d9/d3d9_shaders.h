@@ -7,16 +7,19 @@
 
 namespace dxapex {
 
-  template <dx9asm::ShaderType Type, typename... Base>
-  class Direct3DShader9 final : public D3D9DeviceUnknown<Base...> {
+  template <dx9asm::ShaderType Type, typename Base>
+  class Direct3DShader9 final : public D3D9DeviceUnknown<Base> {
 
   public:
 
-    Direct3DShader9(uint32_t* code)
-      : m_dxbc{ dxbc }  {
+    Direct3DShader9(Direct3DDevice9Ex* device, const DWORD* code, ID3D11VertexShader* shader, dx9asm::ShaderBytecode* translation)
+      : m_shader { shader }
+      , m_translation{ translation }
+      , D3D9DeviceUnknown<Base>(device) {
 
-      m_d3d9code.resize(dx9asm::byteCodeLength(code));
-      std::memcpy(&m_d3d9code[0], code, m_d3d9code.size());
+      m_dx9asm.resize(dx9asm::byteCodeLength((const uint32_t*)code));
+
+      std::memcpy(&m_dx9asm[0], code, m_dx9asm.size());
     }
 
     HRESULT STDMETHODCALLTYPE GetFunction(void* pShader, UINT* pSizeOfData) override {
@@ -24,17 +27,35 @@ namespace dxapex {
         return D3DERR_INVALIDCALL;
 
       if (pShader == nullptr) {
-        *pSizeOfData = m_d3d9code.size();
+        *pSizeOfData = m_dx9asm.size();
         return D3D_OK;
       }
+
+      UINT size = *pSizeOfData;
+      if (size > m_dx9asm.size())
+        size = m_dx9asm.size();
+
+      std::memcpy(pShader, &m_dx9asm[0], (size_t)size);
+      return D3D_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+      InitReturnPtr(ppv);
+
+      if (ppv == nullptr)
+        return E_POINTER;
+
+      if (riid == __uuidof(Base) || riid == __uuidof(IUnknown))
+        *ppv = ref(this);
+
+      return E_NOINTERFACE;
     }
 
   private:
 
-    std::vector<uint32_t> m_d3d9code;
-
-    //Com<dx9asm::ITranslatedShaderDXBC> m_dxbc;
-
+    std::vector<uint32_t> m_dx9asm;
+    Com<ID3D11VertexShader> m_shader;
+    dx9asm::ShaderBytecode* m_translation;
   };
 
   using Direct3DVertexShader9 = Direct3DShader9<dx9asm::ShaderType::Vertex, IDirect3DVertexShader9>;
