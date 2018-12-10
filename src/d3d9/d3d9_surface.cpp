@@ -140,7 +140,7 @@ namespace dxapex {
     m_device->GetContext(&context);
 
     Com<ID3D11Texture2D> mappedTexture;
-    GetD3D11Texture(&mappedTexture);
+    GetD3D11MappedTexture(&mappedTexture);
 
     if (mappedTexture != nullptr)
       context->Unmap(mappedTexture.ptr(), m_subresource);

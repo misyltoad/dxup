@@ -34,11 +34,10 @@ namespace dxapex {
   }
 
   void Direct3DVertexBuffer9::GetD3D11MappedBuffer(ID3D11Buffer** buffer) {
-    if (m_stagingBuffer == nullptr) { // Standard path.
-      *buffer = ref(m_stagingBuffer);
-    }
+    *buffer = ref(m_stagingBuffer);
 
-    *buffer = ref(m_buffer); // Dynamic Path
+    if (*buffer == nullptr)
+      *buffer = ref(m_buffer); // Dynamic Path
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::Lock(UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags) {
