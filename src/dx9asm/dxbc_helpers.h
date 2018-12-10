@@ -97,7 +97,7 @@ namespace dxapex {
       }
 
     protected:
-      friend class ShaderCodeTranslator;
+
       void doPass(uint32_t* instructionSize, std::vector<uint32_t>* code);
 
       // TODO: We could remove these next 3 later on and do encoding straight away. ~ Josh

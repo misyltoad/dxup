@@ -33,7 +33,7 @@ namespace dxapex {
     template <typename T>
     void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t i = 0;
-      for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
+      for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
         if (mapping.dxbcOperand.getRegisterType() != D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
           continue;
 
@@ -49,7 +49,7 @@ namespace dxapex {
     template <bool Input, typename T>
     void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t i = 0;
-      for (const RegisterMapping& mapping : shdrCode.getRegisterMappings()) {
+      for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
         bool valid = mapping.dclInfo.type == UsageType::Input && Input ||
                      mapping.dclInfo.type == UsageType::Output && !Input;
 
@@ -255,7 +255,7 @@ namespace dxapex {
         // Temps
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
-          obj.push_back(shdrCode.getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP)); // Followed by DWORD count of temps. Not an operand!
+          obj.push_back(shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP)); // Followed by DWORD count of temps. Not an operand!
         }
 
         // Input
@@ -267,7 +267,7 @@ namespace dxapex {
         // Constant Buffer
         {
           const uint32_t constantBuffer = 0;
-          const uint32_t cbufferCount = shdrCode.getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
+          const uint32_t cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
           uint32_t data[2] = { constantBuffer , cbufferCount };
           DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }

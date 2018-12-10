@@ -6,7 +6,7 @@ namespace dxapex {
 
   namespace dx9asm {
 
-    RegisterMapping* ShaderCodeTranslator::lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset) {
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset) {
       RegisterMapping* mapping = getRegisterMapping(operand.getRegType(), operand.getRegNumber() + regOffset);
       if (mapping != nullptr)
         return mapping;

@@ -6,7 +6,7 @@ dx9asm_src = files([
   'dx9asm_operand.cpp',
   'dx9asm_unique_operations.cpp',
   'dx9asm_standard_operations.cpp',
-  'dx9asm_register_mapping.cpp',
+  'dx9asm_register_map.cpp',
   'dxbc_bytecode.cpp',
   'dxbc_helpers.cpp',
   'dxbc_chunks.cpp',

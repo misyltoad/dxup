@@ -9,7 +9,7 @@ namespace dxapex {
   namespace dx9asm {
 
     DXBCOperand::DXBCOperand(ShaderCodeTranslator& state, const DX9Operation& operation, const DX9Operand& operand, uint32_t regOffset) {
-      RegisterMapping* mapping = state.lookupOrCreateRegisterMapping(operand, regOffset);
+      RegisterMapping* mapping = state.getRegisterMap().lookupOrCreateRegisterMapping(operand, regOffset);
       std::memcpy(this, &mapping->dxbcOperand, sizeof(DXBCOperand));
 
       calculateDXBCSwizzleAndWriteMask(*this, operand);

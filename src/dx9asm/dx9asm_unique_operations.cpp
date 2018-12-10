@@ -29,7 +29,7 @@ namespace dxapex {
       const DX9Operand* usageToken = operation.getOperandByType(optype::UsageToken);
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
-      RegisterMapping* mapping = lookupOrCreateRegisterMapping(*dst);
+      RegisterMapping* mapping = m_map.lookupOrCreateRegisterMapping(*dst);
       mapping->dclInfo.type = dst->getRegType() == D3DSPR_INPUT ? UsageType::Input : UsageType::Output;
       mapping->dclInfo.usage = usageToken->getUsage();
       mapping->dclInfo.usageIndex = usageToken->getUsageIndex();
@@ -54,7 +54,7 @@ namespace dxapex {
 
       mapping.dxbcOperand.setSwizzleOrWritemask(noSwizzle);
 
-      addRegisterMapping(false, mapping);
+      m_map.addRegisterMapping(false, mapping);
 
       return true;
     }
