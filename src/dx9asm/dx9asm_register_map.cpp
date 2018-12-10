@@ -58,14 +58,14 @@ namespace dxapex {
 
         dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
-      case D3DSPR_COLOROUT: {
+      //case D3DSPR_COLOROUT:
+      case D3DSPR_ATTROUT: {
         newMapping.dclInfo.type = UsageType::Output;
         newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
         newMapping.dclInfo.usageIndex = newMapping.dx9Id;
 
         dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
-      case D3DSPR_ATTROUT:
       case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:
