@@ -8,8 +8,8 @@ namespace dxapex {
   template <typename D3D11ResourceType, D3DRESOURCETYPE ResourceType, typename... ID3D9BaseType>
   class Direct3DBaseTexture9 : public Direct3DResource9<ResourceType, ID3D9BaseType...> {
   public:
-    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, D3DPOOL pool, DWORD usage)
-      : Direct3DResource9<ResourceType, ID3D9BaseType...>(device, pool, usage)
+    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
+      : Direct3DResource9<ResourceType, ID3D9BaseType...>(device, pool, usage, d3d11Dynamic)
       , m_resource(resource)
     {}
 
@@ -48,7 +48,7 @@ namespace dxapex {
   class Direct3DTexture9 final : public Direct3DTexture9Base
   {
   public:
-    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage);
+    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 

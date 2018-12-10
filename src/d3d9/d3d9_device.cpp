@@ -338,7 +338,7 @@ namespace dxapex {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), Pool, Usage));
+    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), Pool, Usage, desc.Usage == D3D11_USAGE_DYNAMIC));
 
     return D3D_OK;
   }
@@ -370,7 +370,7 @@ namespace dxapex {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, buffer.ptr(), Pool, FVF, Usage));
+    *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, buffer.ptr(), Pool, FVF, Usage, desc.Usage == D3D11_USAGE_DYNAMIC));
 
     return D3D_OK;
   }

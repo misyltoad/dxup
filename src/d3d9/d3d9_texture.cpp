@@ -3,15 +3,15 @@
 
 namespace dxapex {
 
-  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
-    : Direct3DTexture9Base(device, texture, pool, usage) {
+  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
+    : Direct3DTexture9Base(device, texture, pool, usage, d3d11Dynamic) {
 
     D3D11_TEXTURE2D_DESC Desc;
     texture->GetDesc(&Desc);
 
     m_surfaces.reserve(Desc.MipLevels);
     for (UINT i = 0; i < Desc.MipLevels; i++)
-      m_surfaces.push_back(ref(new Direct3DSurface9(false, i, device, this, texture, pool, usage)));
+      m_surfaces.push_back(ref(new Direct3DSurface9(false, i, device, this, texture, pool, usage, d3d11Dynamic)));
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DTexture9::QueryInterface(REFIID riid, void** ppvObj) {

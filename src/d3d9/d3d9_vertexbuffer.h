@@ -9,7 +9,7 @@ namespace dxapex {
   class Direct3DVertexBuffer9 final : public Direct3DVertexBuffer9Base
   {
   public:
-    Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage);
+    Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage, bool d3d11Dynamic);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 

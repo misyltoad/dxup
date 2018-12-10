@@ -80,15 +80,18 @@ namespace dxapex {
       return scanlineConverter.toT(ScanlineOrdering);
     }
 
-    UINT cpuFlags(D3DPOOL pool, UINT usage) {
-      return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-    }
-
     D3D11_USAGE usage(D3DPOOL pool, UINT usage) {
       if (usage & D3DUSAGE_DYNAMIC || pool == D3DPOOL_SCRATCH || pool == D3DPOOL_SYSTEMMEM)
         return D3D11_USAGE_DYNAMIC;
 
       return D3D11_USAGE_DEFAULT;
+    }
+
+    UINT cpuFlags(D3DPOOL pool, UINT usage) {
+      if (convert::usage(pool, usage) == D3D11_USAGE_DYNAMIC)
+        return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+
+      return 0;
     }
 
     UINT fvf(UINT fvf) {

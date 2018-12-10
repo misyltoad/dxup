@@ -3,19 +3,18 @@
 
 namespace dxapex {
 
-  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
-    : Direct3DSurface9Base(device, pool, usage)
+  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
+    : Direct3DSurface9Base(device, pool, usage, d3d11Dynamic)
     , m_container(container)
     , m_d3d11texture(texture)
     , m_subresource(subresource)
     , m_rtView(nullptr)
-    , m_resourceMapPtr(nullptr)
   {
     if (texture != nullptr) {
       D3D11_TEXTURE2D_DESC desc;
       texture->GetDesc(&desc);
 
-      m_surfaceData.resize(calculatePitch(desc.Format, desc.Width) * desc.Height);
+      m_stagingBuffer.resize(desc.Format, desc.Width, desc.Height);
     }
 
     if (m_subresource == 0 && usage & D3DUSAGE_RENDERTARGET) {
@@ -112,17 +111,29 @@ namespace dxapex {
     Com<ID3D11Texture2D> texture;
     GetD3D11Texture(&texture);
 
-    D3D11_MAPPED_SUBRESOURCE resource;
-    HRESULT result = context->Map(texture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+    if (pRect != nullptr)
+      log::warn("Need to apply offset here... pRect != nullptr! Expect garbage textures.");
 
-    if (result == DXGI_ERROR_WAS_STILL_DRAWING)
-      return D3DERR_WASSTILLDRAWING;
+    if (IsD3D11Dynamic()) {
+      D3D11_MAPPED_SUBRESOURCE resource;
+      HRESULT result = context->Map(texture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
-    if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+        return D3DERR_WASSTILLDRAWING;
 
-    pLockedRect->pBits = resource.pData;
-    pLockedRect->Pitch = resource.RowPitch;
+      if (FAILED(result))
+        return D3DERR_INVALIDCALL;
+
+      pLockedRect->pBits = resource.pData;
+      pLockedRect->Pitch = resource.RowPitch;
+
+      return D3D_OK;
+    }
+
+    // Default path.
+
+    pLockedRect->pBits = m_stagingBuffer.getDataPtr();
+    pLockedRect->Pitch = m_stagingBuffer.getPitch();
 
     return D3D_OK;
   }
@@ -133,7 +144,10 @@ namespace dxapex {
     Com<ID3D11Texture2D> texture;
     GetD3D11Texture(&texture);
 
-    context->Unmap(texture.ptr(), m_subresource);
+    if (IsD3D11Dynamic())
+      context->Unmap(texture.ptr(), m_subresource);
+    else
+      context->UpdateSubresource(texture.ptr(), m_subresource, nullptr, m_stagingBuffer.getDataPtr(), m_stagingBuffer.getPitch(), 1);
 
     return D3D_OK;
   }
@@ -165,11 +179,9 @@ namespace dxapex {
     if (texture != nullptr && m_container != nullptr)
       *texture = reinterpret_cast<Direct3DTexture9*>(ref(m_container));
   }
-
   void Direct3DSurface9::GetD3D11RenderTarget(ID3D11RenderTargetView** rtv) {
-    if (rtv != nullptr && m_rtView != nullptr) {
+    if (rtv != nullptr && m_rtView != nullptr)
       *rtv = ref(m_rtView);
-    }
   }
 
   UINT Direct3DSurface9::GetSubresource() {

@@ -28,7 +28,7 @@ namespace dxapex {
     switch (format)
     {
     case DXGI_FORMAT_UNKNOWN:
-      return sizeUnknown;
+      return size1;
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
     case DXGI_FORMAT_R32G32B32A32_UINT:
