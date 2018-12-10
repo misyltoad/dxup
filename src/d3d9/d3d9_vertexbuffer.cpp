@@ -9,6 +9,10 @@ namespace dxapex {
     m_buffer->GetDesc(&desc);
 
     if (desc.Usage != D3D11_USAGE_DYNAMIC) {
+      // If we are not a dynamic resource, we have a staging buffer.
+      // We then map this and CopySubresourceRegion on unmapping.
+      // If it's a dynamic resource the staging equiv. will be nullptr, some logic relies on this.  
+
       desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
       desc.Usage = D3D11_USAGE_STAGING;
 

@@ -10,6 +10,8 @@ namespace dxapex {
     texture->GetDesc(&desc);
 
     if (desc.Usage != D3D11_USAGE_DYNAMIC) {
+      // See comment in d3d9_vertexbuffer.cpp
+
       desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
       desc.Usage = D3D11_USAGE_STAGING;
 
