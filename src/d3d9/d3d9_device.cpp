@@ -818,6 +818,11 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader) {
+    InitReturnPtr(ppShader);
+
+    if (pFunction == nullptr || ppShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
     dx9asm::ShaderBytecode* bytecode = nullptr;
     dx9asm::toDXBC((const uint32_t*)pFunction, &bytecode);
 
