@@ -3,15 +3,27 @@
 
 namespace dxapex {
 
-  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
-    : Direct3DTexture9Base(device, texture, pool, usage, d3d11Dynamic) {
+  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
+    : Direct3DTexture9Base(device, texture, pool, usage) {
 
-    D3D11_TEXTURE2D_DESC Desc;
-    texture->GetDesc(&Desc);
+    D3D11_TEXTURE2D_DESC desc;
+    texture->GetDesc(&desc);
 
-    m_surfaces.reserve(Desc.MipLevels);
-    for (UINT i = 0; i < Desc.MipLevels; i++)
-      m_surfaces.push_back(ref(new Direct3DSurface9(false, i, device, this, texture, pool, usage, d3d11Dynamic)));
+    if (desc.Usage != D3D11_USAGE_DYNAMIC) {
+      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      desc.Usage = D3D11_USAGE_STAGING;
+
+      Com<ID3D11Device> device;
+      m_device->GetD3D11Device(&device);
+
+      Com<ID3D11Texture2D> stagingTex;
+      device->CreateTexture2D(&desc, nullptr, &stagingTex);
+      SetStagingResource(stagingTex.ptr());
+    }
+
+    m_surfaces.reserve(desc.MipLevels);
+    for (UINT i = 0; i < desc.MipLevels; i++)
+      m_surfaces.push_back(ref(new Direct3DSurface9(false, i, device, this, texture, pool, usage)));
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DTexture9::QueryInterface(REFIID riid, void** ppvObj) {
@@ -29,8 +41,11 @@ namespace dxapex {
   }
 
   DWORD STDMETHODCALLTYPE Direct3DTexture9::GetLevelCount() {
+    Com<ID3D11Texture2D> texture;
+    GetResource(&texture);
+
     D3D11_TEXTURE2D_DESC desc;
-    GetResource<ID3D11Texture2D>()->GetDesc(&desc);
+    texture->GetDesc(&desc);
 
     return desc.MipLevels;
   }

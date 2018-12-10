@@ -9,7 +9,7 @@ namespace dxapex {
   class Direct3DVertexBuffer9 final : public Direct3DVertexBuffer9Base
   {
   public:
-    Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage, bool d3d11Dynamic);
+    Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 
@@ -17,12 +17,15 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE Unlock() override;
     HRESULT STDMETHODCALLTYPE GetDesc(D3DVERTEXBUFFER_DESC *pDesc) override;
 
+    void GetD3D11MappedBuffer(ID3D11Buffer** buffer);
+
     void GetD3D11Buffer(ID3D11Buffer** buffer);
 
   private:
 
     DWORD m_fvf;
     Com<ID3D11Buffer> m_buffer;
+    Com<ID3D11Buffer> m_stagingBuffer;
   };
 
 }

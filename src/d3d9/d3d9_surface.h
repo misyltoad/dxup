@@ -12,7 +12,7 @@ namespace dxapex {
     
   public:
 
-    Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic);
+    Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage);
 
     HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppv) override;
     HRESULT WINAPI GetContainer(REFIID riid, void** ppContainer) override;
@@ -23,6 +23,9 @@ namespace dxapex {
     HRESULT WINAPI ReleaseDC(HDC hdc) override;
 
     void GetD3D11Texture(ID3D11Texture2D** texture);
+    void GetD3D11StagingTexture(ID3D11Texture2D** texture);
+    void GetD3D11MappedTexture(ID3D11Texture2D** texture);
+
     void GetDXGISurface(IDXGISurface1** surface);
     void GetD3D9Texture(Direct3DTexture9** texture);
     void GetD3D11RenderTarget(ID3D11RenderTargetView** rtv);
@@ -34,6 +37,9 @@ namespace dxapex {
     Com<ID3D11Texture2D> m_d3d11texture;
     Com<IDXGISurface1> m_surface;
     Com<ID3D11RenderTargetView> m_rtView;
+
+    bool m_useRect;
+    RECT m_stagingRect;
 
     UINT m_subresource;
   };

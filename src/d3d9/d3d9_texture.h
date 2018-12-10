@@ -8,8 +8,8 @@ namespace dxapex {
   template <typename D3D11ResourceType, D3DRESOURCETYPE ResourceType, typename... ID3D9BaseType>
   class Direct3DBaseTexture9 : public Direct3DResource9<ResourceType, ID3D9BaseType...> {
   public:
-    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
-      : Direct3DResource9<ResourceType, ID3D9BaseType...>(device, pool, usage, d3d11Dynamic)
+    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, D3DPOOL pool, DWORD usage)
+      : Direct3DResource9<ResourceType, ID3D9BaseType...>(device, pool, usage)
       , m_resource(resource)
     {}
 
@@ -34,21 +34,30 @@ namespace dxapex {
       log::stub("Direct3DBaseTexture9::GenerateMipSubLevels");
     }
 
-    template <typename T>
-    T* GetResource() {
-      return (T*) m_resource.ptr();
+    void GetResource(D3D11ResourceType** res) {
+      if (res != nullptr && m_resource != nullptr)
+        *res = ref(m_resource);
+    }
+
+    void GetStagingResource(D3D11ResourceType** res) {
+      if (res != nullptr && m_stagingResource != nullptr)
+        *res = ref(m_stagingResource);
+    }
+
+    void SetStagingResource(D3D11ResourceType* res) {
+      m_stagingResource = res;
     }
 
   private:
     Com<D3D11ResourceType> m_resource;
-
+    Com<D3D11ResourceType> m_stagingResource;
   };
 
   using Direct3DTexture9Base = Direct3DBaseTexture9<ID3D11Texture2D, D3DRTYPE_TEXTURE, IDirect3DTexture9>;
   class Direct3DTexture9 final : public Direct3DTexture9Base
   {
   public:
-    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic);
+    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 
@@ -58,6 +67,8 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE LockRect(UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) override;
     HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level) override;
     HRESULT STDMETHODCALLTYPE AddDirtyRect(const RECT* pDirtyRect) override;
+
+    void GetD3D11Texture2D(ID3D11Texture2D** buffer);
 
   private:
     std::vector<Com<IDirect3DSurface9>> m_surfaces;

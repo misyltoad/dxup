@@ -1,21 +1,16 @@
 #include "d3d9_surface.h"
 #include "d3d9_format.h"
+#include "d3d9_texture.h"
 
 namespace dxapex {
 
-  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, bool d3d11Dynamic)
-    : Direct3DSurface9Base(device, pool, usage, d3d11Dynamic)
+  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
+    : Direct3DSurface9Base(device, pool, usage)
     , m_container(container)
     , m_d3d11texture(texture)
     , m_subresource(subresource)
     , m_rtView(nullptr)
   {
-    if (IsD3D11Dynamic() && texture != nullptr) {
-      D3D11_TEXTURE2D_DESC desc;
-      texture->GetDesc(&desc);
-
-      m_stagingBuffer.resize(desc.Format, desc.Width, desc.Height);
-    }
 
     if (m_subresource == 0 && usage & D3DUSAGE_RENDERTARGET) {
       if (texture != nullptr) {
@@ -108,20 +103,18 @@ namespace dxapex {
     Com<ID3D11DeviceContext> context;
     m_device->GetContext(&context);
 
-    Com<ID3D11Texture2D> texture;
-    GetD3D11Texture(&texture);
+    Com<ID3D11Texture2D> mappedTexture;
+    GetD3D11MappedTexture(&mappedTexture);
 
-    if (pRect != nullptr)
-      log::warn("Need to apply offset here... pRect != nullptr! Expect garbage textures.");
+    if (mappedTexture != nullptr) {
 
-    if (IsD3D11Dynamic()) {
-      if (texture == nullptr) {
-        log::fail("Map was called on a non-texture surface.");
-        return D3DERR_INVALIDCALL;
-      }
+      if (pRect != nullptr)
+       m_stagingRect = *pRect;
+
+      m_useRect = pRect != nullptr;
 
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(texture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = context->Map(mappedTexture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
       if (result == DXGI_ERROR_WAS_STILL_DRAWING)
         return D3DERR_WASSTILLDRAWING;
@@ -134,11 +127,11 @@ namespace dxapex {
 
       return D3D_OK;
     }
-
-    // Default path.
-
-    pLockedRect->pBits = m_stagingBuffer.getDataPtr();
-    pLockedRect->Pitch = m_stagingBuffer.getPitch();
+    else if (m_surface != nullptr) {
+      m_surface->Map((DXGI_MAPPED_RECT*)pLockedRect, CalcMapFlags(Flags));
+    }
+    else
+      log::fail("Surface with no real parent to map to.");
 
     return D3D_OK;
   }
@@ -146,18 +139,35 @@ namespace dxapex {
     Com<ID3D11DeviceContext> context;
     m_device->GetContext(&context);
 
-    Com<ID3D11Texture2D> texture;
-    GetD3D11Texture(&texture);
+    Com<ID3D11Texture2D> mappedTexture;
+    GetD3D11Texture(&mappedTexture);
 
-    if (texture == nullptr) {
-      log::fail("Map was called on a non-texture surface.");
-      return D3DERR_INVALIDCALL;
+    if (mappedTexture != nullptr)
+      context->Unmap(mappedTexture.ptr(), m_subresource);
+    else if (m_surface != nullptr)
+      m_surface->Unmap();
+
+    Com<ID3D11Texture2D> stagingTexture;
+    GetD3D11StagingTexture(&stagingTexture);
+
+    if (stagingTexture != nullptr) {
+      Com<ID3D11Texture2D> texture;
+      GetD3D11Texture(&texture);
+
+      D3D11_BOX box = { 0 };
+
+      if (m_useRect) {
+        box.left = m_stagingRect.left;
+        box.top = m_stagingRect.top;
+        box.right = m_stagingRect.right;
+        box.bottom = m_stagingRect.bottom;
+        
+        box.front = 0;
+        box.back = 1;
+      }
+
+      context->CopySubresourceRegion(texture.ptr(), m_subresource, box.left, box.top, 0, stagingTexture.ptr(), m_subresource, m_useRect ? &box : nullptr);
     }
-
-    if (IsD3D11Dynamic())
-      context->Unmap(texture.ptr(), m_subresource);
-    else
-      context->UpdateSubresource(texture.ptr(), m_subresource, nullptr, m_stagingBuffer.getDataPtr(), m_stagingBuffer.getPitch(), 1);
 
     return D3D_OK;
   }
@@ -177,6 +187,21 @@ namespace dxapex {
     return D3D_OK;
   }
 
+  void Direct3DSurface9::GetD3D11MappedTexture(ID3D11Texture2D** texture) {
+    GetD3D11StagingTexture(texture);
+
+    if (*texture == nullptr)
+      GetD3D11Texture(texture);
+  }
+  void Direct3DSurface9::GetD3D11StagingTexture(ID3D11Texture2D** texture) {
+    Com<Direct3DTexture9> d3d9Texture;
+    GetD3D9Texture(&d3d9Texture);
+
+    if (d3d9Texture == nullptr)
+      return;
+
+    d3d9Texture->GetStagingResource(texture);
+  }
   void Direct3DSurface9::GetD3D11Texture(ID3D11Texture2D** texture) {
     if (texture != nullptr && m_d3d11texture != nullptr)
       *texture = ref(m_d3d11texture);

@@ -2,14 +2,20 @@
 
 namespace dxapex {
 
-  Direct3DVertexBuffer9::Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage, bool d3d11Dynamic)
-    : Direct3DVertexBuffer9Base(device, pool, usage, d3d11Dynamic), m_buffer(buffer), m_fvf(fvf) {
+  Direct3DVertexBuffer9::Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage)
+    : Direct3DVertexBuffer9Base(device, pool, usage), m_buffer(buffer), m_fvf(fvf) {
 
-    if (IsD3D11Dynamic()) {
-      D3D11_BUFFER_DESC desc;
-      m_buffer->GetDesc(&desc);
+    D3D11_BUFFER_DESC desc;
+    m_buffer->GetDesc(&desc);
 
-      m_stagingBuffer.resize(DXGI_FORMAT_UNKNOWN, desc.ByteWidth, 1);
+    if (desc.Usage != D3D11_USAGE_DYNAMIC) {
+      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      desc.Usage = D3D11_USAGE_STAGING;
+
+      Com<ID3D11Device> device;
+      m_device->GetD3D11Device(&device);
+
+      device->CreateBuffer(&desc, nullptr, &m_stagingBuffer);
     }
   }
 
@@ -27,6 +33,14 @@ namespace dxapex {
     return E_NOINTERFACE;
   }
 
+  void Direct3DVertexBuffer9::GetD3D11MappedBuffer(ID3D11Buffer** buffer) {
+    if (m_stagingBuffer == nullptr) { // Standard path.
+      *buffer = ref(m_stagingBuffer);
+    }
+
+    *buffer = ref(m_buffer); // Dynamic Path
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::Lock(UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags) {
     InitReturnPtr(ppbData);
 
@@ -36,36 +50,34 @@ namespace dxapex {
     Com<ID3D11DeviceContext> context;
     m_device->GetContext(&context);
 
-    if (IsD3D11Dynamic()) {
-      D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(m_buffer.ptr(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+    Com<ID3D11Buffer> mappedBuffer;
+    GetD3D11MappedBuffer(&mappedBuffer);
 
-      // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
-      //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
-      //  return D3DERR_WASSTILLDRAWING;
+    D3D11_MAPPED_SUBRESOURCE resource;
+    HRESULT result = context->Map(mappedBuffer.ptr(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
-      if (FAILED(result))
-        return D3DERR_INVALIDCALL;
+    // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
+    //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+    //  return D3DERR_WASSTILLDRAWING;
 
-      *ppbData = resource.pData;
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    *ppbData = resource.pData;
       
-      return D3D_OK;
-    }
-
-    // Default path.
-
-    *ppbData = m_stagingBuffer.getDataPtr();
-
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::Unlock() {
     Com<ID3D11DeviceContext> context;
     m_device->GetContext(&context);
 
-    if (IsD3D11Dynamic())
-      context->Unmap(m_buffer.ptr(), 0);
-    else
-      context->UpdateSubresource(m_buffer.ptr(), 0, nullptr, m_stagingBuffer.getDataPtr(), m_stagingBuffer.getPitch(), 0);
+    Com<ID3D11Buffer> mappedBuffer;
+    GetD3D11MappedBuffer(&mappedBuffer);
+
+    context->Unmap(mappedBuffer.ptr(), 0);
+
+    if (m_stagingBuffer != nullptr)
+      context->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, m_stagingBuffer.ptr(), 0, nullptr);
 
     return D3D_OK;
   }
