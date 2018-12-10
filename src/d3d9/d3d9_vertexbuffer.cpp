@@ -3,9 +3,7 @@
 namespace dxapex {
 
   Direct3DVertexBuffer9::Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage)
-    : Direct3DVertexBuffer9Base(device, pool, usage), m_buffer(buffer), m_fvf(fvf), m_bufferDataPitch(0) {
-
-    ResizeBuffer();
+    : Direct3DVertexBuffer9Base(device, pool, usage), m_buffer(buffer), m_fvf(fvf) {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::QueryInterface(REFIID riid, void** ppvObj) {
@@ -28,12 +26,20 @@ namespace dxapex {
     if (!ppbData)
       return D3DERR_INVALIDCALL;
 
-    if (Flags & D3DLOCK_DISCARD)
-      m_bufferData.clear();
+    Com<ID3D11DeviceContext> context;
+    m_device->GetContext(&context);
 
-    ResizeBuffer();
+    D3D11_MAPPED_SUBRESOURCE resource;
+    HRESULT result = context->Map(m_buffer.ptr(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
-    *ppbData = &m_bufferData[0] + OffsetToLock;
+    // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
+    //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+    //  return D3DERR_WASSTILLDRAWING;
+
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    *ppbData = resource.pData;
 
     return D3D_OK;
   }
@@ -41,9 +47,7 @@ namespace dxapex {
     Com<ID3D11DeviceContext> context;
     m_device->GetContext(&context);
 
-    D3D11_BUFFER_DESC desc;
-    m_buffer->GetDesc(&desc);
-    context->UpdateSubresource(m_buffer.ptr(), 0, NULL, &m_bufferData[0], desc.ByteWidth, 0);
+    context->Unmap(m_buffer.ptr(), 0);
 
     return D3D_OK;
   }
@@ -58,12 +62,6 @@ namespace dxapex {
   void Direct3DVertexBuffer9::GetD3D11Buffer(ID3D11Buffer** buffer) {
     if (buffer != nullptr && m_buffer != nullptr)
       *buffer = ref(m_buffer);
-  }
-
-  void Direct3DVertexBuffer9::ResizeBuffer() {
-    D3D11_BUFFER_DESC desc;
-    m_buffer->GetDesc(&desc);
-    m_bufferData.resize(desc.ByteWidth);
   }
 
 }

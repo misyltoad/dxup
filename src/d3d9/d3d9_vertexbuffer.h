@@ -18,15 +18,11 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE GetDesc(D3DVERTEXBUFFER_DESC *pDesc) override;
 
     void GetD3D11Buffer(ID3D11Buffer** buffer);
-    void ResizeBuffer();
 
   private:
 
     DWORD m_fvf;
     Com<ID3D11Buffer> m_buffer;
-    
-    std::vector<uint8_t> m_bufferData;
-    UINT m_bufferDataPitch;
   };
 
 }

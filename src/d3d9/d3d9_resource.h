@@ -41,6 +41,25 @@ namespace dxapex {
       return ResourceType;
     }
 
+    UINT CalcMapFlags(UINT d3d9LockFlags) {
+      return d3d9LockFlags & D3DLOCK_DONOTWAIT ? D3D11_MAP_FLAG_DO_NOT_WAIT : 0;
+    }
+
+    D3D11_MAP CalcMapType(UINT d3d9LockFlags) {
+      if (m_usage & D3DUSAGE_DYNAMIC) {
+        if (d3d9LockFlags & D3DLOCK_NOOVERWRITE)
+          return D3D11_MAP_WRITE_NO_OVERWRITE;
+
+        if (d3d9LockFlags & D3DLOCK_DISCARD)
+          return D3D11_MAP_WRITE_DISCARD;
+      }
+
+      if (d3d9LockFlags & D3DLOCK_READONLY)
+        return D3D11_MAP_READ;
+
+      return D3D11_MAP_READ_WRITE;
+    }
+
   protected:
 
     DWORD m_priority;

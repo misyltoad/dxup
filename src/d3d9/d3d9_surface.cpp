@@ -106,75 +106,34 @@ namespace dxapex {
     pLockedRect->pBits = nullptr;
     pLockedRect->Pitch = 0;
 
-    if (Flags & D3DLOCK_DISCARD)
-      m_surfaceData.clear();
+    Com<ID3D11DeviceContext> context;
+    m_device->GetContext(&context);
 
-    if (m_d3d11texture != nullptr) {
+    Com<ID3D11Texture2D> texture;
+    GetD3D11Texture(&texture);
 
-      D3D11_TEXTURE2D_DESC desc;
-      m_d3d11texture->GetDesc(&desc);
+    D3D11_MAPPED_SUBRESOURCE resource;
+    HRESULT result = context->Map(texture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
-      if (desc.CPUAccessFlags & D3D11_CPU_ACCESS_READ || desc.Usage & D3D11_USAGE_DYNAMIC) {
-        UINT d3d11Flags;
-        D3D11_MAP mapType;
-        convert::lockFlags(m_pool, Flags, &d3d11Flags, &mapType);
+    if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+      return D3DERR_WASSTILLDRAWING;
 
-        D3D11_MAPPED_SUBRESOURCE subresource;
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
 
-        Com<ID3D11DeviceContext> context;
-        m_device->GetContext(&context);
+    pLockedRect->pBits = resource.pData;
+    pLockedRect->Pitch = resource.RowPitch;
 
-        HRESULT result = context->Map(m_d3d11texture.ptr(), m_subresource, mapType, d3d11Flags, &subresource);
-
-        if (result == DXGI_ERROR_WAS_STILL_DRAWING)
-          return D3DERR_WASSTILLDRAWING;
-        else if (FAILED(result))
-          return D3DERR_INVALIDCALL;
-
-        m_surfaceData.resize(subresource.RowPitch * desc.Height);
-        std::memcpy(&m_surfaceData[0], subresource.pData, m_surfaceData.size());
-        m_resourceMapPtr = subresource.pData;
-
-        pLockedRect->Pitch = subresource.RowPitch;
-        m_surfaceDataPitch = subresource.RowPitch;
-      }
-      else {
-        m_resourceMapPtr = nullptr;
-
-        m_surfaceDataPitch = calculatePitch(desc.Format, desc.Width);
-        pLockedRect->Pitch = m_surfaceDataPitch;
-        m_surfaceData.resize(m_surfaceDataPitch * desc.Height);
-      }
-      pLockedRect->pBits = &m_surfaceData[0];
-
-      return D3D_OK;
-    }
-
-    return D3DERR_INVALIDCALL;
+    return D3D_OK;
   }
   HRESULT Direct3DSurface9::UnlockRect() {
+    Com<ID3D11DeviceContext> context;
+    m_device->GetContext(&context);
 
-    if (m_d3d11texture != nullptr) {
+    Com<ID3D11Texture2D> texture;
+    GetD3D11Texture(&texture);
 
-      D3D11_TEXTURE2D_DESC desc;
-      m_d3d11texture->GetDesc(&desc);
-
-      Com<ID3D11DeviceContext> context;
-      m_device->GetContext(&context);
-
-      if (desc.CPUAccessFlags & D3D11_CPU_ACCESS_READ || desc.Usage & D3D11_USAGE_DYNAMIC) {
-
-        if (m_resourceMapPtr != nullptr)
-          std::memcpy(m_resourceMapPtr, &m_surfaceData[0], m_surfaceData.size());
-
-        context->Unmap(m_d3d11texture.ptr(), m_subresource);
-      }
-      else
-        context->UpdateSubresource(m_d3d11texture.ptr(), m_subresource, nullptr, &m_surfaceData[0], m_surfaceDataPitch, 0);
-
-    }
-
-    m_resourceMapPtr = nullptr;
+    context->Unmap(texture.ptr(), m_subresource);
 
     return D3D_OK;
   }

@@ -81,14 +81,7 @@ namespace dxapex {
     }
 
     UINT cpuFlags(D3DPOOL pool, UINT usage) {
-
-      if (usage & D3DUSAGE_DYNAMIC)
-        return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-
-      if (pool == D3DPOOL_SCRATCH || pool == D3DPOOL_SYSTEMMEM)
-        return D3D11_CPU_ACCESS_WRITE;
-
-      return 0;
+      return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
     }
 
     D3D11_USAGE usage(D3DPOOL pool, UINT usage) {
@@ -97,26 +90,6 @@ namespace dxapex {
 
       return D3D11_USAGE_DEFAULT;
     }
-
-    void lockFlags(D3DPOOL pool, UINT lockFlags, UINT* d3d11Flags, D3D11_MAP* d3d11MapType) {
-      *d3d11Flags = lockFlags & D3DLOCK_DONOTWAIT ? D3D11_MAP_FLAG_DO_NOT_WAIT : 0;
-
-      if (lockFlags & D3DLOCK_DISCARD) {
-        *d3d11MapType = D3D11_MAP_WRITE_DISCARD;
-        return;
-      }
-
-      if (lockFlags & D3DLOCK_READONLY) {
-        *d3d11MapType = D3D11_MAP_READ;
-        return;
-      }
-
-      if (pool == D3DPOOL_MANAGED || pool == D3DPOOL_DEFAULT)
-        *d3d11MapType = D3D11_MAP_WRITE;
-      else
-        *d3d11MapType = D3D11_MAP_READ_WRITE;
-    }
-
 
     UINT fvf(UINT fvf) {
       UINT structureCount = 0;
