@@ -10,7 +10,7 @@ namespace dxapex {
     , m_subresource(subresource)
     , m_rtView(nullptr)
   {
-    if (texture != nullptr) {
+    if (IsD3D11Dynamic() && texture != nullptr) {
       D3D11_TEXTURE2D_DESC desc;
       texture->GetDesc(&desc);
 
@@ -115,6 +115,11 @@ namespace dxapex {
       log::warn("Need to apply offset here... pRect != nullptr! Expect garbage textures.");
 
     if (IsD3D11Dynamic()) {
+      if (texture == nullptr) {
+        log::fail("Map was called on a non-texture surface.");
+        return D3DERR_INVALIDCALL;
+      }
+
       D3D11_MAPPED_SUBRESOURCE resource;
       HRESULT result = context->Map(texture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
@@ -143,6 +148,11 @@ namespace dxapex {
 
     Com<ID3D11Texture2D> texture;
     GetD3D11Texture(&texture);
+
+    if (texture == nullptr) {
+      log::fail("Map was called on a non-texture surface.");
+      return D3DERR_INVALIDCALL;
+    }
 
     if (IsD3D11Dynamic())
       context->Unmap(texture.ptr(), m_subresource);

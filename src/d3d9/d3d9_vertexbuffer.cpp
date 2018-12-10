@@ -4,10 +4,13 @@ namespace dxapex {
 
   Direct3DVertexBuffer9::Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage, bool d3d11Dynamic)
     : Direct3DVertexBuffer9Base(device, pool, usage, d3d11Dynamic), m_buffer(buffer), m_fvf(fvf) {
-    D3D11_BUFFER_DESC desc;
-    m_buffer->GetDesc(&desc);
 
-    m_stagingBuffer.resize(DXGI_FORMAT_UNKNOWN, desc.ByteWidth, 1);
+    if (IsD3D11Dynamic()) {
+      D3D11_BUFFER_DESC desc;
+      m_buffer->GetDesc(&desc);
+
+      m_stagingBuffer.resize(DXGI_FORMAT_UNKNOWN, desc.ByteWidth, 1);
+    }
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::QueryInterface(REFIID riid, void** ppvObj) {
