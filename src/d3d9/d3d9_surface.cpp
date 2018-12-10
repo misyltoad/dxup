@@ -178,9 +178,11 @@ namespace dxapex {
       if (d3d9Texture->CanPushStaging()) {
         uint64_t delta = d3d9Texture->GetChangedSubresources();
         for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
-          if ( delta & (1 << i) )
+          if ( delta & (1ull << i) )
             context->CopySubresourceRegion(texture.ptr(), i, box.left, box.top, 0, stagingTexture.ptr(), i, m_useRect ? &box : nullptr);
         }
+
+        d3d9Texture->ResetSubresourceMapInfo();
       }
     }
 
