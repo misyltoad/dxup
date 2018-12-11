@@ -1,6 +1,7 @@
 #include "d3d9_surface.h"
 #include "d3d9_format.h"
 #include "d3d9_texture.h"
+#include "d3d9_format.h"
 
 namespace dxapex {
 
@@ -126,7 +127,18 @@ namespace dxapex {
       GetD3D9Texture(&d3d9Texture);
       d3d9Texture->SetSubresourceMapped(m_subresource);
 
-      pLockedRect->pBits = resource.pData;
+      size_t offset = 0;
+
+      if (m_useRect) {
+        D3D11_TEXTURE2D_DESC desc;
+        mappedTexture->GetDesc(&desc);
+        auto& sizeInfo = getDXGIFormatSizeInfo(desc.Format);
+
+        offset = ((pRect->top * resource.RowPitch) + pRect->left) * sizeInfo.pixelBytes / 8;
+      }
+
+      uint8_t* data = (uint8_t*)resource.pData;
+      pLockedRect->pBits = &data[offset];
       pLockedRect->Pitch = resource.RowPitch;
 
       return D3D_OK;

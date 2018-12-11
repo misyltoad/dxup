@@ -2,12 +2,6 @@
 
 namespace dxapex {
 
-  struct DXGIFormatSize {
-    UINT pixelBytes;
-    UINT blockWidth;
-    UINT blockHeight;
-  };
-
   const DXGIFormatSize &getDXGIFormatSizeInfo(DXGI_FORMAT format)
   {
     static const DXGIFormatSize sizeUnknown{0, 0, 0};
