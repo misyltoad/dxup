@@ -114,7 +114,7 @@ namespace dxapex {
       m_useRect = pRect != nullptr;
 
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(mappedTexture.ptr(), m_subresource, CalcMapType(m_usage, Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = context->Map(mappedTexture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
       if (result == DXGI_ERROR_WAS_STILL_DRAWING)
         return D3DERR_WASSTILLDRAWING;

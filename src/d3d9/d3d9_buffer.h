@@ -55,7 +55,7 @@ namespace dxapex {
       GetD3D11MappedBuffer(&mappedBuffer);
 
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(mappedBuffer.ptr(), 0, CalcMapType(m_usage, Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = context->Map(mappedBuffer.ptr(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
       // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
       //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
