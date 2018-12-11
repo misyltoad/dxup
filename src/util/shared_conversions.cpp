@@ -6,7 +6,7 @@ namespace dxapex {
 
   namespace convert {
 
-    std::array<std::string, 15> dclUsageMap = {
+    std::array<std::string, 15> dclUsageMapSemantic = {
       "SV_Position",
       "BLENDWEIGHT",
       "BLENDINDICES",
@@ -24,14 +24,36 @@ namespace dxapex {
       "UNKNOWN"
     };
 
-    const std::string& declUsage(D3DDECLUSAGE usage) {
+    std::array<std::string, 15> dclUsageMap = {
+      "POSITION",
+      "BLENDWEIGHT",
+      "BLENDINDICES",
+      "NORMAL",
+      "PSIZE",
+      "TEXCOORD",
+      "TANGENT",
+      "BINORMAL",
+      "TESSFACTOR",
+      "POSITIONT",
+      "COLOR",
+      "FOG",
+      "DEPTH",
+      "SAMPLE",
+      "UNKNOWN"
+    };
+
+
+    const std::string& declUsage(bool vsInput, D3DDECLUSAGE usage) {
       if (usage > 14 || usage < 0)
         return dclUsageMap[14];
 
-      return dclUsageMap[usage];
+      return vsInput ? dclUsageMap[usage] : dclUsageMapSemantic[usage];
     }
 
-    uint32_t sysValue(D3DDECLUSAGE usage) {
+    uint32_t sysValue(bool vsInput, D3DDECLUSAGE usage) {
+      if (vsInput)
+        return D3D_NAME_UNDEFINED;
+
       switch (usage) {
       case D3DDECLUSAGE_POSITION: return D3D_NAME_POSITION;
       case D3DDECLUSAGE_TESSFACTOR: return D3D_NAME_FINAL_TRI_EDGE_TESSFACTOR;

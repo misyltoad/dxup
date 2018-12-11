@@ -5,8 +5,8 @@ namespace dxapex {
 
     namespace convert {
 
-        const std::string& declUsage(D3DDECLUSAGE usage);
-        uint32_t sysValue(D3DDECLUSAGE usage);
+        const std::string& declUsage(bool vsInput, D3DDECLUSAGE usage);
+        uint32_t sysValue(bool vsInput, D3DDECLUSAGE usage);
 
     }
 

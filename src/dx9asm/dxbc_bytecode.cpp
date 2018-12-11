@@ -32,7 +32,7 @@ namespace dxapex {
 
       getHeader()->size = getByteSize();
       
-      BOOL success = CalculateDXBCChecksum(getBytecode(), getByteSize(), (DWORD*)getHeader()->checksum);
+      BOOL success = CalculateDXBCChecksum((BYTE*)&m_bytecode[0], getByteSize(), (DWORD*)getHeader()->checksum);
       if (!success)
         log::fail("Couldn't calculate DXBC checksum!");
     }

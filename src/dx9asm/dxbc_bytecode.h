@@ -17,11 +17,11 @@ namespace dxapex {
         return (DXBCHeader*)getBytecode();
       }
 
-      inline uint8_t* getBytecode() {
+      inline const uint8_t* getBytecode() const {
         return (uint8_t*)&m_bytecode[0];
       }
 
-      inline uint32_t getByteSize() {
+      inline uint32_t getByteSize() const {
         return m_bytecode.size() * sizeof(uint32_t);
       }
 

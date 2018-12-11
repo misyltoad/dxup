@@ -813,7 +813,7 @@ namespace dxapex {
     for (size_t i = 0; i < count; i++) {
       D3D11_INPUT_ELEMENT_DESC desc = { 0 };
       
-      desc.SemanticName = convert::declUsage((D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
+      desc.SemanticName = convert::declUsage(true, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
       desc.AlignedByteOffset = pVertexElements[i].Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;

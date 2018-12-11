@@ -225,7 +225,7 @@ namespace dxapex {
       void writeIODcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
         forEachValidElement<Input>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          uint32_t siv = convert::sysValue(mapping.dclInfo.usage);
+          uint32_t siv = convert::sysValue(Input, mapping.dclInfo.usage);
           const bool hasSiv = siv != D3D_NAME_UNDEFINED;
 
           uint32_t opcode = 0;
@@ -347,14 +347,14 @@ namespace dxapex {
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
-          element.systemValueType = convert::sysValue(mapping.dclInfo.usage);
+          element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.usage);
           pushObject(obj, element);
         });
 
         uint32_t count = 0;
         forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
           elementStart[i].nameOffset = getChunkSize(bytecode);
-          pushAlignedString(obj, convert::declUsage(mapping.dclInfo.usage));
+          pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.usage));
 
           count++;
         });
