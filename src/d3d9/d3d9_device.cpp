@@ -785,11 +785,13 @@ namespace dxapex {
       return D3D_OK; // Lies!
     }
 
+    log::warn("DrawIndexedPrimitive, partial support.");
+
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
 
     m_context->IASetPrimitiveTopology(topology);
-    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex);
+    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex + MinVertexIndex);
 
     return D3D_OK;
   }
