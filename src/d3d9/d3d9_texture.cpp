@@ -11,7 +11,7 @@ namespace dxapex {
     D3D11_TEXTURE2D_DESC desc;
     texture->GetDesc(&desc);
 
-    if (desc.Usage != D3D11_USAGE_DYNAMIC) {
+    if (desc.Usage != D3D11_USAGE_DYNAMIC || !(m_usage & D3DUSAGE_WRITEONLY)) {
       // See comment in d3d9_vertexbuffer.cpp
       makeStaging(desc, m_usage);
 
