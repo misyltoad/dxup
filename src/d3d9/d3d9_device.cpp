@@ -3,7 +3,7 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_surface.h"
 #include "d3d9_texture.h"
-#include "d3d9_vertexbuffer.h"
+#include "d3d9_buffer.h"
 #include "d3d9_shaders.h"
 #include "../dx9asm/dx9asm_translator.h"
 #include "../dx9asm/dx9asm_util.h"

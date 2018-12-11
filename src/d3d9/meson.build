@@ -6,7 +6,6 @@ d3d9_main_src = [
   'd3d9_swapchain.cpp',
   'd3d9_texture.cpp',
   'd3d9_util.cpp',
-  'd3d9_vertexbuffer.cpp',
   'd3d9_format.cpp'
 ]
 
