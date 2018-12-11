@@ -329,6 +329,12 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::GetGammaRamp");
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
+    InitReturnPtr(ppTexture);
+    InitReturnPtr(pSharedHandle);
+
+    if (!ppTexture)
+      return D3DERR_INVALIDCALL;
+
     D3D11_USAGE d3d11Usage = convert::usage(Pool, Usage);
 
     D3D11_TEXTURE2D_DESC desc;
