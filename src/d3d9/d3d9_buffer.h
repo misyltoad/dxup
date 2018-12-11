@@ -9,7 +9,7 @@ namespace dxapex {
   class Direct3DBuffer9 : public Direct3DResource9<ResourceType, Base>
   {
   public:
-    Direct3DBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage) 
+    Direct3DBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD usage) 
       : Direct3DResource9<ResourceType, Base>{ device, pool, usage }, m_buffer{ buffer } {
       D3D11_BUFFER_DESC desc;
       m_buffer->GetDesc(&desc);
@@ -95,7 +95,7 @@ namespace dxapex {
         *buffer = ref(m_buffer);
     }
 
-  private:
+  protected:
 
     Com<ID3D11Buffer> m_buffer;
     Com<ID3D11Buffer> m_stagingBuffer;
@@ -105,17 +105,49 @@ namespace dxapex {
   class Direct3DVertexBuffer9 final : public Direct3DVertexBuffer9Base {
   public:
     Direct3DVertexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, DWORD fvf, DWORD usage)
-      : Direct3DVertexBuffer9Base{ device, buffer, pool, fvf, usage }, m_fvf{ fvf } { }
+      : Direct3DVertexBuffer9Base{ device, buffer, pool, usage }, m_fvf{ fvf } { }
 
-    HRESULT STDMETHODCALLTYPE Direct3DVertexBuffer9::GetDesc(D3DVERTEXBUFFER_DESC *pDesc) override {
-      D3DVERTEXBUFFER_DESC desc;
-      desc.Pool = m_pool;
-      desc.FVF = m_fvf;
+    HRESULT STDMETHODCALLTYPE GetDesc(D3DVERTEXBUFFER_DESC *pDesc) override {
+      D3D11_BUFFER_DESC desc;
+      m_buffer->GetDesc(&desc);
+
+      pDesc->Format = D3DFMT_VERTEXDATA;
+      pDesc->FVF = m_fvf;
+      pDesc->Pool = m_pool;
+      pDesc->Size = desc.ByteWidth;
+      pDesc->Type = D3DRTYPE_VERTEXBUFFER;
+      pDesc->Usage = m_usage;
 
       return D3D_OK;
     }
   private:
     DWORD m_fvf;
+  };
+
+  using Direct3DIndexBuffer9Base = Direct3DBuffer9<D3DRTYPE_INDEXBUFFER, IDirect3DIndexBuffer9>;
+  class Direct3DIndexBuffer9 final : public Direct3DIndexBuffer9Base {
+  public:
+    Direct3DIndexBuffer9(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, D3DPOOL pool, D3DFORMAT format, DWORD usage)
+      : Direct3DIndexBuffer9Base{ device, buffer, pool, usage }, m_format{ format } { }
+
+    HRESULT STDMETHODCALLTYPE GetDesc(D3DINDEXBUFFER_DESC *pDesc) override {
+      D3D11_BUFFER_DESC desc;
+      m_buffer->GetDesc(&desc);
+
+      pDesc->Format = m_format;
+      pDesc->Pool = m_pool;
+      pDesc->Size = desc.ByteWidth;
+      pDesc->Type = D3DRTYPE_INDEXBUFFER;
+      pDesc->Usage = m_usage;
+
+      return D3D_OK;
+    }
+
+    inline D3DFORMAT GetFormat() {
+      return m_format;
+    }
+  private:
+    D3DFORMAT m_format;
   };
 
 }

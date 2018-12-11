@@ -386,7 +386,27 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateIndexBuffer(UINT Length, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DIndexBuffer9** ppIndexBuffer, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateIndexBuffer");
+    InitReturnPtr(ppIndexBuffer);
+    InitReturnPtr(pSharedHandle);
+
+    if (!ppIndexBuffer)
+      return D3DERR_INVALIDCALL;
+
+    D3D11_BUFFER_DESC desc;
+    desc.ByteWidth = Length;
+    desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
+    desc.Usage = convert::usage(Pool, Usage);
+    desc.MiscFlags = 0;
+    desc.StructureByteStride = 0;
+
+    Com<ID3D11Buffer> buffer;
+    HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    *ppIndexBuffer = ref(new Direct3DIndexBuffer9(this, buffer.ptr(), Pool, Format, Usage));
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateRenderTarget(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
@@ -431,7 +451,6 @@ namespace dxapex {
       dstTex->GenerateMipSubLevels();
 
       return D3D_OK;
-
     }
 
     default: return D3DERR_INVALIDCALL;
@@ -761,7 +780,17 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
-    log::stub("Direct3DDevice9Ex::DrawIndexedPrimitive");
+    if (!CanDraw()) {
+      log::warn("Invalid internal render state achieved.");
+      return D3D_OK; // Lies!
+    }
+
+    D3D_PRIMITIVE_TOPOLOGY topology;
+    UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
+
+    m_context->IASetPrimitiveTopology(topology);
+    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
@@ -1004,7 +1033,17 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
-    log::stub("Direct3DDevice9Ex::SetIndices");
+    Direct3DIndexBuffer9* indexBuffer = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
+    Com<ID3D11Buffer> buffer;
+    indexBuffer->GetD3D11Buffer(&buffer);
+    ID3D11Buffer* bufferPtr = buffer.ptr();
+
+    DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
+    if (indexBuffer->GetFormat() == D3DFMT_INDEX32)
+      format = DXGI_FORMAT_R32_UINT;
+
+    m_context->IASetIndexBuffer(buffer.ptr(), format, 0);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
