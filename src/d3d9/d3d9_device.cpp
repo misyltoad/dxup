@@ -329,19 +329,20 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::GetGammaRamp");
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
-    
+    D3D11_USAGE d3d11Usage = convert::usage(Pool, Usage);
+
     D3D11_TEXTURE2D_DESC desc;
     desc.Width = Width;
     desc.Height = Height;
     desc.Format = convert::format(Format);
-    desc.Usage = convert::usage(Pool, Usage);
+    desc.Usage = d3d11Usage;
     desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
-    desc.MipLevels = desc.Usage & D3DUSAGE_DYNAMIC ? 1 : 0;
+    desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : 0;
     desc.ArraySize = 1;
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
-    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-    desc.MiscFlags = desc.Usage & D3DUSAGE_DYNAMIC ? D3D11_RESOURCE_MISC_GDI_COMPATIBLE : D3D11_RESOURCE_MISC_GENERATE_MIPS;
+    desc.BindFlags = d3d11Usage == D3D11_USAGE_DYNAMIC ? D3D11_BIND_SHADER_RESOURCE : D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+    desc.MiscFlags = d3d11Usage == D3D11_USAGE_DYNAMIC ? D3D11_RESOURCE_MISC_GDI_COMPATIBLE : D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
