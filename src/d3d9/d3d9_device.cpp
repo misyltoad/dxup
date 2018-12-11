@@ -348,7 +348,7 @@ namespace dxapex {
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
     desc.BindFlags = d3d11Usage == D3D11_USAGE_DYNAMIC ? D3D11_BIND_SHADER_RESOURCE : D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-    desc.MiscFlags = d3d11Usage == D3D11_USAGE_DYNAMIC ? D3D11_RESOURCE_MISC_GDI_COMPATIBLE : D3D11_RESOURCE_MISC_GENERATE_MIPS;
+    desc.MiscFlags = d3d11Usage == D3D11_USAGE_DYNAMIC ? 0 : D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
