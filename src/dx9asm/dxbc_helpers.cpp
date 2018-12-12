@@ -9,8 +9,29 @@ namespace dxapex {
   namespace dx9asm {
 
     DXBCOperand::DXBCOperand(ShaderCodeTranslator& state, const DX9Operation& operation, const DX9Operand& operand, uint32_t regOffset) {
-      RegisterMapping* mapping = state.getRegisterMap().lookupOrCreateRegisterMapping(operand, regOffset);
+      RegisterMapping* mapping = state.getRegisterMap().lookupOrCreateRegisterMapping(state.getShaderType(), state.getMajorVersion(), state.getMinorVersion(), operand, regOffset);
       std::memcpy(this, &mapping->dxbcOperand, sizeof(DXBCOperand));
+
+      if (isLiteral()) {
+        if (operand.isSrc())
+          setSwizzleOrWritemask(noSwizzle);
+        else
+          setSwizzleOrWritemask(writeAll);
+
+        uint32_t originalData[4];
+        std::memcpy(originalData, m_data, 4 * sizeof(uint32_t));
+
+        uint32_t dx9Swizzle = operand.getSwizzleData() >> D3DVS_SWIZZLE_SHIFT;
+
+        for (uint32_t i = 0; i < 4; i++) {
+          uint32_t shift = i * 2;
+          uint32_t mask = 0b0011u << shift;
+          uint32_t swizzleIndex = (dx9Swizzle & mask) >> shift;
+          m_data[i] = originalData[swizzleIndex];
+        }
+
+        return;
+      }
 
       calculateDXBCSwizzleAndWriteMask(*this, operand);
       calculateDXBCModifiers(*this, operation, operand);
