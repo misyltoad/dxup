@@ -112,9 +112,10 @@ namespace dxapex {
         return writeAll;
 
       // The write mask is the same as we use in dxbc, just shifted!
-      // D3DSP_WRITEMASK_0 -> 0x00010000 ~ D3D10_SB_OPERAND_4_COMPONENT_MASK_X -> 0x00000010
-      dx9WriteMask = dx9WriteMask >> 12; // 3 * 4, see above
-      return dx9WriteMask | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE);
+      uint32_t dxbcWriteMask = (dx9WriteMask >> 16);
+      dxbcWriteMask <<= D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
+
+      return dxbcWriteMask | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE);
     }
 
     void calculateDXBCSwizzleAndWriteMask(DXBCOperand& dstOperand, const DX9Operand& operand) {
