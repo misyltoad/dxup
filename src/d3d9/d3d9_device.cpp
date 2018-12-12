@@ -581,6 +581,11 @@ namespace dxapex {
     FLOAT color[4];
     convert::color(Color, color);
 
+    if (config::getBool(config::RandomClearColour)) {
+      for (uint32_t i = 0; i < 4; i++)
+        color[i] = ((float)(rand() % 255)) / 255.0f;
+    }
+
     m_context->ClearRenderTargetView(renderTarget.ptr(), color);
     return D3D_OK;
   }

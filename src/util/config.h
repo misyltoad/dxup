@@ -10,6 +10,7 @@ namespace dxapex {
       Debug,
       ShaderSpew,
       ShaderDump,
+      RandomClearColour,
       UnimplementedFatal,
       Count,
     };

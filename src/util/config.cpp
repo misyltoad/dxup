@@ -27,6 +27,7 @@ namespace dxapex {
 #else
           initVar(var::Debug, "DXAPEX_DEBUG", "0");
 #endif
+          initVar(var::RandomClearColour, "DXAPEX_RANDOMCLEARCOLOUR", "0");
           initVar(var::ShaderSpew, "DXAPEX_SHADERSPEW", "0");
           initVar(var::ShaderDump, "DXAPEX_SHADERDUMP", "0");
           initVar(var::UnimplementedFatal, "DXAPEX_UNIMPLEMENTEDFATAL", "0");
