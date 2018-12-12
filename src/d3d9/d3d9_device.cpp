@@ -1078,8 +1078,10 @@ namespace dxapex {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
-    if (pShader == nullptr)
+    if (pShader == nullptr) {
+      m_context->PSSetShader(nullptr, nullptr, 0);
       return D3DERR_INVALIDCALL;
+    }
 
     m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
