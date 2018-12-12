@@ -1003,6 +1003,9 @@ namespace dxapex {
     return CreateShader<true, IDirect3DVertexShader9, Direct3DVertexShader9, ID3D11VertexShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
+    if (pShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
 
     RefreshInputLayout();
@@ -1075,6 +1078,9 @@ namespace dxapex {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
+    if (pShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
     m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
     m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
