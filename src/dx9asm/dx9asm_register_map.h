@@ -1,5 +1,6 @@
 #pragma once
 #include "dx9asm_register_mapping.h"
+#include "dx9asm_meta.h"
 
 namespace dxapex {
 
@@ -51,7 +52,7 @@ namespace dxapex {
       }
 
 
-      RegisterMapping* lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset = 0);
+      RegisterMapping* lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, const DX9Operand& operand, uint32_t regOffset = 0);
 
       inline void addRegisterMapping(bool generateDXBCId, RegisterMapping& mapping) {
         DXBCOperand& dxbcOperand = mapping.dxbcOperand;

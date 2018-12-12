@@ -29,7 +29,7 @@ namespace dxapex {
       const DX9Operand* usageToken = operation.getOperandByType(optype::UsageToken);
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
-      RegisterMapping* mapping = m_map.lookupOrCreateRegisterMapping(*dst);
+      RegisterMapping* mapping = m_map.lookupOrCreateRegisterMapping(getShaderType(), getMajorVersion(), getMinorVersion(), *dst);
 
       if (dst->getRegType() == D3DSPR_INPUT)
         mapping->dclInfo.type = UsageType::Input;

@@ -6,7 +6,7 @@ namespace dxapex {
 
   namespace dx9asm {
 
-    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const DX9Operand& operand, uint32_t regOffset) {
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t majorVersion, uint32_t minorVersion, const DX9Operand& operand, uint32_t regOffset) {
       RegisterMapping* mapping = getRegisterMapping(operand.getRegType(), operand.getRegNumber() + regOffset);
       if (mapping != nullptr)
         return mapping;
@@ -26,7 +26,22 @@ namespace dxapex {
 
       // LUT later!
       switch (operand.getRegType()) {
-      case D3DSPR_TEMP: dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
+      case D3DSPR_TEMP: { 
+        if (type == ShaderType::Pixel && majorVersion == 1) {
+          if (newMapping.dx9Id == 0) {
+            // Pixel Shader...
+            newMapping.dclInfo.type = UsageType::Output;
+            newMapping.dclInfo.target = true;
+            newMapping.dclInfo.usage = (D3DDECLUSAGE)0;
+            newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+
+            dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+            break;
+          }
+        }
+
+        dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
+      }
       case D3DSPR_INPUT: dxbcType = D3D10_SB_OPERAND_TYPE_INPUT; break;
       case D3DSPR_CONST: {
         const uint32_t constantBufferIndex = 0;
@@ -64,15 +79,7 @@ namespace dxapex {
 
         dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
-      case D3DSPR_ADDR: {
-        // Pixel Shader...
-        newMapping.dclInfo.type = UsageType::Output;
-        newMapping.dclInfo.target = true;
-        newMapping.dclInfo.usage = (D3DDECLUSAGE)0;
-        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-
-        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
-      } break;
+      case D3DSPR_ADDR:
       case D3DSPR_COLOROUT:
       case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
@@ -94,7 +101,7 @@ namespace dxapex {
 
       addRegisterMapping(true, newMapping);
 
-      return lookupOrCreateRegisterMapping(operand, regOffset);
+      return lookupOrCreateRegisterMapping(type, minorVersion, majorVersion, operand, regOffset);
     }
 
   }
