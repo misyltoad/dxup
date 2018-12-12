@@ -15,6 +15,7 @@ namespace dxapex {
 
   struct InternalRenderState{
     Com<Direct3DVertexShader9> vertexShader;
+    Com<Direct3DPixelShader9> pixelShader;
     Com<Direct3DVertexDeclaration9> vertexDecl;
     bool isValid = false;
   };
@@ -1088,7 +1089,12 @@ namespace dxapex {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
-    log::stub("Direct3DDevice9Ex::SetPixelShader");
+    m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
+
+    Com<ID3D11PixelShader> d3d11PixelShader;
+    m_state->pixelShader->GetD3D11Shader(&d3d11PixelShader);
+    m_context->PSSetShader(d3d11PixelShader.ptr(), nullptr, 0);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
