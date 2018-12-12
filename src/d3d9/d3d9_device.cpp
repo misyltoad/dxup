@@ -843,7 +843,8 @@ namespace dxapex {
 
     size_t count;
     {
-      const D3DVERTEXELEMENT9* counter = pVertexElements; 
+      const D3DVERTEXELEMENT9* counter = pVertexElements;
+      while (!vertexElementEqual(*counter, lastElement))
         counter++;
 
       count = counter - pVertexElements;
