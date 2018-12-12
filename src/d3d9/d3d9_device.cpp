@@ -344,7 +344,7 @@ namespace dxapex {
     desc.Format = convert::format(Format);
     desc.Usage = d3d11Usage;
     desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
-    desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : 0;
+    desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = 1;
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
@@ -355,7 +355,7 @@ namespace dxapex {
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
       desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS; // TODO(Josh): Check and handle D3DUSAGE_AUTOGENMIPMAP.
+      desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     }
 
     Com<ID3D11Texture2D> texture;
