@@ -334,7 +334,11 @@ namespace dxapex {
       // Pack properly for DXBC formatting...
       struct IOSGNElement {
         IOSGNElement() {
-          mask = 0xFFFFFFFF;
+          // This mask is inverted on OSGN.
+          if (ChunkType == chunks::ISGN)
+            mask = 0x0000FFFF;
+          else
+            mask = 0x000000FF;
         }
 
         uint32_t nameOffset;
