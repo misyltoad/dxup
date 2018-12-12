@@ -30,7 +30,15 @@ namespace dxapex {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
       RegisterMapping* mapping = m_map.lookupOrCreateRegisterMapping(*dst);
-      mapping->dclInfo.type = dst->getRegType() == D3DSPR_INPUT ? UsageType::Input : UsageType::Output;
+
+      if (dst->getRegType() == D3DSPR_INPUT)
+        mapping->dclInfo.type = UsageType::Input;
+      else if (dst->getRegType() == D3DSPR_OUTPUT)
+        mapping->dclInfo.type = UsageType::Output;
+      else {
+        log::warn("Unhandled reg type in dcl.");
+        mapping->dclInfo.type = UsageType::Output;
+      }
       mapping->dclInfo.usage = usageToken->getUsage();
       mapping->dclInfo.usageIndex = usageToken->getUsageIndex();
       mapping->dclInfo.centroid = dst->centroid();
