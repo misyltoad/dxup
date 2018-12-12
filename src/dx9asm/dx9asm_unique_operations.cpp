@@ -33,6 +33,7 @@ namespace dxapex {
       mapping->dclInfo.type = dst->getRegType() == D3DSPR_INPUT ? UsageType::Input : UsageType::Output;
       mapping->dclInfo.usage = usageToken->getUsage();
       mapping->dclInfo.usageIndex = usageToken->getUsageIndex();
+      mapping->dclInfo.centroid = dst->centroid();
       
       return true;
     }

@@ -6,7 +6,7 @@ namespace dxapex {
 
   namespace convert {
 
-    std::array<std::string, 15> dclUsageMapSemantic = {
+    std::array<std::string, 16> dclUsageMapSemantic = {
       "SV_Position",
       "BLENDWEIGHT",
       "BLENDINDICES",
@@ -21,7 +21,9 @@ namespace dxapex {
       "FOG",
       "SV_Depth",
       "SV_SampleIndex",
-      "UNKNOWN"
+      "UNKNOWN",
+
+      "SV_Target"
     };
 
     std::array<std::string, 15> dclUsageMap = {
@@ -43,14 +45,20 @@ namespace dxapex {
     };
 
 
-    const std::string& declUsage(bool vsInput, D3DDECLUSAGE usage) {
+    const std::string& declUsage(bool vsInput, bool target, D3DDECLUSAGE usage) {
+      if (target)
+        return dclUsageMapSemantic[15];
+
       if (usage > 14 || usage < 0)
         return dclUsageMap[14];
 
       return vsInput ? dclUsageMap[usage] : dclUsageMapSemantic[usage];
     }
 
-    uint32_t sysValue(bool vsInput, D3DDECLUSAGE usage) {
+    uint32_t sysValue(bool vsInput, bool target, D3DDECLUSAGE usage) {
+      if (target)
+        return D3D_NAME_UNDEFINED;
+
       if (vsInput)
         return D3D_NAME_UNDEFINED;
 

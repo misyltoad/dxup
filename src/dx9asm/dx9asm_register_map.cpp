@@ -64,8 +64,16 @@ namespace dxapex {
 
         dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
+      case D3DSPR_ADDR: {
+        // Pixel Shader...
+        newMapping.dclInfo.type = UsageType::Output;
+        newMapping.dclInfo.target = true;
+        newMapping.dclInfo.usage = (D3DDECLUSAGE)0;
+        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+
+        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+      } break;
       case D3DSPR_COLOROUT:
-      case D3DSPR_ADDR: //dxbcType = D3D10_SB_OPERAND_TYPE_RESOURCE; break; // D3DSPR_TEXTURE
       case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:

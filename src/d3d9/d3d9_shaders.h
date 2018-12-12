@@ -92,5 +92,6 @@ namespace dxapex {
   };
 
   using Direct3DVertexShader9 = Direct3DShader9<dx9asm::ShaderType::Vertex, ID3D11VertexShader, IDirect3DVertexShader9>;
+  using Direct3DPixelShader9 = Direct3DShader9<dx9asm::ShaderType::Pixel, ID3D11PixelShader, IDirect3DPixelShader9>;
 
 }

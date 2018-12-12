@@ -98,11 +98,11 @@ namespace dxapex {
         obj.push_back(constantBufferCount); // [PUSH] Constant Buffer Count
         PlaceholderPtr<uint32_t> constantBufferDescOffset{ "[RDEF] Constant Buffer Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Constant Buffer Desc Offset
-        obj.push_back(1); // [PUSH] Resource Binding Count
+        obj.push_back(constantBufferCount != 0 ? 1 : 0); // [PUSH] Resource Binding Count
         PlaceholderPtr<uint32_t>  resourceBindingDescOffset{ "[RDEF] Resource Binding Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Resource Binding Desc Offset
 
-        uint32_t versionInfo = 0xFFFE << 16; // Vertex Shader
+        uint32_t versionInfo = shdrCode.getShaderType() == ShaderType::Vertex ? (0xFFFE << 16) : (0xFFFF << 16);
         versionInfo |= 5 << 8; // Major Version
         versionInfo |= 0 << 0; // Minor Version
         obj.push_back(versionInfo); // [PUSH] Version Info (u8 minor, u8 major, u16 type)
@@ -156,7 +156,7 @@ namespace dxapex {
           pushObject(obj, defaultValues); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
-          #pragma pack(1)
+#pragma pack(1)
           struct {
             uint16_t varClass = D3D_SVC_VECTOR;
             uint16_t varType = D3D_SVT_FLOAT;
@@ -178,7 +178,7 @@ namespace dxapex {
           pushObject(obj, variableType);
 
           // Resource Binding
-          #pragma pack(1)
+#pragma pack(1)
           struct ResourceBinding {
             uint32_t nameOffset;
             uint32_t bindingType = 0; // cbuffer
@@ -211,6 +211,10 @@ namespace dxapex {
           cbufNameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_mapped_constants");
         }
+        else {
+          log::warn("Generating a shader w/ no resource bindings...");
+          resourceBindingDescOffset = 0;
+        }
 
         creatorOffset = getChunkSize(bytecode);
         pushAlignedString(obj, ":frog:"); // [PUSH] Creator (ribbit.)
@@ -225,22 +229,33 @@ namespace dxapex {
       void writeIODcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
         forEachValidElement<Input>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          uint32_t siv = convert::sysValue(Input, mapping.dclInfo.usage);
+          uint32_t siv = convert::sysValue(Input, mapping.dclInfo.target, mapping.dclInfo.usage);
           const bool hasSiv = siv != D3D_NAME_UNDEFINED;
 
           uint32_t opcode = 0;
+          uint32_t interpMode = UINT32_MAX;
           
-          if (Input)
-            opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_SIV : D3D10_SB_OPCODE_DCL_INPUT;
-          else
-            opcode = hasSiv ? D3D10_SB_OPCODE_DCL_OUTPUT_SIV : D3D10_SB_OPCODE_DCL_OUTPUT;
+          if (shdrCode.getShaderType() == ShaderType::Vertex) {
+            if (Input)
+              opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_SIV : D3D10_SB_OPCODE_DCL_INPUT;
+            else
+              opcode = hasSiv ? D3D10_SB_OPCODE_DCL_OUTPUT_SIV : D3D10_SB_OPCODE_DCL_OUTPUT;
+          }
+          else {
+            if (Input) {
+              opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_PS_SIV : D3D10_SB_OPCODE_DCL_INPUT_PS;
+              interpMode = mapping.dclInfo.centroid ? D3D10_SB_INTERPOLATION_LINEAR_CENTROID : D3D10_SB_INTERPOLATION_LINEAR;
+            }
+            else
+              opcode = hasSiv ? D3D10_SB_OPCODE_DCL_OUTPUT_SIV : D3D10_SB_OPCODE_DCL_OUTPUT;
+          }
 
           uint32_t lengthOffset = hasSiv ? 1 : 0;
 
           DXBCOperand operand = mapping.dxbcOperand;
           operand.setSwizzleOrWritemask(writeAll);
 
-          DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset }
+          DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset, interpMode }
             .appendOperand(operand)
             .push(obj);
 
@@ -269,10 +284,12 @@ namespace dxapex {
           const uint32_t constantBuffer = 0;
           const uint32_t cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
-          uint32_t data[2] = { constantBuffer , cbufferCount };
-          DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
-            .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setData(data, 2))
-            .push(obj);
+          if (cbufferCount != 0) {
+            uint32_t data[2] = { constantBuffer , cbufferCount };
+            DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
+              .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setData(data, 2))
+              .push(obj);
+          }
         }
 
       }
@@ -283,7 +300,7 @@ namespace dxapex {
         PlaceholderPtr<uint32_t> headerChunkSize{ "[SHEX] Chunk Header - Chunk Data Size", &((ChunkHeader*)nextPtr(obj))->size };
         ChunkHeader{ fourcc("SHEX") }.push(obj); // [PUSH] Chunk Header
         
-        obj.push_back(ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(D3D10_SB_VERTEX_SHADER, 5, 0)); // [PUSH] DXBC Version Token - VerTok
+        obj.push_back(ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(shdrCode.getShaderType() == ShaderType::Vertex ? D3D10_SB_VERTEX_SHADER : D3D10_SB_PIXEL_SHADER, 5, 0)); // [PUSH] DXBC Version Token - VerTok
 
         PlaceholderPtr<uint32_t> dwordCount{ "[SHEX] Dword Count", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Dword Count
@@ -347,14 +364,15 @@ namespace dxapex {
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
-          element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.usage);
+
+          element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage);
           pushObject(obj, element);
         });
 
         uint32_t count = 0;
         forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
           elementStart[i].nameOffset = getChunkSize(bytecode);
-          pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.usage));
+          pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
 
           count++;
         });

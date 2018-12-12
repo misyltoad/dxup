@@ -51,9 +51,14 @@ namespace dxapex {
     }
 
     uint32_t DXBCOperation::genOpToken(uint32_t instructionSize) {
-      return ENCODE_D3D10_SB_OPCODE_TYPE(m_opcode) |
-             ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate) |
-             ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize);
+      uint32_t opToken = ENCODE_D3D10_SB_OPCODE_TYPE(m_opcode) |
+                         ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate) |
+                         ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize);
+
+      if (m_interpolationMode != UINT32_MAX)
+        opToken |= ENCODE_D3D10_SB_INPUT_INTERPOLATION_MODE(m_interpolationMode);
+
+      return opToken;
     }
 
     void DXBCOperation::push(std::vector<uint32_t>& code) {

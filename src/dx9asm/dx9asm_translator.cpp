@@ -11,7 +11,7 @@ namespace dxapex {
     bool ShaderCodeTranslator::handleOperation(uint32_t token) {
       DX9Operation operation{ *this, token };
       if (!operation.isValid()) {
-        log::fail("Unknown operation encountered!");
+        log::fail("Unknown opcode %lu encountered!", opcode(token));
         return false;
       }
 

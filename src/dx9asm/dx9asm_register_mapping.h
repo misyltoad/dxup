@@ -22,6 +22,8 @@ namespace dxapex {
         UsageType type;
         D3DDECLUSAGE usage;
         uint32_t usageIndex;
+        bool target = false;
+        bool centroid = false;
       } dclInfo;
     };
 

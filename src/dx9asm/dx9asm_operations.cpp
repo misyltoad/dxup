@@ -67,6 +67,7 @@ namespace dxapex {
         {"sincos",  D3DSIO_SINCOS, 1, { Dst, Src0, Src1, Src2 }, {}},
         {"slt",     D3DSIO_SLT, 1, { Dst, Src0, Src1 }, {}},
         {"sub",     D3DSIO_SUB, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_ADD, negate}},
+        {"tex",     D3DSIO_TEX, 1, { Dst }, {}}, // The destination register number specifies the texture stage number.
         {"texldl",  D3DSIO_TEXLDL, 1, { Dst, Src0, Src1 }, {}},
       };
     }

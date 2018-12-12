@@ -41,9 +41,12 @@ namespace dxapex {
       DX9Operation(ShaderCodeTranslator& translator, uint32_t token)
         : m_dx9token{ token } {
         m_info = lookupOperationInfo(token);
-        m_operands.reserve(m_info->args.size());
 
-        readOperands(translator);
+        if (m_info) {
+          m_operands.reserve(m_info->args.size());
+
+          readOperands(translator);
+        }
       }
 
       inline const DX9ToDXBCImplicitConversionInfo& getImplicitInfo() const {

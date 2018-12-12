@@ -843,8 +843,7 @@ namespace dxapex {
 
     size_t count;
     {
-      const D3DVERTEXELEMENT9* counter = pVertexElements;
-      while (!vertexElementEqual(*counter, lastElement))
+      const D3DVERTEXELEMENT9* counter = pVertexElements; 
         counter++;
 
       count = counter - pVertexElements;
@@ -858,7 +857,7 @@ namespace dxapex {
     for (size_t i = 0; i < count; i++) {
       D3D11_INPUT_ELEMENT_DESC desc = { 0 };
       
-      desc.SemanticName = convert::declUsage(true, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
+      desc.SemanticName = convert::declUsage(true, false, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
       desc.AlignedByteOffset = pVertexElements[i].Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
@@ -936,7 +935,11 @@ namespace dxapex {
     *pFVF = m_fvf;
     return D3D_OK;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader) {
+
+    static int32_t shaderNum = 0;
+
+  template <bool Vertex, typename ID3D9, typename D3D9, typename D3D11>
+  HRESULT CreateShader(CONST DWORD* pFunction, ID3D9** ppShader, ID3D11Device* device, Direct3DDevice9Ex* wrapDevice) {
     InitReturnPtr(ppShader);
 
     if (pFunction == nullptr || ppShader == nullptr)
@@ -945,7 +948,6 @@ namespace dxapex {
     dx9asm::ShaderBytecode* bytecode = nullptr;
     dx9asm::toDXBC((const uint32_t*)pFunction, &bytecode);
 
-    static int32_t shaderNum = 0;
     shaderNum++;
 
     if (config::getBool(config::ShaderDump)) {
@@ -958,14 +960,20 @@ namespace dxapex {
       fclose(file);
     }
 
-    Com<ID3D11VertexShader> shader;
-    HRESULT result = m_device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, &shader);
+    Com<D3D11> shader;
+    HRESULT result = D3DERR_INVALIDCALL;
+
+    if (Vertex)
+      result = device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11VertexShader**) &shader);
+    else
+      result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**) &shader);
+
     if (FAILED(result)) {
       log::fail("Shader translation failed!");
       return D3DERR_INVALIDCALL;
     }
 
-    *ppShader = ref(new Direct3DVertexShader9(this, pFunction, shader.ptr(), bytecode));
+    *ppShader = ref(new D3D9(wrapDevice, pFunction, shader.ptr(), bytecode));
 
     if (config::getBool(config::ShaderDump)) {
       char comments[2048];
@@ -989,8 +997,12 @@ namespace dxapex {
         fclose(file);
       }
     }
-    
+
     return D3D_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexShader(CONST DWORD* pFunction, IDirect3DVertexShader9** ppShader) {
+    return CreateShader<true, IDirect3DVertexShader9, Direct3DVertexShader9, ID3D11VertexShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
@@ -1067,8 +1079,7 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreatePixelShader(CONST DWORD* pFunction, IDirect3DPixelShader9** ppShader) {
-    log::stub("Direct3DDevice9Ex::CreatePixelShader");
-    return D3D_OK;
+    return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
     log::stub("Direct3DDevice9Ex::SetPixelShader");
