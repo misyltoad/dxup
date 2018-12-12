@@ -22,13 +22,17 @@ namespace dxapex {
     HRESULT WINAPI GetDC(HDC *phdc) override;
     HRESULT WINAPI ReleaseDC(HDC hdc) override;
 
-    void GetD3D11Texture(ID3D11Texture2D** texture);
-    void GetD3D11StagingTexture(ID3D11Texture2D** texture);
-    void GetD3D11MappedTexture(ID3D11Texture2D** texture);
+    ID3D11Texture2D* GetD3D11Texture2D();
+    ID3D11Texture2D* GetStaging();
+    ID3D11Texture2D* GetMapping();
 
-    void GetDXGISurface(IDXGISurface1** surface);
-    void GetD3D9Texture(Direct3DTexture9** texture);
-    void GetD3D11RenderTarget(ID3D11RenderTargetView** rtv);
+    inline bool HasStaging() {
+      return GetStaging() != nullptr;
+    }
+
+    IDXGISurface1* GetDXGISurface();
+    Direct3DTexture9* GetD3D9Texture();
+    ID3D11RenderTargetView* GetD3D11RenderTarget();
     UINT GetSubresource();
 
   private:

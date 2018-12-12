@@ -15,12 +15,9 @@ namespace dxapex {
       // See comment in d3d9_vertexbuffer.cpp
       makeStaging(desc, m_usage);
 
-      Com<ID3D11Device> device;
-      m_device->GetD3D11Device(&device);
-
       Com<ID3D11Texture2D> stagingTex;
-      device->CreateTexture2D(&desc, nullptr, &stagingTex);
-      SetStagingResource(stagingTex.ptr());
+      GetD3D11Device()->CreateTexture2D(&desc, nullptr, &stagingTex);
+      SetStaging(stagingTex.ptr());
     }
 
     m_surfaces.reserve(desc.MipLevels);
@@ -43,11 +40,8 @@ namespace dxapex {
   }
 
   DWORD STDMETHODCALLTYPE Direct3DTexture9::GetLevelCount() {
-    Com<ID3D11Texture2D> texture;
-    GetResource(&texture);
-
     D3D11_TEXTURE2D_DESC desc;
-    texture->GetDesc(&desc);
+    GetResource()->GetDesc(&desc);
 
     return desc.MipLevels;
   }

@@ -164,8 +164,8 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
     void GetParent(Direct3D9Ex** parent);
-    void GetContext(ID3D11DeviceContext** context);
-    void GetD3D11Device(ID3D11Device** device);
+    ID3D11DeviceContext* GetContext();
+    ID3D11Device* GetD3D11Device();
 
     void RefreshInputLayout();
 

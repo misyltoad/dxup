@@ -60,9 +60,8 @@ namespace dxapex {
       return m_translation;
     }
 
-    void GetD3D11Shader(D3D11Shader** shader) {
-      if (shader != nullptr)
-        *shader = ref(m_shader);
+    D3D11Shader* GetD3D11Shader() {
+      return m_shader.ptr();
     }
 
     void LinkInput(ID3D11InputLayout* inputLayout, IDirect3DVertexDeclaration9* vertDcl) {

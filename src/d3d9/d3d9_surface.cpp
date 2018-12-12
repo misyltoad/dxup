@@ -15,10 +15,8 @@ namespace dxapex {
 
     if (m_subresource == 0 && usage & D3DUSAGE_RENDERTARGET) {
       if (texture != nullptr) {
-        Com<ID3D11Device> d3d11Device;
-        m_device->GetD3D11Device(&d3d11Device);
+        HRESULT result = GetD3D11Device()->CreateRenderTargetView(texture, nullptr, &m_rtView);
 
-        HRESULT result = d3d11Device->CreateRenderTargetView(texture, nullptr, &m_rtView);
         if (FAILED(result))
           log::warn("Failed to create render target for surface!");
       }
@@ -55,9 +53,6 @@ namespace dxapex {
     if (!pDesc)
       return D3DERR_INVALIDCALL;
 
-    Com<ID3D11Texture2D> texture;
-    GetD3D11Texture(&texture);
-
     if (m_surface != nullptr) {
       DXGI_SURFACE_DESC dxgiDesc;
       HRESULT Result = m_surface->GetDesc(&dxgiDesc);
@@ -74,9 +69,9 @@ namespace dxapex {
       pDesc->Type = D3DRTYPE_SURFACE;
       pDesc->Usage = m_usage;
     }
-    else if (texture != nullptr) {
+    else if (GetD3D11Texture2D() != nullptr) {
       D3D11_TEXTURE2D_DESC desc;
-      texture->GetDesc(&desc);
+      GetD3D11Texture2D()->GetDesc(&desc);
       
       pDesc->Format = convert::format(desc.Format);
       pDesc->Height = desc.Height;
@@ -101,13 +96,7 @@ namespace dxapex {
     pLockedRect->pBits = nullptr;
     pLockedRect->Pitch = 0;
 
-    Com<ID3D11DeviceContext> context;
-    m_device->GetContext(&context);
-
-    Com<ID3D11Texture2D> mappedTexture;
-    GetD3D11MappedTexture(&mappedTexture);
-
-    if (mappedTexture != nullptr) {
+    if (GetMapping() != nullptr) {
 
       if (pRect != nullptr)
        m_stagingRect = *pRect;
@@ -115,7 +104,7 @@ namespace dxapex {
       m_useRect = pRect != nullptr;
 
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(mappedTexture.ptr(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = GetContext()->Map(GetMapping(), m_subresource, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
       if (result == DXGI_ERROR_WAS_STILL_DRAWING)
         return D3DERR_WASSTILLDRAWING;
@@ -123,15 +112,13 @@ namespace dxapex {
       if (FAILED(result))
         return D3DERR_INVALIDCALL;
 
-      Com<Direct3DTexture9> d3d9Texture;
-      GetD3D9Texture(&d3d9Texture);
-      d3d9Texture->SetSubresourceMapped(m_subresource);
+      GetD3D9Texture()->SetSubresourceMapped(m_subresource);
 
       size_t offset = 0;
 
       if (m_useRect) {
         D3D11_TEXTURE2D_DESC desc;
-        mappedTexture->GetDesc(&desc);
+        GetMapping()->GetDesc(&desc);
         auto& sizeInfo = getDXGIFormatSizeInfo(desc.Format);
 
         offset = ((pRect->top * resource.RowPitch) + pRect->left) * sizeInfo.pixelBytes / 8;
@@ -152,29 +139,14 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT Direct3DSurface9::UnlockRect() {
-    Com<ID3D11DeviceContext> context;
-    m_device->GetContext(&context);
-
-    Com<ID3D11Texture2D> mappedTexture;
-    GetD3D11MappedTexture(&mappedTexture);
-
-    Com<Direct3DTexture9> d3d9Texture;
-    GetD3D9Texture(&d3d9Texture);
-
-    if (mappedTexture != nullptr) {
-      context->Unmap(mappedTexture.ptr(), m_subresource);
-      d3d9Texture->SetSubresourceUnmapped(m_subresource);
+    if (GetMapping() != nullptr) {
+      GetContext()->Unmap(GetMapping(), m_subresource);
+      GetD3D9Texture()->SetSubresourceUnmapped(m_subresource);
     }
     else if (m_surface != nullptr)
       m_surface->Unmap();
 
-    Com<ID3D11Texture2D> stagingTexture;
-    GetD3D11StagingTexture(&stagingTexture);
-
-    if (stagingTexture != nullptr) {
-      Com<ID3D11Texture2D> texture;
-      GetD3D11Texture(&texture);
-
+    if (HasStaging()) {
       D3D11_BOX box = { 0 };
 
       if (m_useRect) {
@@ -187,14 +159,14 @@ namespace dxapex {
         box.back = 1;
       }
 
-      if (d3d9Texture->CanPushStaging()) {
-        uint64_t delta = d3d9Texture->GetChangedSubresources();
+      if (GetD3D9Texture()->CanPushStaging()) {
+        uint64_t delta = GetD3D9Texture()->GetChangedSubresources();
         for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
           if ( delta & (1ull << i) )
-            context->CopySubresourceRegion(texture.ptr(), i, box.left, box.top, 0, stagingTexture.ptr(), i, m_useRect ? &box : nullptr);
+            GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), i, box.left, box.top, 0, GetStaging(), i, m_useRect ? &box : nullptr);
         }
 
-        d3d9Texture->ResetSubresourceMapInfo();
+        GetD3D9Texture()->ResetSubresourceMapInfo();
       }
     }
 
@@ -216,36 +188,26 @@ namespace dxapex {
     return D3D_OK;
   }
 
-  void Direct3DSurface9::GetD3D11MappedTexture(ID3D11Texture2D** texture) {
-    GetD3D11StagingTexture(texture);
+  ID3D11Texture2D* Direct3DSurface9::GetMapping() {
+    if (HasStaging())
+      return GetStaging();
 
-    if (*texture == nullptr)
-      GetD3D11Texture(texture);
+    return GetD3D11Texture2D();
   }
-  void Direct3DSurface9::GetD3D11StagingTexture(ID3D11Texture2D** texture) {
-    Com<Direct3DTexture9> d3d9Texture;
-    GetD3D9Texture(&d3d9Texture);
-
-    if (d3d9Texture == nullptr)
-      return;
-
-    d3d9Texture->GetStagingResource(texture);
+  ID3D11Texture2D* Direct3DSurface9::GetStaging() {
+    return GetD3D9Texture()->GetStaging();
   }
-  void Direct3DSurface9::GetD3D11Texture(ID3D11Texture2D** texture) {
-    if (texture != nullptr && m_d3d11texture != nullptr)
-      *texture = ref(m_d3d11texture);
+  ID3D11Texture2D* Direct3DSurface9::GetD3D11Texture2D() {
+    return GetD3D9Texture()->GetResource();
   }
-  void Direct3DSurface9::GetDXGISurface(IDXGISurface1** surface) {
-    if (surface != nullptr && m_surface != nullptr)
-      *surface = ref(m_surface);
+  IDXGISurface1* Direct3DSurface9::GetDXGISurface() {
+    return m_surface.ptr();
   }
-  void Direct3DSurface9::GetD3D9Texture(Direct3DTexture9** texture) {
-    if (texture != nullptr && m_container != nullptr)
-      *texture = reinterpret_cast<Direct3DTexture9*>(ref(m_container));
+  Direct3DTexture9* Direct3DSurface9::GetD3D9Texture() {
+    return dynamic_cast<Direct3DTexture9*>(m_container.ptr());
   }
-  void Direct3DSurface9::GetD3D11RenderTarget(ID3D11RenderTargetView** rtv) {
-    if (rtv != nullptr && m_rtView != nullptr)
-      *rtv = ref(m_rtView);
+  ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget() {
+    return m_rtView.ptr();
   }
 
   UINT Direct3DSurface9::GetSubresource() {

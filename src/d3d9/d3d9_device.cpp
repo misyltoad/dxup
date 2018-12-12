@@ -483,14 +483,13 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::StretchRect(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestSurface, CONST RECT* pDestRect, D3DTEXTUREFILTERTYPE Filter) {
-
     Direct3DSurface9* src = reinterpret_cast<Direct3DSurface9*>(pSourceSurface);
-    Com<ID3D11Texture2D> srcTex;
-    src->GetD3D11Texture(&srcTex);
+    Direct3DSurface9* dst = reinterpret_cast<Direct3DSurface9*>(pDestSurface);
 
-    Direct3DSurface9* dest = reinterpret_cast<Direct3DSurface9*>(pDestSurface);
-    Com<ID3D11Texture2D> destTex;
-    dest->GetD3D11Texture(&destTex);
+    if (dst->GetD3D11Texture2D() == nullptr || src->GetD3D11Texture2D() == nullptr) {
+      log::fail("Can't StretchRect of non-d3d11 based surface.");
+      return D3DERR_INVALIDCALL;
+    }
 
     if (pSourceRect != nullptr && pDestRect != nullptr) {
       UINT x = pDestRect->left;
@@ -504,12 +503,12 @@ namespace dxapex {
       box.bottom = pSourceRect->bottom;
       box.top = 0;
       box.back = 0;
-      m_context->CopySubresourceRegion(destTex.ptr(), dest->GetSubresource(), x, y, 0, srcTex.ptr(), src->GetSubresource(), &box);
+      m_context->CopySubresourceRegion(dst->GetD3D11Texture2D(), dst->GetSubresource(), x, y, 0, src->GetD3D11Texture2D(), src->GetSubresource(), &box);
 
       return D3D_OK;
     }
 
-    m_context->CopySubresourceRegion(destTex.ptr(), dest->GetSubresource(), 0, 0, 0, srcTex.ptr(), src->GetSubresource(), nullptr);
+    m_context->CopySubresourceRegion(dst->GetD3D11Texture2D(), dst->GetSubresource(), 0, 0, 0, src->GetD3D11Texture2D(), src->GetSubresource(), nullptr);
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ColorFill(IDirect3DSurface9* pSurface, CONST RECT* pRect, D3DCOLOR color) {
@@ -540,10 +539,8 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
-    
-    Direct3DSurface9* surface = (Direct3DSurface9*)pRenderTarget;
-    Com<ID3D11RenderTargetView> rtv;
-    surface->GetD3D11RenderTarget(&rtv);
+    Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
+    ID3D11RenderTargetView* rtv = surface->GetD3D11RenderTarget();
 
     if (rtv == nullptr)
       log::warn("No RTV for surface we want as RT");
@@ -576,9 +573,6 @@ namespace dxapex {
     m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d9Surface);
     Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(d3d9Surface.ptr());
 
-    Com<ID3D11RenderTargetView> renderTarget;
-    surface->GetD3D11RenderTarget(&renderTarget);
-
     FLOAT color[4];
     convert::color(Color, color);
 
@@ -587,7 +581,7 @@ namespace dxapex {
         color[i] = ((float)(rand() % 255)) / 255.0f;
     }
 
-    m_context->ClearRenderTargetView(renderTarget.ptr(), color);
+    m_context->ClearRenderTargetView(surface->GetD3D11RenderTarget(), color);
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTransform(D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix) {
@@ -913,11 +907,8 @@ namespace dxapex {
 
     m_state->isValid = true;
 
-    Com<ID3D11VertexShader> d3d11VertexShader;
-    m_state->vertexShader->GetD3D11Shader(&d3d11VertexShader);
-
     m_context->IASetInputLayout(layout.ptr());
-    m_context->VSSetShader(d3d11VertexShader.ptr(), nullptr, 0);
+    m_context->VSSetShader(m_state->vertexShader->GetD3D11Shader(), nullptr, 0);
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
@@ -1048,10 +1039,8 @@ namespace dxapex {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
-    Com<ID3D11Buffer> buffer;
-    vertexBuffer->GetD3D11Buffer(&buffer);
-    ID3D11Buffer* bufferPtr = buffer.ptr();
-    m_context->IASetVertexBuffers(StreamNumber, 1, &bufferPtr, &Stride, &OffsetInBytes);
+    ID3D11Buffer* buffer = vertexBuffer->GetD3D11Buffer();
+    m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
 
     return D3D_OK;
   }
@@ -1069,15 +1058,12 @@ namespace dxapex {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
     Direct3DIndexBuffer9* indexBuffer = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
-    Com<ID3D11Buffer> buffer;
-    indexBuffer->GetD3D11Buffer(&buffer);
-    ID3D11Buffer* bufferPtr = buffer.ptr();
 
     DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
     if (indexBuffer->GetFormat() == D3DFMT_INDEX32)
       format = DXGI_FORMAT_R32_UINT;
 
-    m_context->IASetIndexBuffer(buffer.ptr(), format, 0);
+    m_context->IASetIndexBuffer(indexBuffer->GetD3D11Buffer(), format, 0);
 
     return D3D_OK;
   }
@@ -1091,9 +1077,7 @@ namespace dxapex {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
     m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
-    Com<ID3D11PixelShader> d3d11PixelShader;
-    m_state->pixelShader->GetD3D11Shader(&d3d11PixelShader);
-    m_context->PSSetShader(d3d11PixelShader.ptr(), nullptr, 0);
+    m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
 
     return D3D_OK;
   }
@@ -1219,11 +1203,11 @@ namespace dxapex {
   void Direct3DDevice9Ex::GetParent(Direct3D9Ex** parent) {
     *parent = static_cast<Direct3D9Ex*>( ref(m_parent) );
   }
-  void Direct3DDevice9Ex::GetContext(ID3D11DeviceContext** context) {
-    *context = ref(m_context);
+  ID3D11DeviceContext* Direct3DDevice9Ex::GetContext() {
+    return m_context.ptr();
   }
-  void Direct3DDevice9Ex::GetD3D11Device(ID3D11Device** device) {
-    *device = ref(m_device);
+  ID3D11Device* Direct3DDevice9Ex::GetD3D11Device() {
+    return m_device.ptr();
   }
 
 }

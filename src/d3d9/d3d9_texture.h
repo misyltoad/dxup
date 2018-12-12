@@ -34,17 +34,17 @@ namespace dxapex {
       log::stub("Direct3DBaseTexture9::GenerateMipSubLevels");
     }
 
-    void GetResource(D3D11ResourceType** res) {
-      if (res != nullptr && m_resource != nullptr)
-        *res = ref(m_resource);
+    D3D11ResourceType* GetResource() {
+      return m_resource.ptr();
     }
 
-    void GetStagingResource(D3D11ResourceType** res) {
-      if (res != nullptr && m_stagingResource != nullptr)
-        *res = ref(m_stagingResource);
+    D3D11ResourceType* GetStaging() {
+      return m_stagingResource.ptr();
     }
 
-    void SetStagingResource(D3D11ResourceType* res) {
+  protected:
+
+    void SetStaging(D3D11ResourceType* res) {
       m_stagingResource = res;
     }
 
@@ -67,8 +67,6 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE LockRect(UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) override;
     HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level) override;
     HRESULT STDMETHODCALLTYPE AddDirtyRect(const RECT* pDirtyRect) override;
-
-    void GetD3D11Texture2D(ID3D11Texture2D** buffer);
 
     inline void SetSubresourceMapped(UINT subresource) {
       m_mappedSubresources |= 1 << subresource;

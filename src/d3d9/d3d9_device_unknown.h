@@ -21,6 +21,14 @@ namespace dxapex {
       return D3D_OK;
     }
 
+    ID3D11Device* GetD3D11Device() {
+      return m_device->GetD3D11Device();
+    }
+
+    ID3D11DeviceContext* GetContext() {
+      return m_device->GetContext();
+    }
+
   protected:
     Direct3DDevice9Ex* m_device;
   };

@@ -21,10 +21,7 @@ namespace dxapex {
 
         makeStaging(desc, m_usage);
 
-        Com<ID3D11Device> device;
-        m_device->GetD3D11Device(&device);
-
-        device->CreateBuffer(&desc, nullptr, &m_stagingBuffer);
+        GetD3D11Device()->CreateBuffer(&desc, nullptr, &m_stagingBuffer);
       }
     }
 
@@ -48,14 +45,8 @@ namespace dxapex {
       if (!ppbData)
         return D3DERR_INVALIDCALL;
 
-      Com<ID3D11DeviceContext> context;
-      m_device->GetContext(&context);
-
-      Com<ID3D11Buffer> mappedBuffer;
-      GetD3D11MappedBuffer(&mappedBuffer);
-
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = context->Map(mappedBuffer.ptr(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = GetContext()->Map(GetMapping(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
 
       // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
       //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
@@ -69,30 +60,31 @@ namespace dxapex {
       return D3D_OK;
     }
     HRESULT STDMETHODCALLTYPE Unlock() override {
-      Com<ID3D11DeviceContext> context;
-      m_device->GetContext(&context);
+      GetContext()->Unmap(GetMapping(), 0);
 
-      Com<ID3D11Buffer> mappedBuffer;
-      GetD3D11MappedBuffer(&mappedBuffer);
-
-      context->Unmap(mappedBuffer.ptr(), 0);
-
-      if (m_stagingBuffer != nullptr)
-        context->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, m_stagingBuffer.ptr(), 0, nullptr);
+      if (GetStaging() != nullptr)
+        GetContext()->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, GetStaging(), 0, nullptr);
 
       return D3D_OK;
     }
 
-    void GetD3D11MappedBuffer(ID3D11Buffer** buffer) {
-      *buffer = ref(m_stagingBuffer);
-
-      if (*buffer == nullptr)
-        *buffer = ref(m_buffer); // Dynamic Path
+    inline bool HasStaging() {
+      return m_stagingBuffer != nullptr;
     }
 
-    void GetD3D11Buffer(ID3D11Buffer** buffer) {
-      if (buffer != nullptr && m_buffer != nullptr)
-        *buffer = ref(m_buffer);
+    ID3D11Buffer* GetMapping() {
+      if (GetStaging())
+        return GetStaging();
+
+      return GetD3D11Buffer();
+    }
+
+    ID3D11Buffer* GetStaging() {
+      return m_stagingBuffer.ptr();
+    }
+
+    ID3D11Buffer* GetD3D11Buffer() {
+      return m_buffer.ptr();
     }
 
   protected:
