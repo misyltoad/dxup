@@ -19,9 +19,6 @@ namespace dxapex {
       if (operand.isSrc())
         readMask |= calcReadMask(operand);
 
-      if (operand.isSrc())
-        readMask |= calcReadMask(operand);
-
       if (mapping != nullptr) {
         mapping->writeMask |= writeMask;
         mapping->readMask |= readMask;
