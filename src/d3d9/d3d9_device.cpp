@@ -17,6 +17,7 @@ namespace dxapex {
     Com<Direct3DVertexShader9> vertexShader;
     Com<Direct3DPixelShader9> pixelShader;
     Com<Direct3DVertexDeclaration9> vertexDecl;
+    std::array<Com<Direct3DSurface9>, 4> renderTargets;
     bool isValid = false;
   };
 
@@ -560,12 +561,16 @@ namespace dxapex {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
     Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
-    ID3D11RenderTargetView* rtv = surface->GetD3D11RenderTarget();
+    m_state->renderTargets[RenderTargetIndex] = surface;
 
-    if (rtv == nullptr)
-      log::warn("No RTV for surface we want as RT");
+    std::array<ID3D11RenderTargetView*, 4> rtvs = { nullptr, nullptr, nullptr, nullptr };
+    for (uint32_t i = 0; i < 4; i++)
+    {
+      if (m_state->renderTargets[i] != nullptr)
+        rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget();
+    }
 
-    m_context->OMSetRenderTargets(1, &rtv, nullptr);
+    m_context->OMSetRenderTargets(4, &rtvs[0], nullptr);
 
     return D3D_OK;
   }
@@ -589,10 +594,6 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Clear(DWORD Count, CONST D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
-    Com<IDirect3DSurface9> d3d9Surface;
-    GetInternalSwapchain(0)->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d9Surface);
-    Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(d3d9Surface.ptr());
-
     FLOAT color[4];
     convert::color(Color, color);
 
@@ -600,8 +601,25 @@ namespace dxapex {
       for (uint32_t i = 0; i < 4; i++)
         color[i] = ((float)(rand() % 255)) / 255.0f;
     }
+    
+    if (Flags & D3DCLEAR_TARGET) {
+      for (uint32_t i = 0; i < 4; i++)
+      {
+        if (m_state->renderTargets[i] == nullptr)
+          continue;
 
-    m_context->ClearRenderTargetView(surface->GetD3D11RenderTarget(), color);
+        ID3D11RenderTargetView* rtv = m_state->renderTargets[i]->GetD3D11RenderTarget();
+        if (rtv)
+          m_context->ClearRenderTargetView(rtv, color);
+      }
+    }
+
+    if (Flags & D3DCLEAR_STENCIL)
+      log::warn("No stencil view support yet! Cannot clear.");
+
+    if (Flags & D3DCLEAR_ZBUFFER)
+      log::warn("No depth view support yet! Cannot clear.");
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTransform(D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix) {
