@@ -62,7 +62,7 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE Unlock() override {
       GetContext()->Unmap(GetMapping(), 0);
 
-      if (GetStaging() != nullptr)
+      if (HasStaging())
         GetContext()->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, GetStaging(), 0, nullptr);
 
       return D3D_OK;
