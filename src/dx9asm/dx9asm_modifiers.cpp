@@ -108,9 +108,6 @@ namespace dxapex {
       if (!operand.isSrc() || !operand.isRegister())
         return 0;
 
-      if (dx9swizzle == D3DVS_NOSWIZZLE)
-        return noSwizzle;
-
       uint32_t readMask = 0;
 
       for (uint32_t i = 0; i < 4; i++) {
