@@ -273,9 +273,11 @@ namespace dxapex {
         auto& obj = bytecode.getBytecodeVector();
 
         // Temps
+        uint32_t tempCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
+        if (tempCount > 0)
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
-          obj.push_back(shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP)); // Followed by DWORD count of temps. Not an operand!
+          obj.push_back(tempCount); // Followed by DWORD count of temps. Not an operand!
         }
 
         // Input
