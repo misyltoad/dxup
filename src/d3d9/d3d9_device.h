@@ -171,6 +171,7 @@ namespace dxapex {
     void RefreshInputLayout();
 
     bool CanDraw();
+    bool PrepareDraw();
     bool CanRefreshInputLayout();
 
   private:

@@ -818,7 +818,7 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
-    if (!CanDraw()) {
+    if (!PrepareDraw()) {
       log::warn("Invalid internal render state achieved.");
       return D3D_OK; // Lies!
     }
@@ -832,7 +832,7 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
-    if (!CanDraw()) {
+    if (!PrepareDraw()) {
       log::warn("Invalid internal render state achieved.");
       return D3D_OK; // Lies!
     }
@@ -914,6 +914,11 @@ namespace dxapex {
     return CanRefreshInputLayout() && m_state->isValid;
   }
 
+  bool Direct3DDevice9Ex::PrepareDraw() {
+    RefreshInputLayout();
+    return CanDraw();
+  }
+
   bool Direct3DDevice9Ex::CanRefreshInputLayout() {
     if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
       return false;
@@ -923,6 +928,10 @@ namespace dxapex {
 
   void Direct3DDevice9Ex::RefreshInputLayout() {
     if (!CanRefreshInputLayout())
+      return;
+
+    // Our state is already valid! No need to refresh
+    if (m_state->isValid)
       return;
 
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
@@ -951,8 +960,7 @@ namespace dxapex {
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
     m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
-
-    RefreshInputLayout();
+    m_state->isValid = false;
 
     return D3D_OK;
   }
@@ -1045,8 +1053,7 @@ namespace dxapex {
       return D3DERR_INVALIDCALL;
 
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
-
-    RefreshInputLayout();
+    m_state->isValid = false;
 
     return D3D_OK;
   }
