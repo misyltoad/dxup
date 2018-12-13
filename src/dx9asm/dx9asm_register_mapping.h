@@ -18,6 +18,9 @@ namespace dxapex {
       uint32_t dx9Id;
       DXBCOperand dxbcOperand;
 
+      uint32_t readMask = 0;
+      uint32_t writeMask = 0;
+
       struct DclInfo {
         UsageType type;
         D3DDECLUSAGE usage;

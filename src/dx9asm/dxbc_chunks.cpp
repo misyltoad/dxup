@@ -253,7 +253,12 @@ namespace dxapex {
           uint32_t lengthOffset = hasSiv ? 1 : 0;
 
           DXBCOperand operand = mapping.dxbcOperand;
-          operand.setSwizzleOrWritemask(writeAll);
+          
+          if (!Input)
+            operand.setSwizzleOrWritemask(mapping.writeMask);
+          else
+            operand.setSwizzleOrWritemask(mapping.readMask);
+
 
           DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset, interpMode }
             .appendOperand(operand)

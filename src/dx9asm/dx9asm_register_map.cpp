@@ -1,4 +1,5 @@
 #include "dx9asm_translator.h"
+#include "dx9asm_modifiers.h"
 #include "dx9asm_operations.h"
 #include "../util/config.h"
 
@@ -8,13 +9,32 @@ namespace dxapex {
 
     RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t majorVersion, uint32_t minorVersion, const DX9Operand& operand, uint32_t regOffset) {
       RegisterMapping* mapping = getRegisterMapping(operand.getRegType(), operand.getRegNumber() + regOffset);
-      if (mapping != nullptr)
+
+      uint32_t writeMask = 0;
+      uint32_t readMask = 0;
+
+      if (operand.isDst())
+        writeMask |= calcWriteMask(operand);
+
+      if (operand.isSrc())
+        readMask |= calcReadMask(operand);
+
+      if (operand.isSrc())
+        readMask |= calcReadMask(operand);
+
+      if (mapping != nullptr) {
+        mapping->writeMask |= writeMask;
+        mapping->readMask |= readMask;
+
         return mapping;
+      }
 
       RegisterMapping newMapping;
       newMapping.dclInfo.type = UsageType::None;
       newMapping.dx9Id = operand.getRegNumber() + regOffset;
       newMapping.dx9Type = operand.getRegType();
+      newMapping.writeMask = writeMask;
+      newMapping.readMask = readMask;
 
       newMapping.dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
       newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);

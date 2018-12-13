@@ -102,6 +102,37 @@ namespace dxapex {
       return dx9swizzle | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE);
     }
 
+    uint32_t calcReadMask(const DX9Operand& operand) {
+      uint32_t dx9swizzle = operand.getSwizzleData();
+
+      if (!operand.isSrc() || !operand.isRegister())
+        return 0;
+
+      if (dx9swizzle == D3DVS_NOSWIZZLE)
+        return noSwizzle;
+
+      uint32_t readMask = 0;
+
+      dx9swizzle = dx9swizzle >> D3DVS_SWIZZLE_SHIFT;
+
+      for (uint32_t i = 0; i < 4; i++) {
+        // Move them all into X swizzled space.
+        uint32_t shift = i * 2;
+        dx9swizzle <<= shift;
+
+        if (dx9swizzle & D3DVS_X_X)
+          readMask |= D3D10_SB_OPERAND_4_COMPONENT_MASK_X;
+        else if (dx9swizzle & D3DVS_X_Y)
+          readMask |= D3D10_SB_OPERAND_4_COMPONENT_MASK_Y;
+        else if (dx9swizzle & D3DVS_X_Z)
+          readMask |= D3D10_SB_OPERAND_4_COMPONENT_MASK_Z;
+        else if (dx9swizzle & D3DVS_X_W)
+          readMask |= D3D10_SB_OPERAND_4_COMPONENT_MASK_W;
+      }
+
+      return readMask;
+    }
+
     uint32_t calcWriteMask(const DX9Operand& operand) {
       uint32_t dx9WriteMask = operand.getWriteMaskData();
 
