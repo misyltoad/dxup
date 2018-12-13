@@ -32,6 +32,8 @@ namespace dxapex {
     if (data->ex)
       m_flags |= DeviceFlag_Ex;
 
+    m_device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&m_dxgiDevice);
+
     Reset(data->presentParameters);
 
     CreateAdditionalSwapChain(data->presentParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
@@ -1148,12 +1150,14 @@ namespace dxapex {
     if (pPriority == nullptr)
       return D3DERR_INVALIDCALL;
 
-    *pPriority = m_priority;
+    if (FAILED(m_dxgiDevice->GetGPUThreadPriority(pPriority)))
+      return D3DERR_INVALIDCALL;
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetGPUThreadPriority(INT Priority) {
-    m_priority = Priority;
+    if (FAILED(m_dxgiDevice->SetGPUThreadPriority(Priority)))
+      return D3DERR_INVALIDCALL;
 
     return D3D_OK;
   }
@@ -1167,11 +1171,18 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetMaximumFrameLatency(UINT MaxLatency) {
-    log::stub("Direct3DDevice9Ex::SetMaximumFrameLatency");
+    if (FAILED(m_dxgiDevice->SetMaximumFrameLatency(MaxLatency)))
+      return D3DERR_INVALIDCALL;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetMaximumFrameLatency(UINT* pMaxLatency) {
-    log::stub("Direct3DDevice9Ex::GetMaximumFrameLatency");
+    if (pMaxLatency == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (FAILED(m_dxgiDevice->GetMaximumFrameLatency(pMaxLatency)))
+      return D3DERR_INVALIDCALL;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CheckDeviceState(HWND hDestinationWindow) {

@@ -178,6 +178,7 @@ namespace dxapex {
 
     InternalRenderState* m_state;
 
+    Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device> m_device;
     Com<IDXGIAdapter> m_adapter;
     Com<ID3D11DeviceContext> m_context;
@@ -196,7 +197,6 @@ namespace dxapex {
     };
 
     PendingCursorUpdate m_pendingCursorUpdate = { 0 };
-    INT m_priority = 0;
     DWORD m_fvf = 0;
     BOOL m_softwareVertexProcessing = 0;
   };
