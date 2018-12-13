@@ -1171,6 +1171,9 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetMaximumFrameLatency(UINT MaxLatency) {
+    if (MaxLatency > 16)
+      MaxLatency = 16;
+
     if (FAILED(m_dxgiDevice->SetMaximumFrameLatency(MaxLatency)))
       return D3DERR_INVALIDCALL;
 
