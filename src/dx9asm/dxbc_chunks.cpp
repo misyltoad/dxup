@@ -272,6 +272,11 @@ namespace dxapex {
       void writeDcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
 
+        // Global Flags
+        {
+          DXBCOperation{ D3D10_SB_OPCODE_DCL_GLOBAL_FLAGS, false, 1, 0, UINT32_MAX, D3D10_SB_GLOBAL_FLAG_REFACTORING_ALLOWED }.push(obj);
+        }
+
         // Temps
         uint32_t tempCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
         if (tempCount > 0)

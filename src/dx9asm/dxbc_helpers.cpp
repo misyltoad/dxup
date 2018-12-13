@@ -73,8 +73,12 @@ namespace dxapex {
 
     uint32_t DXBCOperation::genOpToken(uint32_t instructionSize) {
       uint32_t opToken = ENCODE_D3D10_SB_OPCODE_TYPE(m_opcode) |
-                         ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate) |
                          ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize);
+
+      if (m_flags != UINT32_MAX)
+        opToken |= ENCODE_D3D10_SB_GLOBAL_FLAGS(m_flags);
+      else
+        opToken |= ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate);
 
       if (m_interpolationMode != UINT32_MAX)
         opToken |= ENCODE_D3D10_SB_INPUT_INTERPOLATION_MODE(m_interpolationMode);
