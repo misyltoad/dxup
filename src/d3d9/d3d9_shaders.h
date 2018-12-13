@@ -68,18 +68,16 @@ namespace dxapex {
       m_inputLinks.push_back(InputLink{ inputLayout, vertDcl });
     }
 
-    void GetLinkedInput(IDirect3DVertexDeclaration9* vertDcl, ID3D11InputLayout** inputLayout) {
-      if (inputLayout == nullptr || vertDcl == nullptr)
-        return;
-
-      InitReturnPtr(inputLayout);
+    ID3D11InputLayout* GetLinkedInput(IDirect3DVertexDeclaration9* vertDcl) {
+      if (vertDcl == nullptr)
+        return nullptr;
 
       for (InputLink& link : m_inputLinks) {
         if (link.vertexDcl == vertDcl)
-          *inputLayout = ref(link.inputLayout);
+          return link.inputLayout.ptr();
       }
 
-      return;
+      return nullptr;
     }
 
   private:

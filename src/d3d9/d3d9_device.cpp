@@ -278,6 +278,8 @@ namespace dxapex {
     if (FAILED(result))
       return result;
 
+    dxgiFactory->MakeWindowAssociation(m_creationParameters.hFocusWindow, DXGI_MWA_NO_ALT_ENTER);
+
     for (size_t i = 0; i < m_swapchains.size(); i++)
     {
       if (m_swapchains[i] == nullptr) {
@@ -939,14 +941,13 @@ namespace dxapex {
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
     auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
 
-    Com<ID3D11InputLayout> layout;
-    m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr(), &layout);
+    ID3D11InputLayout* layout = m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr());
 
     if (layout == nullptr) {
       m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
 
       if (layout != nullptr)
-        m_state->vertexShader->LinkInput(layout.ptr(), m_state->vertexDecl.ptr());
+        m_state->vertexShader->LinkInput(layout, m_state->vertexDecl.ptr());
     }
 
     if (layout == nullptr) {
@@ -956,7 +957,7 @@ namespace dxapex {
 
     m_state->isValid = true;
 
-    m_context->IASetInputLayout(layout.ptr());
+    m_context->IASetInputLayout(layout);
     m_context->VSSetShader(m_state->vertexShader->GetD3D11Shader(), nullptr, 0);
   }
 
