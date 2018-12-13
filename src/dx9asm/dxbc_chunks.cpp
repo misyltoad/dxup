@@ -338,14 +338,6 @@ namespace dxapex {
 
       // Pack properly for DXBC formatting...
       struct IOSGNElement {
-        IOSGNElement() {
-          // This mask is inverted on OSGN.
-          if (ChunkType == chunks::ISGN)
-            mask = 0x0000FFFF;
-          else
-            mask = 0x000000FF;
-        }
-
         uint32_t nameOffset;
         uint32_t semanticIndex;
         uint32_t systemValueType = 0;
@@ -371,6 +363,16 @@ namespace dxapex {
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
+
+          uint32_t baseMask = isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+          element.mask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
+          uint32_t rwMask = element.mask;
+
+          if (!isInput(ChunkType))
+            rwMask = rwMask ^ 0xFFu;
+
+          rwMask = rwMask << 8;
+          element.mask |= rwMask;
 
           element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage);
           pushObject(obj, element);
