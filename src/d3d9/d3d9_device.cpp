@@ -248,13 +248,15 @@ namespace dxapex {
     if (BackBufferCount == 0)
       BackBufferCount = 1;
 
-    SwapChainDesc.BufferCount = BackBufferCount + 1;
+    SwapChainDesc.BufferCount = BackBufferCount;
     SwapChainDesc.BufferDesc.Width = pPresentationParameters->BackBufferWidth;
     SwapChainDesc.BufferDesc.Height = pPresentationParameters->BackBufferHeight;
     SwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    SwapChainDesc.BufferDesc.RefreshRate.Numerator = 1;
-    SwapChainDesc.BufferDesc.RefreshRate.Denominator = 0;
-    SwapChainDesc.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    SwapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
+    SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
+    SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     SwapChainDesc.OutputWindow = m_creationParameters.hFocusWindow;
     SwapChainDesc.Windowed = true;
     SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
