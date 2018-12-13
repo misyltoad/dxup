@@ -79,7 +79,11 @@ namespace dxapex {
     if (m_flags & DeviceFlag_Ex)
       return D3D_OK;
 
-    Direct3DSwapChain9Ex* swapchain = reinterpret_cast<Direct3DSwapChain9Ex*>(m_swapchains[0].ptr());
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(0);
+
+    if (swapchain == nullptr)
+      return D3DERR_INVALIDCALL;
+
     return swapchain->TestSwapchain(nullptr, 0);
   }
 
@@ -281,14 +285,22 @@ namespace dxapex {
       }
     }
 
-    return D3DERR_INVALIDCALL;;
+    return D3DERR_INVALIDCALL;
   }
+
+  Direct3DSwapChain9Ex* Direct3DDevice9Ex::GetInternalSwapchain(UINT i) {
+    if (i >= m_swapchains.size())
+      return nullptr;
+
+    return reinterpret_cast<Direct3DSwapChain9Ex*>(m_swapchains[i].ptr());
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSwapChain(UINT iSwapChain, IDirect3DSwapChain9** pSwapChain) {
     InitReturnPtr(pSwapChain);
-    if (!pSwapChain || iSwapChain > m_swapchains.size() || m_swapchains[iSwapChain] == nullptr)
+    if (!pSwapChain || iSwapChain >= m_swapchains.size() || GetInternalSwapchain(iSwapChain) == nullptr)
       return D3DERR_INVALIDCALL;
 
-    *pSwapChain = ref(m_swapchains[iSwapChain]);
+    *pSwapChain = ref(GetInternalSwapchain(iSwapChain));
 
     return D3D_OK;
   }
@@ -310,16 +322,20 @@ namespace dxapex {
     return PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetBackBuffer(UINT iSwapChain, UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface9** ppBackBuffer) {
-    if (iSwapChain > m_swapchains.size() || m_swapchains[iSwapChain] == nullptr)
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
+
+    if (swapchain == nullptr)
       return D3DERR_INVALIDCALL;
 
-    return m_swapchains[iSwapChain]->GetBackBuffer(iBackBuffer, Type, ppBackBuffer);
+    return swapchain->GetBackBuffer(iBackBuffer, Type, ppBackBuffer);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRasterStatus(UINT iSwapChain, D3DRASTER_STATUS* pRasterStatus) {
-    if (iSwapChain > m_swapchains.size() || m_swapchains[iSwapChain] == nullptr)
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
+
+    if (swapchain == nullptr)
       return D3DERR_INVALIDCALL;
 
-    return m_swapchains[iSwapChain]->GetRasterStatus(pRasterStatus);
+    return swapchain->GetRasterStatus(pRasterStatus);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDialogBoxMode(BOOL bEnableDialogs) {
     log::stub("Direct3DDevice9Ex::SetDialogBoxMode");
@@ -478,10 +494,12 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
-    if (iSwapChain >= m_swapchains.size() || m_swapchains[iSwapChain] == nullptr)
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
+
+    if (swapchain == nullptr)
       return D3DERR_INVALIDCALL;
 
-    m_swapchains[iSwapChain]->GetFrontBufferData(pDestSurface);  
+    swapchain->GetFrontBufferData(pDestSurface);  
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::StretchRect(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestSurface, CONST RECT* pDestRect, D3DTEXTUREFILTERTYPE Filter) {
@@ -572,7 +590,7 @@ namespace dxapex {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Clear(DWORD Count, CONST D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     Com<IDirect3DSurface9> d3d9Surface;
-    m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d9Surface);
+    GetInternalSwapchain(0)->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &d3d9Surface);
     Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(d3d9Surface.ptr());
 
     FLOAT color[4];
@@ -1162,7 +1180,11 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::WaitForVBlank(UINT iSwapChain) {
-    Direct3DSwapChain9Ex* swapchain = reinterpret_cast<Direct3DSwapChain9Ex*>(m_swapchains[0].ptr());
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
+
+    if (swapchain == nullptr)
+      return D3DERR_INVALIDCALL;
+
     swapchain->WaitForVBlank();
     return D3D_OK;
   }
@@ -1189,13 +1211,17 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CheckDeviceState(HWND hDestinationWindow) {
-    Direct3DSwapChain9Ex* swapchain = reinterpret_cast<Direct3DSwapChain9Ex*>(m_swapchains[0].ptr());
+    Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(0);
+
+    if (swapchain == nullptr)
+      return D3DERR_INVALIDCALL;
+
     return swapchain->TestSwapchain(hDestinationWindow, true);
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::PresentEx(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags) {
     // Not sure what swapchain to use here, going with this one ~ Josh
-    HRESULT result = m_swapchains[0]->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+    HRESULT result = GetInternalSwapchain(0)->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
 
     if (m_pendingCursorUpdate.update)
       SetCursorPosition(m_pendingCursorUpdate.x, m_pendingCursorUpdate.y, D3DCURSOR_IMMEDIATE_UPDATE);

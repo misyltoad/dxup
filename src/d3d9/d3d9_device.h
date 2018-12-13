@@ -39,6 +39,7 @@ namespace dxapex {
     BOOL    STDMETHODCALLTYPE ShowCursor(BOOL bShow) override;
     HRESULT STDMETHODCALLTYPE CreateAdditionalSwapChain(D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DSwapChain9** ppSwapChain) override;
     HRESULT STDMETHODCALLTYPE GetSwapChain(UINT iSwapChain, IDirect3DSwapChain9** pSwapChain) override;
+    Direct3DSwapChain9Ex* GetInternalSwapchain(UINT i);
     UINT    STDMETHODCALLTYPE GetNumberOfSwapChains();
     HRESULT STDMETHODCALLTYPE Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
     HRESULT STDMETHODCALLTYPE Present(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion) override;
