@@ -1158,7 +1158,8 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::WaitForVBlank(UINT iSwapChain) {
-    log::stub("Direct3DDevice9Ex::WaitForVBlank");
+    Direct3DSwapChain9Ex* swapchain = reinterpret_cast<Direct3DSwapChain9Ex*>(m_swapchains[0].ptr());
+    swapchain->WaitForVBlank();
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CheckResourceResidency(IDirect3DResource9** pResourceArray, UINT32 NumResources) {

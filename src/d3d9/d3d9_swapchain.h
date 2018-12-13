@@ -27,9 +27,11 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex);
 
     HRESULT TestSwapchain(HWND hDestWindowOverride, bool ex);
+    HRESULT WaitForVBlank();
   private:
 
     Com<IDXGISwapChain> m_swapchain;
+    Com<IDXGIOutput> m_output;
     D3DPRESENT_PARAMETERS m_presentationParameters;
     std::array<Com<IDirect3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
 

@@ -30,6 +30,7 @@ namespace dxapex {
       m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET));
     }
 
+    m_swapchain->GetContainingOutput(&m_output);
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::QueryInterface(REFIID riid, void** ppvObj) {
@@ -108,6 +109,11 @@ namespace dxapex {
     return D3D_OK;
   }
 
+  HRESULT Direct3DSwapChain9Ex::WaitForVBlank() {
+    m_output->WaitForVBlank();
+    return D3D_OK;
+  }
+
   HRESULT Direct3DSwapChain9Ex::TestSwapchain(HWND hDestWindowOverride, bool ex) {
     return PresentD3D11(nullptr, nullptr, hDestWindowOverride, nullptr, 0, DXGI_PRESENT_TEST, ex);
   }
@@ -119,7 +125,7 @@ namespace dxapex {
       log::warn("Present given with a window override. Not supported yet! Not presenting.");
       return D3DERR_INVALIDCALL;
     }
-    
+
     if (d3d11Flags != 0) {
       result = m_swapchain->Present(0, d3d11Flags);
     }
