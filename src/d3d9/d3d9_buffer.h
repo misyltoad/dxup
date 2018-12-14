@@ -73,7 +73,7 @@ namespace dxapex {
     }
 
     ID3D11Buffer* GetMapping() {
-      if (GetStaging())
+      if (HasStaging())
         return GetStaging();
 
       return GetD3D11Buffer();
