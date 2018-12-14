@@ -8,13 +8,13 @@ namespace dxapex {
     if (d3d9 == nullptr)
       return E_INVALIDARG;
 
-    IDXGIFactory* dxgiFactory = nullptr;
-    HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
+    Com<IDXGIFactory1> dxgiFactory;
+    HRESULT result = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&dxgiFactory);
 
     if (FAILED(result))
         return result;
 
-    *d3d9 = ref(new Direct3D9Ex(dxgiFactory));
+    *d3d9 = ref(new Direct3D9Ex(dxgiFactory.ptr()));
 
     return D3D_OK;
   }

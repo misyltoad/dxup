@@ -3,13 +3,13 @@
 
 namespace dxapex {
 
-  Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain* swapchain)
+  Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain)
     : Direct3DSwapChain9ExBase(device)
     , m_swapchain(swapchain)
     , m_presentationParameters(*presentationParameters) {
 
-    DXGI_SWAP_CHAIN_DESC desc;
-    m_swapchain->GetDesc(&desc);
+    DXGI_SWAP_CHAIN_DESC1 desc;
+    m_swapchain->GetDesc1(&desc);
 
     UINT buffers = desc.BufferCount;
 
@@ -24,13 +24,25 @@ namespace dxapex {
       Com<ID3D11Texture2D> texture;
 
       HRESULT result = m_swapchain->GetBuffer(i, __uuidof(ID3D11Texture2D), (void**)&texture);
-      if (FAILED(result))
+      if (FAILED(result)) {
+        log::warn("Failed to get swapchain buffer as ID3D11Texture2D.");
         return;
+      }
       
       m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET));
     }
 
-    m_swapchain->GetContainingOutput(&m_output);
+    Com<IDXGIOutput> output;
+    HRESULT result = m_swapchain->GetContainingOutput(&output);
+    if (FAILED(result)) {
+      log::warn("Failed to get Swapchain IDXGIOutput");
+      return;
+    }
+
+    result = output->QueryInterface(__uuidof(IDXGIOutput1), (void**) &m_output);
+
+    if (FAILED(result))
+      log::warn("Failed to get Swapchain IDXGIOutput1");
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::QueryInterface(REFIID riid, void** ppvObj) {

@@ -61,19 +61,16 @@ namespace dxapex {
   }
 
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetDeviceCaps(UINT Adapter, D3DDEVTYPE DeviceType, D3DCAPS9* pCaps) {
-    
-
-
     return D3D_OK;
   }
 
   HMONITOR STDMETHODCALLTYPE Direct3D9Ex::GetAdapterMonitor(UINT Adapter) {
-    Com<IDXGIAdapter> adapter = nullptr;
-    HRESULT Result = m_dxgiFactory->EnumAdapters(Adapter, &adapter);
+    Com<IDXGIAdapter1> adapter;
+    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
     if (FAILED(Result))
       return NULL;
 
-    Com<IDXGIOutput> output = nullptr;
+    Com<IDXGIOutput> output;
     Result = adapter->EnumOutputs(0, &output);
     if (FAILED(Result))
       return NULL;
@@ -134,8 +131,8 @@ namespace dxapex {
 
     InitReturnPtr(ppReturnedDeviceInterface);
 
-    Com<IDXGIAdapter> adapter = nullptr;
-    HRESULT Result = m_dxgiFactory->EnumAdapters(Adapter, &adapter);
+    Com<IDXGIAdapter1> adapter = nullptr;
+    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
 
     if (FAILED(Result))
       return D3DERR_DEVICELOST;
@@ -147,14 +144,12 @@ namespace dxapex {
 
     D3D_FEATURE_LEVEL FeatureLevels[] =
     {
-      D3D_FEATURE_LEVEL_11_0,
-      D3D_FEATURE_LEVEL_10_1,
-      D3D_FEATURE_LEVEL_10_0,
-      D3D_FEATURE_LEVEL_9_3,
-      D3D_FEATURE_LEVEL_9_2,
-      D3D_FEATURE_LEVEL_9_1,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
     };
-    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_0;
+    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
 
     ID3D11Device* pDX11Device = nullptr;
     ID3D11DeviceContext* pImmediateContext = nullptr;
@@ -172,8 +167,25 @@ namespace dxapex {
       &pImmediateContext
     );
 
-    if (FAILED(Result))
+    if (Result == E_INVALIDARG) {
+      Result = D3D11CreateDevice(
+        adapter.ptr(),
+        D3D_DRIVER_TYPE_UNKNOWN,
+        nullptr,
+        Flags,
+        &FeatureLevels[1],
+        ARRAYSIZE(FeatureLevels) - 1,
+        D3D11_SDK_VERSION,
+        &pDX11Device,
+        &Level,
+        &pImmediateContext
+      );
+    }
+
+    if (FAILED(Result)) {
+      log::fail("Failed to create D3D11 Device.");
       return D3DERR_DEVICELOST;
+    }
 
     if (config::getBool(config::Debug)) {
       Com<ID3D11Debug> d3dDebug;
@@ -217,10 +229,16 @@ namespace dxapex {
     if (pPresentationParameters->BackBufferFormat == D3DFMT_UNKNOWN)
       pPresentationParameters->BackBufferFormat = D3DFMT_A8B8G8R8;
 
+    Com<ID3D11Device1> upgradedDevice;
+    pDX11Device->QueryInterface(__uuidof(ID3D11Device1), (void**)&upgradedDevice);
+
+    Com<ID3D11DeviceContext1> upgradedContext;
+    pImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&upgradedContext);
+
     DeviceInitData initData;
     initData.adapter = adapter.ptr();
-    initData.device = pDX11Device;
-    initData.context = pImmediateContext;
+    initData.device = upgradedDevice.ptr();
+    initData.context = upgradedContext.ptr();
     initData.ex = true;
     initData.parent = this;
     initData.creationParameters = &CreationParameters;
@@ -235,8 +253,8 @@ namespace dxapex {
     if (!pLUID)
       return D3DERR_INVALIDCALL;
 
-    Com<IDXGIAdapter> adapter = nullptr;
-    if (!FAILED(m_dxgiFactory->EnumAdapters(Adapter, &adapter)))
+    Com<IDXGIAdapter1> adapter = nullptr;
+    if (!FAILED(m_dxgiFactory->EnumAdapters1(Adapter, &adapter)))
     {
       DXGI_ADAPTER_DESC adapterDesc;      
 
@@ -253,12 +271,12 @@ namespace dxapex {
     if (!pMode)
       return D3DERR_INVALIDCALL;
 
-    Com<IDXGIAdapter> adapter = nullptr;
-    HRESULT Result = m_dxgiFactory->EnumAdapters(Adapter, &adapter);
+    Com<IDXGIAdapter1> adapter;
+    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
     if (FAILED(Result))
       return D3DERR_INVALIDCALL;
 
-    Com<IDXGIOutput> output = nullptr;
+    Com<IDXGIOutput> output;
     Result = adapter->EnumOutputs(0, &output);
     if (FAILED(Result))
       return D3DERR_INVALIDCALL;
@@ -301,8 +319,8 @@ namespace dxapex {
 
   // dxapex
 
-  void Direct3D9Ex::GetDXGIFactory(IDXGIFactory** factory) {
-    *factory = ref(m_dxgiFactory);
+  IDXGIFactory1* Direct3D9Ex::GetDXGIFactory() {
+    return m_dxgiFactory.ptr();
   }
 
 }

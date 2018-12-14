@@ -10,7 +10,7 @@ namespace dxapex {
 
   public:
 
-	Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain* swapchain);
+	Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj) override;
 
@@ -30,8 +30,8 @@ namespace dxapex {
     HRESULT WaitForVBlank();
   private:
 
-    Com<IDXGISwapChain> m_swapchain;
-    Com<IDXGIOutput> m_output;
+    Com<IDXGISwapChain1> m_swapchain;
+    Com<IDXGIOutput1> m_output;
     D3DPRESENT_PARAMETERS m_presentationParameters;
     std::array<Com<IDirect3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
 

@@ -270,20 +270,27 @@ namespace dxapex {
     GetParent(&parent);
 
     Com<IDXGISwapChain> dxgiSwapChain;
-    Com<IDXGIFactory> dxgiFactory;
+    HRESULT result = parent->GetDXGIFactory()->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
 
-    parent->GetDXGIFactory(&dxgiFactory);
-    HRESULT result = dxgiFactory->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
-
-    if (FAILED(result))
+    if (FAILED(result)) {
+      log::fail("Failed to make swapchain!");
       return result;
+    }
 
-    dxgiFactory->MakeWindowAssociation(m_creationParameters.hFocusWindow, DXGI_MWA_NO_ALT_ENTER);
+    Com<IDXGISwapChain1> upgradedSwapchain;
+    result = dxgiSwapChain->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&upgradedSwapchain);
+
+    if (FAILED(result)) {
+      log::fail("Failed to upgrade swapchain to IDXGISwapChain1!");
+      return result;
+    }
+
+    parent->GetDXGIFactory()->MakeWindowAssociation(m_creationParameters.hFocusWindow, DXGI_MWA_NO_ALT_ENTER);
 
     for (size_t i = 0; i < m_swapchains.size(); i++)
     {
       if (m_swapchains[i] == nullptr) {
-        m_swapchains[i] = ref( new Direct3DSwapChain9Ex(this, pPresentationParameters, dxgiSwapChain.ptr()) );
+        m_swapchains[i] = ref( new Direct3DSwapChain9Ex(this, pPresentationParameters, upgradedSwapchain.ptr()) );
 
         *ppSwapChain = ref(m_swapchains[i]);
         return D3D_OK;

@@ -7,7 +7,7 @@ namespace dxapex {
   class Direct3D9Ex final : public Unknown<IDirect3D9Ex> {
 
     public:
-      Direct3D9Ex(IDXGIFactory* dxgiFactory)
+      Direct3D9Ex(IDXGIFactory1* dxgiFactory)
        : m_dxgiFactory(dxgiFactory)
       {}
 
@@ -37,12 +37,12 @@ namespace dxapex {
 
       // dxapex
 
-      void GetDXGIFactory(IDXGIFactory** factory);
+      IDXGIFactory1* GetDXGIFactory();
       HRESULT EnumAdapterModeFormatEx(UINT Adapter, D3DFORMAT Format, const D3DDISPLAYMODEFILTER* pFilter, UINT Mode, D3DDISPLAYMODEEX* pMode);
 
     private:
 
-      Com<IDXGIFactory> m_dxgiFactory;
+      Com<IDXGIFactory1> m_dxgiFactory;
 
   };
 

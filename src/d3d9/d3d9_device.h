@@ -6,9 +6,9 @@
 namespace dxapex {
 
   struct DeviceInitData {
-    IDXGIAdapter* adapter;
-    ID3D11Device* device;
-    ID3D11DeviceContext* context;
+    IDXGIAdapter1* adapter;
+    ID3D11Device1* device;
+    ID3D11DeviceContext1* context;
     bool ex;
     Direct3D9Ex* parent;
     D3DDEVICE_CREATION_PARAMETERS* creationParameters;
@@ -181,9 +181,9 @@ namespace dxapex {
     InternalRenderState* m_state;
 
     Com<IDXGIDevice1> m_dxgiDevice;
-    Com<ID3D11Device> m_device;
-    Com<IDXGIAdapter> m_adapter;
-    Com<ID3D11DeviceContext> m_context;
+    Com<ID3D11Device1> m_device;
+    Com<IDXGIAdapter1> m_adapter;
+    Com<ID3D11DeviceContext1> m_context;
     //Com<ID3D11Query> m_endQuery;
 
     const uint8_t DeviceFlag_Ex = 0x01;
