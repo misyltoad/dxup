@@ -945,11 +945,14 @@ namespace dxapex {
 
     ID3D11InputLayout* layout = m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr());
 
+    bool created = false;
     if (layout == nullptr) {
       m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
 
       if (layout != nullptr)
         m_state->vertexShader->LinkInput(layout, m_state->vertexDecl.ptr());
+
+      layout->Release();
     }
 
     if (layout == nullptr) {
@@ -960,6 +963,7 @@ namespace dxapex {
     m_state->isValid = true;
 
     m_context->IASetInputLayout(layout);
+
     m_context->VSSetShader(m_state->vertexShader->GetD3D11Shader(), nullptr, 0);
   }
 
