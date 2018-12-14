@@ -898,13 +898,15 @@ namespace dxapex {
     std::memcpy(&d3d9Elements[0], pVertexElements, sizeof(D3DVERTEXELEMENT9) * count);
 
     for (size_t i = 0; i < count; i++) {
-      D3D11_INPUT_ELEMENT_DESC desc = { 0 };
+      D3D11_INPUT_ELEMENT_DESC desc;
       
       desc.SemanticName = convert::declUsage(true, false, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
+      desc.SemanticIndex = 0;
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
+      desc.InputSlot = pVertexElements[i].UsageIndex;
       desc.AlignedByteOffset = pVertexElements[i].Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-      desc.InputSlot = pVertexElements[i].UsageIndex;
+      desc.InstanceDataStepRate = 0;
       
       inputElements.push_back(desc);
     }
