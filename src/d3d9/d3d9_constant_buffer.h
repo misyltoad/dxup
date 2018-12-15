@@ -33,8 +33,8 @@ namespace dxapex {
     void pushData();
 
     // I exist as long as my parent D3D9 device exists. No need for COM.
-    ID3D11Device* m_device;
-    ID3D11DeviceContext* m_context;
+    ID3D11Device1* m_device;
+    ID3D11DeviceContext1* m_context;
 
     std::shared_ptr<uint8_t> m_elements;
     uint32_t m_elementSize;
