@@ -29,7 +29,8 @@ namespace dxapex {
     , m_flags(0)
     , m_creationParameters(*data->creationParameters) 
     , m_deviceType(data->deviceType)
-    , m_state{ new InternalRenderState }{
+    , m_state{ new InternalRenderState }
+    , m_constants{ data->device, data->context }{
     if (data->ex)
       m_flags |= DeviceFlag_Ex;
 
@@ -50,11 +51,6 @@ namespace dxapex {
     implicitViewport.MinZ = 0.0f;
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);
-
-    /*D3D11_QUERY_DESC desc;
-    desc.MiscFlags = 0;
-    desc.Query = D3D11_QUERY::D3D11_QUERY_TIMESTAMP;
-    m_device->CreateQuery(&desc, &m_endQuery);*/
 
     if (!FAILED(result))
       SetRenderTarget(0, backbuffer.ptr());
@@ -840,6 +836,8 @@ namespace dxapex {
     m_context->IASetPrimitiveTopology(topology);
     m_context->Draw(drawCount, StartVertex);
 
+    FinishDraw();
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
@@ -855,6 +853,8 @@ namespace dxapex {
 
     m_context->IASetPrimitiveTopology(topology);
     m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex + MinVertexIndex);
+
+    FinishDraw();
 
     return D3D_OK;
   }
@@ -929,6 +929,9 @@ namespace dxapex {
 
   bool Direct3DDevice9Ex::PrepareDraw() {
     RefreshInputLayout();
+
+    m_constants.prepareDraw();
+
     return CanDraw();
   }
 
@@ -972,6 +975,9 @@ namespace dxapex {
     m_context->IASetInputLayout(layout);
 
     m_context->VSSetShader(m_state->vertexShader->GetD3D11Shader(), nullptr, 0);
+  }
+
+  void Direct3DDevice9Ex::FinishDraw() {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
@@ -1078,28 +1084,22 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
-    log::stub("Direct3DDevice9Ex::SetVertexShaderConstantF");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Vertex, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
-    log::stub("Direct3DDevice9Ex::GetVertexShaderConstantF");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Vertex, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
-    log::stub("Direct3DDevice9Ex::SetVertexShaderConstantI");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Vertex, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
-    log::stub("Direct3DDevice9Ex::GetVertexShaderConstantI");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Vertex, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
-    log::stub("Direct3DDevice9Ex::SetVertexShaderConstantB");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Vertex, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
-    log::stub("Direct3DDevice9Ex::GetVertexShaderConstantB");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Vertex, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
@@ -1155,28 +1155,22 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
-    log::stub("Direct3DDevice9Ex::SetPixelShaderConstantF");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Pixel, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
-    log::stub("Direct3DDevice9Ex::GetPixelShaderConstantF");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Pixel, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
-    log::stub("Direct3DDevice9Ex::SetPixelShaderConstantI");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Pixel, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
-    log::stub("Direct3DDevice9Ex::GetPixelShaderConstantI");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Pixel, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
-    log::stub("Direct3DDevice9Ex::SetPixelShaderConstantB");
-    return D3D_OK;
+    return m_constants.set(ShaderType::Pixel, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
-    log::stub("Direct3DDevice9Ex::GetPixelShaderConstantB");
-    return D3D_OK;
+    return m_constants.get(ShaderType::Pixel, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawRectPatch(UINT Handle, CONST float* pNumSegs, CONST D3DRECTPATCH_INFO* DrawRectPatch) {
     log::stub("Direct3DDevice9Ex::DrawRectPatch");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "d3d9_base.h"
+#include "d3d9_constant_buffer.h"
 #include <array>
 
 namespace dxapex {
@@ -172,6 +173,7 @@ namespace dxapex {
 
     bool CanDraw();
     bool PrepareDraw();
+    void FinishDraw();
     bool CanRefreshInputLayout();
 
   private:
@@ -184,7 +186,7 @@ namespace dxapex {
     Com<ID3D11Device1> m_device;
     Com<IDXGIAdapter1> m_adapter;
     Com<ID3D11DeviceContext1> m_context;
-    //Com<ID3D11Query> m_endQuery;
+    D3D9ConstantBuffers m_constants;
 
     const uint8_t DeviceFlag_Ex = 0x01;
 
