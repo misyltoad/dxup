@@ -17,9 +17,14 @@ namespace dxapex {
       const uint32_t abs = 2;
     }
 
-    struct DX9ToDXBCImplicitConversionInfo {
-      uint32_t dxbcOpcode = 0;
-      uint32_t implicitFlags = 0;
+    class DX9ToDXBCImplicitConversionInfo {
+    public:
+      DX9ToDXBCImplicitConversionInfo() : valid{ false }, dxbcOpcode{ 0 }, implicitFlags{ 0 } {}
+      DX9ToDXBCImplicitConversionInfo(uint32_t opcode, uint32_t flags) : valid{ true }, dxbcOpcode{ opcode }, implicitFlags{ flags } {}
+
+      uint32_t dxbcOpcode;
+      uint32_t implicitFlags;
+      bool valid;
     };
 
     typedef bool(ShaderCodeTranslator::*UniqueFunction)(DX9Operation&);
@@ -78,7 +83,7 @@ namespace dxapex {
       }
 
       inline bool isUnique() const {
-        return getUniqueFunction() != nullptr;
+        return getUniqueFunction() != nullptr || !getImplicitInfo().valid;
       }
 
       inline uint32_t getCommentCount() const {

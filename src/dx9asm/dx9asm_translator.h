@@ -56,6 +56,7 @@ namespace dxapex {
 
       bool handleComment(DX9Operation& operation);
       bool handleDcl(DX9Operation& operation);
+      bool handleLit(DX9Operation& operation);
       bool handleMad(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
 

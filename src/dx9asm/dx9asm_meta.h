@@ -10,9 +10,10 @@ namespace dxapex {
 
   namespace dx9asm {
 
-    enum class ShaderType {
-      Vertex,
-      Pixel
+    enum ShaderType {
+      Vertex = 0,
+      Pixel = 1,
+      Count
     };
 
     struct CTHeader
