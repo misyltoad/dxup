@@ -47,12 +47,11 @@ namespace dxapex {
       inline void setSwizzleOrWritemask(uint32_t swizzlewrite) {
         m_swizzleOrWritemask = swizzlewrite;
       }
-      inline void setExtension(uint32_t extension) {
-        m_hasExtension = true;
-        m_extension = extension;
+      inline void setModifier(uint32_t modifier) {
+        m_modifier = modifier;
       }
-      inline void stripExtension() {
-        m_hasExtension = false;
+      inline void stripModifier() {
+        m_modifier = UINT32_MAX;
       }
       inline DXBCOperand& setData(const uint32_t* data, uint32_t count) {
         if (count > 4) {
@@ -107,7 +106,7 @@ namespace dxapex {
       uint32_t m_representations = 0;
       uint32_t m_swizzleOrWritemask = 0;
       uint32_t m_components = 4;
-      uint32_t m_extension = 0;
+      uint32_t m_modifier = UINT32_MAX;
       uint32_t m_data[4] = { 0 };
       uint32_t m_dataCount = 0;
       uint32_t m_dummy = 0;

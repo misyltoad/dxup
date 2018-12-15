@@ -54,7 +54,7 @@ namespace dxapex {
       mapping.dx9Id = dst->getRegNumber();
       mapping.dx9Type = dst->getRegType();
       mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_IMMEDIATE32);
-      mapping.dxbcOperand.setExtension(false);
+      mapping.dxbcOperand.stripModifier();
       mapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_0D);
       uint32_t data[4];
       vec4->getValues(data);

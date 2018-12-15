@@ -33,51 +33,51 @@ namespace dxapex {
         case D3DSPSM_NONE: {
 
           if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
           else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
           else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_NEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
           else
-            return dstOperand.stripExtension();
+            return dstOperand.stripModifier();
 
         }
 
         case D3DSPSM_NEG: {
 
           if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
           else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
           else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.stripExtension();
+            return dstOperand.stripModifier();
           else
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_NEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
 
         }
 
         case D3DSPSM_ABS: {
 
           if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
           else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
           else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
           else
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
 
         }
         case D3DSPSM_ABSNEG: {
 
           if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
           else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
           else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABS);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
           else
-            return dstOperand.setExtension(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
 
         }
 
