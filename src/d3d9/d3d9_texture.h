@@ -8,9 +8,10 @@ namespace dxapex {
   template <typename D3D11ResourceType, D3DRESOURCETYPE ResourceType, typename... ID3D9BaseType>
   class Direct3DBaseTexture9 : public Direct3DResource9<ResourceType, ID3D9BaseType...> {
   public:
-    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, D3DPOOL pool, DWORD usage)
+    Direct3DBaseTexture9(Direct3DDevice9Ex* device, D3D11ResourceType* resource, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage)
       : Direct3DResource9<ResourceType, ID3D9BaseType...>(device, pool, usage)
       , m_resource(resource)
+      , m_srv{ srv }
     {}
 
     DWORD STDMETHODCALLTYPE SetLOD(DWORD LODNew) override {
@@ -42,6 +43,10 @@ namespace dxapex {
       return m_stagingResource.ptr();
     }
 
+    ID3D11ShaderResourceView* GetSRV() {
+      return m_srv.ptr();
+    }
+
   protected:
 
     void SetStaging(D3D11ResourceType* res) {
@@ -51,13 +56,14 @@ namespace dxapex {
   private:
     Com<D3D11ResourceType> m_resource;
     Com<D3D11ResourceType> m_stagingResource;
+    Com<ID3D11ShaderResourceView> m_srv;
   };
 
   using Direct3DTexture9Base = Direct3DBaseTexture9<ID3D11Texture2D, D3DRTYPE_TEXTURE, IDirect3DTexture9>;
   class Direct3DTexture9 final : public Direct3DTexture9Base
   {
   public:
-    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage);
+    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage);
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 

@@ -390,7 +390,10 @@ namespace dxapex {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), Pool, Usage));
+    Com<ID3D11ShaderResourceView> srv;
+    m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
+
+    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage));
 
     return D3D_OK;
   }
@@ -738,7 +741,18 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
-    log::stub("Direct3DDevice9Ex::SetTexture");
+    Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
+
+    ID3D11ShaderResourceView* srv = nullptr;
+    if (texture2D != nullptr)
+      srv = texture2D->GetSRV();
+    else
+      log::warn("Request to bind a texture that I don't know how!");
+
+    if (srv != nullptr)
+      m_context->PSSetShaderResources(Stage, 1, &srv);
+    else
+      log::fail("Failed to bind texture, null SRV.");
 
     return D3D_OK;
   }
@@ -1025,24 +1039,9 @@ namespace dxapex {
       FILE* file = fopen(name, "wb");
       fwrite(bytecode->getBytecode(), 1, bytecode->getByteSize(), file);
       fclose(file);
-    }
+      
+      // Disassemble.
 
-    Com<D3D11> shader;
-    HRESULT result = D3DERR_INVALIDCALL;
-
-    if (Vertex)
-      result = device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11VertexShader**) &shader);
-    else
-      result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**) &shader);
-
-    if (FAILED(result)) {
-      log::fail("Shader translation failed!");
-      return D3DERR_INVALIDCALL;
-    }
-
-    *ppShader = ref(new D3D9(wrapDevice, pFunction, shader.ptr(), bytecode));
-
-    if (config::getBool(config::ShaderDump)) {
       char comments[2048];
       Com<ID3DBlob> blob;
 
@@ -1064,6 +1063,21 @@ namespace dxapex {
         fclose(file);
       }
     }
+
+    Com<D3D11> shader;
+    HRESULT result = D3DERR_INVALIDCALL;
+
+    if (Vertex)
+      result = device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11VertexShader**) &shader);
+    else
+      result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**) &shader);
+
+    if (FAILED(result)) {
+      log::fail("Shader translation failed!");
+      return D3DERR_INVALIDCALL;
+    }
+
+    *ppShader = ref(new D3D9(wrapDevice, pFunction, shader.ptr(), bytecode));
 
     return D3D_OK;
   }

@@ -3,8 +3,8 @@
 
 namespace dxapex {
 
-  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
-    : Direct3DTexture9Base(device, texture, pool, usage)
+  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage)
+    : Direct3DTexture9Base(device, texture, srv, pool, usage)
     , m_mappedSubresources{ 0 }
     , m_unmappedSubresources{ 0 }{
 
