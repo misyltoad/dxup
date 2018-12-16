@@ -957,12 +957,13 @@ namespace dxapex {
 
     bool created = false;
     if (layout == nullptr) {
-      m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
+      HRESULT result = m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
 
-      if (layout != nullptr)
+      if (!FAILED(result)) {
         m_state->vertexShader->LinkInput(layout, m_state->vertexDecl.ptr());
 
-      layout->Release();
+        layout->Release();
+      }
     }
 
     if (layout == nullptr) {
