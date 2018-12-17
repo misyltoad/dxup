@@ -4,6 +4,7 @@
 #include "../util/log.h"
 #include "dx9asm_util.h"
 #include <vector>
+#include <cstring>
 
 namespace dxapex {
 

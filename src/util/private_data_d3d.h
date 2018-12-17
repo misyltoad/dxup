@@ -3,6 +3,7 @@
 #include "windows_includes.h"
 #include <list>
 #include <memory>
+#include <cstring>
 
 namespace dxapex {
 
