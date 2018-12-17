@@ -2,6 +2,7 @@
 #include "d3d9_device.h"
 #include "../util/config.h"
 #include <vector>
+#include <algorithm>
 
 namespace dxapex {
 
@@ -160,7 +161,7 @@ namespace dxapex {
       nullptr,
       Flags,
       FeatureLevels,
-      ARRAYSIZE(FeatureLevels),
+      std::size(FeatureLevels),
       D3D11_SDK_VERSION,
       &pDX11Device,
       &Level,
@@ -174,7 +175,7 @@ namespace dxapex {
         nullptr,
         Flags,
         &FeatureLevels[1],
-        ARRAYSIZE(FeatureLevels) - 1,
+        std::size(FeatureLevels) - 1,
         D3D11_SDK_VERSION,
         &pDX11Device,
         &Level,
@@ -256,7 +257,7 @@ namespace dxapex {
     Com<IDXGIAdapter1> adapter = nullptr;
     if (!FAILED(m_dxgiFactory->EnumAdapters1(Adapter, &adapter)))
     {
-      DXGI_ADAPTER_DESC adapterDesc;      
+      DXGI_ADAPTER_DESC adapterDesc;
 
       if (!FAILED(adapter->GetDesc(&adapterDesc)))
         *pLUID = adapterDesc.AdapterLuid;
