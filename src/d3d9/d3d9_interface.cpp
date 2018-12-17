@@ -80,7 +80,7 @@ namespace dxapex {
       return D3DERR_INVALIDCALL;
 
     UINT count = 0;
-    output->GetDisplayModeList(DXGI_FORMAT_R32G32B32_FLOAT, 0, &count, nullptr);
+    output->GetDisplayModeList(convert::format(Format), 0, &count, nullptr);
 
     return count;
   }
