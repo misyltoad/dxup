@@ -51,6 +51,9 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceMultiSampleType(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels) {
+    if (pQualityLevels)
+      *pQualityLevels = 3;
+
     return D3D_OK;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDepthStencilMatch(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT AdapterFormat, D3DFORMAT RenderTargetFormat, D3DFORMAT DepthStencilFormat) {
