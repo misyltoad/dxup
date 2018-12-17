@@ -152,7 +152,7 @@ namespace dxapex {
     D3DDISPLAYMODEEX exMode;
     HRESULT result = EnumAdapterModeFormatEx(Adapter, Format, NULL, Mode, &exMode);
 
-    pMode->Format = exMode.Format;
+    pMode->Format = Format;
     pMode->Height = exMode.Height;
     pMode->RefreshRate = exMode.RefreshRate;
     pMode->Width = exMode.Width;
@@ -354,7 +354,7 @@ namespace dxapex {
       return D3DERR_INVALIDCALL;
 
     DXGI_MODE_DESC& RequestedMode = pDescs[Mode];
-    pMode->Format = convert::format(RequestedMode.Format);
+    pMode->Format = Format;
     pMode->Width = RequestedMode.Width;
     pMode->Height = RequestedMode.Height;
     pMode->RefreshRate = RequestedMode.RefreshRate.Denominator;
