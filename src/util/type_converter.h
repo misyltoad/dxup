@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 namespace dxapex {
 
   template <typename T, typename J, size_t Size>
