@@ -15,3 +15,9 @@
 #if defined(__WINE__) && !defined(typeof)
 #define typeof __typeof
 #endif
+
+// Missing WINE definitions
+#ifdef __WINE__
+#define D3DCURSOR_IMMEDIATE_UPDATE      1
+#define D3DPRESENT_BACK_BUFFERS_MAX_EX  D3DPRESENT_BACK_BUFFERS_MAX
+#endif
