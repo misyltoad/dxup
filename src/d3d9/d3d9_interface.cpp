@@ -40,7 +40,6 @@ namespace dxapex {
     return 0;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
-    log::stub("Direct3D9Ex::GetAdapterDisplayMode");
     return EnumAdapterModes(Adapter, D3DFMT_A8B8G8R8, 0, pMode);
   }
 
