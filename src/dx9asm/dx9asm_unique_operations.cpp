@@ -56,21 +56,29 @@ namespace dxapex {
 
       m_samplerMask |= 1 << regNum;
 
-      // Fake a D3D9 texcoord register.
-      RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
-        getShaderType(),
-        getMajorVersion(),
-        getMinorVersion(),
-        D3DSPR_TEXCRDOUT,
-        regNum, 
-        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
-        0);
+      DXBCOperand texCoordOp;
+      if (getMajorVersion() < 2 && getMinorVersion() < 4) {
+        // Fake a D3D9 texcoord register.
+        RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
+          getShaderType(),
+          getMajorVersion(),
+          getMinorVersion(),
+          D3DSPR_TEXCRDOUT,
+          regNum,
+          ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
+          0);
 
-      DXBCOperand texCoordOp = texCoordMapping->dxbcOperand;
-      texCoordOp.setSwizzleOrWritemask(
-        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) | 
-        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X)
-      );
+        texCoordOp = texCoordMapping->dxbcOperand;
+
+        texCoordOp.setSwizzleOrWritemask(
+          ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+          ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X)
+        );
+      }
+      else {
+        DX9Operand texCoord{ lookupOperandInfo(optype::Src0), nextToken() };
+        texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
+      }
 
       RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(getShaderType(), getMajorVersion(), getMinorVersion(), dst);
       DXBCOperand dstOp = dstMapping->dxbcOperand;
