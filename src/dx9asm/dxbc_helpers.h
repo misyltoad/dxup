@@ -42,7 +42,7 @@ namespace dxapex {
       }
       inline void setRepresentation(uint32_t index, uint32_t representation) {
         m_representation[index] = representation;
-        m_representations = max(m_representations, index + 1);
+        m_representations = std::max(m_representations, index + 1);
       }
       inline void setSwizzleOrWritemask(uint32_t swizzlewrite) {
         m_swizzleOrWritemask = swizzlewrite;

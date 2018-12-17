@@ -37,7 +37,7 @@ namespace dxapex {
           const DXBCOperand& lumOperand = lum.dxbcOperand;
 
           if (lumOperand.getRegisterType() == type) {
-            highestIdForType = max(highestIdForType, lumOperand.getRegNumber());
+            highestIdForType = std::max(highestIdForType, lumOperand.getRegNumber());
 
             if (highestIdForType == invalidId)
               highestIdForType = lumOperand.getRegNumber();
