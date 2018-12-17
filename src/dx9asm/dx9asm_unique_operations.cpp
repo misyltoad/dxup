@@ -7,6 +7,7 @@ namespace dxapex {
 
   namespace dx9asm {
 
+    // Varadic Operand
     bool ShaderCodeTranslator::handleComment(DX9Operation& operation) {
       uint32_t commentTokenCount = operation.getCommentCount();
 
@@ -46,6 +47,58 @@ namespace dxapex {
       return true;
     }
 
+    // Varadic Operand
+    bool ShaderCodeTranslator::handleTex(DX9Operation& operation) {
+      // SM1_1 impl for now.
+
+      DX9Operand dst{ lookupOperandInfo(optype::Dst), nextToken() };
+      uint32_t regNum = dst.getRegNumber();
+
+      m_samplerMask |= 1 << regNum;
+
+      // Fake a D3D9 texcoord register.
+      RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
+        getShaderType(),
+        getMajorVersion(),
+        getMinorVersion(),
+        D3DSPR_TEXCRDOUT,
+        regNum, 
+        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
+        0);
+
+      DXBCOperand texCoordOp = texCoordMapping->dxbcOperand;
+      texCoordOp.setSwizzleOrWritemask(
+        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) | 
+        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X)
+      );
+
+      RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(getShaderType(), getMajorVersion(), getMinorVersion(), dst);
+      DXBCOperand dstOp = dstMapping->dxbcOperand;
+      dstOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      calculateDXBCSwizzleAndWriteMask(dstOp, dst);
+      calculateDXBCModifiers(dstOp, operation, dst);
+
+      DXBCOperand textureOp{ D3D10_SB_OPERAND_TYPE_RESOURCE, 1 };
+      textureOp.setData(&regNum, 1);
+      textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      textureOp.setSwizzleOrWritemask(noSwizzle);
+
+      DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
+      samplerOp.setData(&regNum, 1);
+      samplerOp.setComponents(0);
+      samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+
+      DXBCOperation{D3D10_SB_OPCODE_SAMPLE, false}
+        .setSampler(true)
+        .appendOperand(dstOp)
+        .appendOperand(texCoordOp)
+        .appendOperand(textureOp)
+        .appendOperand(samplerOp)
+        .push(*this);
+
+      return true;
+    }
+
     bool ShaderCodeTranslator::handleDef(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* vec4 = operation.getOperandByType(optype::Vec4);
@@ -63,7 +116,7 @@ namespace dxapex {
 
       mapping.dxbcOperand.setSwizzleOrWritemask(noSwizzle);
 
-      m_map.addRegisterMapping(false, mapping);
+      m_map.addRegisterMapping(false, false, mapping);
 
       return true;
     }

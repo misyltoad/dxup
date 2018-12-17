@@ -51,17 +51,25 @@ namespace dxapex {
         return getHighestIdForDXBCType(type) + 1;
       }
 
+      RegisterMapping* lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask);
 
       RegisterMapping* lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, const DX9Operand& operand, uint32_t regOffset = 0);
 
-      inline void addRegisterMapping(bool generateDXBCId, RegisterMapping& mapping) {
+      uint32_t getTransientId(DclInfo& info);
+
+      inline void addRegisterMapping(bool transient, bool generateDXBCId, RegisterMapping& mapping) {
         DXBCOperand& dxbcOperand = mapping.dxbcOperand;
         if (generateDXBCId) {
           uint32_t& regNumber = dxbcOperand.getRegNumber();
-          uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.getRegisterType());
 
-          highestIdForType++;
-          regNumber = highestIdForType;
+          if (!transient) {
+            uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.getRegisterType());
+
+            highestIdForType++;
+            regNumber = highestIdForType;
+          }
+          else
+            regNumber = getTransientId(mapping.dclInfo);
         }
 
         m_registerMap.push_back(mapping);

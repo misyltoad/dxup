@@ -64,6 +64,11 @@ namespace dxapex {
 
     class DX9Operand {
     public:
+      DX9Operand(const OperandInfo* info, uint32_t token) 
+        : m_info{ info } {
+        m_dx9tokens[0] = token;
+      }
+
       DX9Operand(const OperandInfo* info, const uint32_t* tokens)
         : m_info{ info } {
         std::memcpy(m_dx9tokens, tokens, sizeof(uint32_t) * info->sizeInTokens);

@@ -27,6 +27,10 @@ namespace dxapex {
         return m_registerType;
       }
 
+      inline void setComponents(uint32_t components) {
+        m_components = components;
+      }
+
       inline DXBCOperand& setupLiteral(uint32_t components) {
         m_components = components;
         for (uint32_t i = 0; i < 4; i++)
@@ -130,6 +134,11 @@ namespace dxapex {
       DXBCOperation(const DX9Operation& operation)
         : DXBCOperation{ operation.getImplicitInfo().dxbcOpcode, operation.saturate() } {}
 
+      inline DXBCOperation& setSampler(bool sampler) {
+        m_sampler = sampler;
+        return *this;
+      }
+
       inline void setOpcode(uint32_t opcode) {
         m_opcode = opcode;
       }
@@ -141,10 +150,15 @@ namespace dxapex {
         return *this;
       }
 
+      inline DXBCOperation& setExtra(uint32_t extra) {
+        m_extra = extra;
+        return *this;
+      }
+
       void push(std::vector<uint32_t>& code);
       void push(ShaderCodeTranslator& translator);
     private:
-      uint32_t genOpToken(uint32_t instructionSize);
+      void pushOpTokens(std::vector<uint32_t>& code, uint32_t operandSize);
 
       uint32_t m_opcode = 0;
       uint32_t m_lengthOverride = UINT32_MAX;
@@ -152,6 +166,8 @@ namespace dxapex {
       uint32_t m_flags = UINT32_MAX;
       uint32_t m_lengthOffset = 0;
       bool m_saturate = false;
+      bool m_sampler = false;
+      uint32_t m_extra = 0;
       std::vector<DXBCOperand> m_operands;
     };
 

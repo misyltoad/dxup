@@ -71,34 +71,62 @@ namespace dxapex {
       }
     }
 
-    uint32_t DXBCOperation::genOpToken(uint32_t instructionSize) {
-      uint32_t opToken = ENCODE_D3D10_SB_OPCODE_TYPE(m_opcode) |
-                         ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize);
+    void DXBCOperation::pushOpTokens(std::vector<uint32_t>& code, uint32_t operandSize) {
+      uint32_t instructionSize = operandSize;
+      uint32_t operationExtension[2] = { 0, 0 };
 
-      if (m_flags != UINT32_MAX)
-        opToken |= ENCODE_D3D10_SB_GLOBAL_FLAGS(m_flags);
+      if (m_lengthOverride == UINT32_MAX)
+        instructionSize += m_sampler ? 3 : 1;
       else
-        opToken |= ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate);
+        instructionSize = m_lengthOverride;
+
+      instructionSize += m_lengthOffset;
+        
+      uint32_t opToken = ENCODE_D3D10_SB_OPCODE_TYPE(m_opcode) |
+                         ENCODE_D3D10_SB_TOKENIZED_INSTRUCTION_LENGTH(instructionSize) |
+                         ENCODE_D3D10_SB_OPCODE_EXTENDED(m_sampler);
+
+      if (m_extra == 0) {
+        if (m_flags != UINT32_MAX)
+          opToken |= ENCODE_D3D10_SB_GLOBAL_FLAGS(m_flags);
+        else
+          opToken |= ENCODE_D3D10_SB_INSTRUCTION_SATURATE(m_saturate);
+      }
+      else
+        opToken |= m_extra;
 
       if (m_interpolationMode != UINT32_MAX)
         opToken |= ENCODE_D3D10_SB_INPUT_INTERPOLATION_MODE(m_interpolationMode);
 
-      return opToken;
+      if (m_sampler) {
+        operationExtension[0] |= ENCODE_D3D10_SB_EXTENDED_OPCODE_TYPE(D3D11_SB_EXTENDED_OPCODE_RESOURCE_DIM);
+        operationExtension[0] |= ENCODE_D3D11_SB_EXTENDED_RESOURCE_DIMENSION(D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D);
+        operationExtension[0] |= ENCODE_D3D10_SB_OPCODE_EXTENDED(true);
+
+        operationExtension[1] |= ENCODE_D3D10_SB_EXTENDED_OPCODE_TYPE(D3D11_SB_EXTENDED_OPCODE_RESOURCE_RETURN_TYPE);
+        operationExtension[1] |= ENCODE_D3D11_SB_EXTENDED_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 0);
+        operationExtension[1] |= ENCODE_D3D11_SB_EXTENDED_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 1);
+        operationExtension[1] |= ENCODE_D3D11_SB_EXTENDED_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 2);
+        operationExtension[1] |= ENCODE_D3D11_SB_EXTENDED_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 3);
+      }           
+
+      code.push_back(opToken);
+
+      if (m_sampler) {
+        code.push_back(operationExtension[0]);
+        code.push_back(operationExtension[1]);
+      }
     }
 
     void DXBCOperation::push(std::vector<uint32_t>& code) {
-      uint32_t instructionSize = 1; // Opcode Token
+      uint32_t instructionSize = 0;
 
-      if (m_lengthOverride == UINT32_MAX) {
-        // Pass 1 - Size
-        for (size_t i = 0; i < m_operands.size(); i++)
-          m_operands[i].addInstructionSize(instructionSize);
-      }
-      else
-        instructionSize = m_lengthOverride;
+      // Pass 1 - Size
+      for (size_t i = 0; i < m_operands.size(); i++)
+        m_operands[i].addInstructionSize(instructionSize);
 
       // Pass 2 - Push
-      code.push_back(genOpToken(instructionSize + m_lengthOffset));
+      pushOpTokens(code, instructionSize);
       for (size_t i = 0; i < m_operands.size(); i++)
         m_operands[i].push(code);
     }
