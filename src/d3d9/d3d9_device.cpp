@@ -52,6 +52,22 @@ namespace dxapex {
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);
 
+    for (uint32_t i = 0; i < 4; i++) {
+      ID3D11SamplerState* state;
+      D3D11_SAMPLER_DESC sampDesc;
+      ZeroMemory(&sampDesc, sizeof(sampDesc));
+      sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+      sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+      sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+      sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+      sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+      sampDesc.MinLOD = 0;
+      sampDesc.MaxLOD = 0;
+
+      m_device->CreateSamplerState(&sampDesc, &state);
+      m_context->PSSetSamplers(i, 1, &state);
+    }
+
     if (!FAILED(result))
       SetRenderTarget(0, backbuffer.ptr());
   }
@@ -166,10 +182,10 @@ namespace dxapex {
     pCaps->MaxStreams = 1024;
     pCaps->MaxStreamStride = 4096;
     //pCaps->VertexShaderVersion = D3DVS_VERSION(3, 0);
-    pCaps->VertexShaderVersion = D3DVS_VERSION(1, 1); // Only sm1_1 support for now!
+    pCaps->VertexShaderVersion = D3DVS_VERSION(1, 4); // Only sm1_1 support for now!
     pCaps->MaxVertexShaderConst = 256;
     //pCaps->PixelShaderVersion = D3DPS_VERSION(3, 0);
-    pCaps->PixelShaderVersion = D3DPS_VERSION(1, 1);
+    pCaps->PixelShaderVersion = D3DPS_VERSION(1, 4);
     pCaps->PixelShader1xMaxValue = 65504.f;
     pCaps->DevCaps2 = D3DDEVCAPS2_STREAMOFFSET | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES;
     pCaps->MasterAdapterOrdinal = 0;

@@ -33,15 +33,59 @@ namespace dxapex {
     return AdapterCount;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterIdentifier(UINT Adapter, DWORD Flags, D3DADAPTER_IDENTIFIER9* pIdentifier) {
-    log::stub("Direct3D9Ex::GetAdapterIdentifier");
+    if (pIdentifier == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    Com<IDXGIAdapter1> adapter;
+    HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    Com<IDXGIOutput> output;
+    result = adapter->EnumOutputs(0, &output);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    DXGI_ADAPTER_DESC1 desc;
+    adapter->GetDesc1(&desc);
+
+    DXGI_OUTPUT_DESC outDesc;
+    output->GetDesc(&outDesc);
+
+    strcpy(pIdentifier->Driver, "DXUP Generic Device");
+    wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
+    wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+
+    std::memset(&pIdentifier->DriverVersion, 0, sizeof(LARGE_INTEGER));
+
+    pIdentifier->VendorId = desc.VendorId;
+    pIdentifier->DeviceId = desc.DeviceId;
+    pIdentifier->SubSysId = desc.SubSysId;
+    pIdentifier->Revision = desc.Revision;
+    
+    std::memcpy(&pIdentifier->DeviceIdentifier, &desc.AdapterLuid, sizeof(LUID));
+
+    pIdentifier->WHQLLevel = 0;
+
     return D3D_OK;
   }
   UINT     STDMETHODCALLTYPE Direct3D9Ex::GetAdapterModeCount(UINT Adapter, D3DFORMAT Format) {
-    log::stub("Direct3D9Ex::GetAdapterModeCount");
-    return 0;
+    Com<IDXGIAdapter1> adapter;
+    HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    Com<IDXGIOutput> output;
+    result = adapter->EnumOutputs(0, &output);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    UINT count = 0;
+    output->GetDisplayModeList(convert::format(Format), 0, &count, nullptr);
+
+    return count;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
-    log::stub("Direct3D9Ex::GetAdapterDisplayMode");
     return EnumAdapterModes(Adapter, D3DFMT_A8B8G8R8, 0, pMode);
   }
 
@@ -52,6 +96,9 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceMultiSampleType(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels) {
+    if (pQualityLevels)
+      *pQualityLevels = 3;
+
     return D3D_OK;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDepthStencilMatch(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT AdapterFormat, D3DFORMAT RenderTargetFormat, D3DFORMAT DepthStencilFormat) {

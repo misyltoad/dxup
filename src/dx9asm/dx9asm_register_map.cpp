@@ -2,14 +2,13 @@
 #include "dx9asm_modifiers.h"
 #include "dx9asm_operations.h"
 #include "../util/config.h"
+#include <unordered_map>
 
 namespace dxapex {
 
   namespace dx9asm {
 
     RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t majorVersion, uint32_t minorVersion, const DX9Operand& operand, uint32_t regOffset) {
-      RegisterMapping* mapping = getRegisterMapping(operand.getRegType(), operand.getRegNumber() + regOffset);
-
       uint32_t writeMask = 0;
       uint32_t readMask = 0;
 
@@ -18,6 +17,49 @@ namespace dxapex {
 
       if (operand.isSrc())
         readMask |= calcReadMask(operand);
+
+      return lookupOrCreateRegisterMapping(type, majorVersion, minorVersion, operand.getRegType(), operand.getRegNumber() + regOffset, readMask, writeMask);
+    }
+
+    struct TransientRegisterMapping {
+      uint32_t regNum;
+      uint32_t d3d9Usage;
+    };
+    std::vector<TransientRegisterMapping> transientMappings = {
+      {0, D3DDECLUSAGE_POSITION},
+
+      {1, D3DDECLUSAGE_COLOR},
+      {2, D3DDECLUSAGE_COLOR},
+
+      // SM1 Up me later!
+      {3, D3DDECLUSAGE_TEXCOORD},
+      {4, D3DDECLUSAGE_TEXCOORD},
+      {5, D3DDECLUSAGE_TEXCOORD},
+      {6, D3DDECLUSAGE_TEXCOORD},
+
+      {7, D3DDECLUSAGE_FOG},
+      {8, D3DDECLUSAGE_PSIZE},
+    };
+
+    uint32_t RegisterMap::getTransientId(DclInfo& info) {
+      uint32_t countOfMyType = 0;
+      static uint32_t lastUnimplementedTransientId = 14;
+
+      for (const TransientRegisterMapping& mapping : transientMappings) {
+        if (mapping.d3d9Usage == info.usage) {
+          if (countOfMyType == info.usageIndex)
+            return mapping.regNum;
+
+          countOfMyType++;
+        }
+      }
+
+      log::warn("Unable to find transient register!");
+      return lastUnimplementedTransientId++;
+    }
+
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask) {
+      RegisterMapping* mapping = getRegisterMapping(regType, regNum);
 
       if (mapping != nullptr) {
         mapping->writeMask |= writeMask;
@@ -28,8 +70,8 @@ namespace dxapex {
 
       RegisterMapping newMapping;
       newMapping.dclInfo.type = UsageType::None;
-      newMapping.dx9Id = operand.getRegNumber() + regOffset;
-      newMapping.dx9Type = operand.getRegType();
+      newMapping.dx9Id = regNum;
+      newMapping.dx9Type = regType;
       newMapping.writeMask = writeMask;
       newMapping.readMask = readMask;
 
@@ -40,9 +82,10 @@ namespace dxapex {
       newMapping.dxbcOperand.setData(&dummyId, 1);
 
       uint32_t dxbcType = 0;
+      bool addMapping = true;
 
       // LUT later!
-      switch (operand.getRegType()) {
+      switch (regType) {
       case D3DSPR_TEMP: { 
         if (type == ShaderType::Pixel && majorVersion == 1) {
           if (newMapping.dx9Id == 0) {
@@ -83,11 +126,11 @@ namespace dxapex {
 
       } break;
       case D3DSPR_TEXCRDOUT: {
-        newMapping.dclInfo.type = UsageType::Output;
+        newMapping.dclInfo.type = type == ShaderType::Pixel ? UsageType::Input : UsageType::Output;
         newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
         newMapping.dclInfo.usageIndex = newMapping.dx9Id;
 
-        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcType = type == ShaderType::Pixel ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
       case D3DSPR_ATTROUT: {
         newMapping.dclInfo.type = UsageType::Output;
@@ -96,7 +139,13 @@ namespace dxapex {
 
         dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
-      case D3DSPR_ADDR:
+      case D3DSPR_ADDR: {
+        if (type == ShaderType::Pixel) {
+          dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
+
+          break;
+        }
+      }
       case D3DSPR_COLOROUT:
       case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
@@ -116,9 +165,12 @@ namespace dxapex {
 
       newMapping.dxbcOperand.setRegisterType(dxbcType);
 
-      addRegisterMapping(true, newMapping);
+      bool transient = (type == ShaderType::Pixel && newMapping.dclInfo.type == UsageType::Input) ||
+                       (type == ShaderType::Vertex && newMapping.dclInfo.type == UsageType::Output);
 
-      return lookupOrCreateRegisterMapping(type, minorVersion, majorVersion, operand, regOffset);
+      addRegisterMapping(transient, true, newMapping);
+
+      return lookupOrCreateRegisterMapping(type, minorVersion, majorVersion, regType, regNum, readMask, writeMask);
     }
 
   }

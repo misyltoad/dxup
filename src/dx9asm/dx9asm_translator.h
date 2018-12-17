@@ -52,10 +52,19 @@ namespace dxapex {
 
       bool handleOperation(uint32_t token);
 
+      inline bool isSamplerUsed(uint32_t i) {
+        return m_samplerMask & (1u << i);
+      }
+
+      inline bool isAnySamplerUsed() {
+        return m_samplerMask != 0;
+      }
+
       bool translate();
 
       bool handleComment(DX9Operation& operation);
       bool handleDcl(DX9Operation& operation);
+      bool handleTex(DX9Operation& operation);
       bool handleLit(DX9Operation& operation);
       bool handleMad(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
@@ -78,6 +87,8 @@ namespace dxapex {
       const CTHeader* m_ctab = nullptr;
 
       RegisterMap m_map;
+
+      uint32_t m_samplerMask = 0;
 
       std::vector<uint32_t> m_dxbcCode;
     };

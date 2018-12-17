@@ -83,6 +83,18 @@ namespace dxapex {
         uint32_t samplerSize = 0;
       };
 
+      #pragma pack(1)
+      struct ResourceBinding {
+        uint32_t nameOffset = 0;
+        uint32_t bindingType = 0; // cbuffer
+        uint32_t returnType = 0; // na
+        uint32_t rvd = 0; // na
+        uint32_t samples = 0;
+        uint32_t bindPoint = 0;
+        uint32_t bindCount = 1;
+        uint32_t flags = 0;
+      };
+
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
         auto& obj = bytecode.getBytecodeVector();
 
@@ -98,7 +110,8 @@ namespace dxapex {
         obj.push_back(constantBufferCount); // [PUSH] Constant Buffer Count
         PlaceholderPtr<uint32_t> constantBufferDescOffset{ "[RDEF] Constant Buffer Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Constant Buffer Desc Offset
-        obj.push_back(constantBufferCount != 0 ? 1 : 0); // [PUSH] Resource Binding Count
+        PlaceholderPtr<uint32_t> resourceBindingCount{ "[RDEF] Resource Binding Count", nextPtr(obj) };
+        obj.push_back(0); // [PUSH] Resource Binding Count
         PlaceholderPtr<uint32_t>  resourceBindingDescOffset{ "[RDEF] Resource Binding Desc Offset", nextPtr(obj) };
         obj.push_back(0); // [PUSH] Resource Binding Desc Offset
 
@@ -123,6 +136,54 @@ namespace dxapex {
         obj.push_back(0); // [PUSH] Interface Slot Count
 
         //}
+
+        ResourceBinding* constantBinding = nullptr;
+        uint32_t bindingCount = 0;
+        std::vector<ResourceBinding*> samplerBindings;
+        std::vector<ResourceBinding*> textureBindings;
+
+        if (constantBufferCount != 0 || shdrCode.isAnySamplerUsed()) {
+          resourceBindingDescOffset = getChunkSize(bytecode);
+
+          if (shdrCode.isAnySamplerUsed()) {
+            for (uint32_t i = 0; i < 16; i++) {
+              if (shdrCode.isSamplerUsed(i)) {
+                samplerBindings.push_back((ResourceBinding*)nextPtr(obj));
+                {
+                  ResourceBinding binding{};
+                  binding.bindingType = 3; // sampler
+                  binding.bindPoint = i;
+                  binding.samples = 1;
+                  pushObject(obj, binding);
+                  bindingCount++;
+                }
+                textureBindings.push_back((ResourceBinding*)nextPtr(obj));
+                {
+                  ResourceBinding binding{};
+                  binding.bindingType = 2; // tex
+                  binding.bindPoint = i;
+                  binding.returnType = 5; // float
+                  binding.rvd = 4; // 2d
+                  binding.flags |= 0xc;
+                  pushObject(obj, binding);
+                  bindingCount++;
+                }
+              }
+            }
+          }
+
+          if (constantBufferCount != 0) {
+            // Resource Binding
+            constantBinding = (ResourceBinding*)nextPtr(obj);
+            pushObject(obj, ResourceBinding{});
+            bindingCount++;
+          }
+
+        }
+        else
+          resourceBindingDescOffset = 0;
+
+        resourceBindingCount = bindingCount;
         
         // Just one for now...
         constantBufferDescOffset = getChunkSize(bytecode);
@@ -177,24 +238,8 @@ namespace dxapex {
           uint32_t variableTypeOffset = getChunkSize(bytecode);
           pushObject(obj, variableType);
 
-          // Resource Binding
-#pragma pack(1)
-          struct ResourceBinding {
-            uint32_t nameOffset;
-            uint32_t bindingType = 0; // cbuffer
-            uint32_t returnType = 0; // na
-            uint32_t rvd = 0; // na
-            uint32_t samples = 0;
-            uint32_t bindPoint = 0;
-            uint32_t bindCount = 1;
-            uint32_t flags = 0;
-          } resourceBinding;
-          ResourceBinding* binding = (ResourceBinding*)nextPtr(obj);
-          resourceBindingDescOffset = getChunkSize(bytecode);
-          pushObject(obj, resourceBinding);
-
           // Push and Fixup Strings
-          binding->nameOffset = getChunkSize(bytecode);
+          constantBinding->nameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_constant_buffer");
 
           forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
@@ -211,9 +256,19 @@ namespace dxapex {
           cbufNameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_mapped_constants");
         }
-        else {
-          log::warn("Generating a shader w/ no resource bindings...");
-          resourceBindingDescOffset = 0;
+
+        for (ResourceBinding* binding : samplerBindings) {
+          binding->nameOffset = getChunkSize(bytecode);
+          char name[64] = "";
+          snprintf(name, 64, "sampler%d", binding->bindPoint);
+          pushAlignedString(obj, name);
+        }
+
+        for (ResourceBinding* binding : textureBindings) {
+          binding->nameOffset = getChunkSize(bytecode);
+          char name[64] = "";
+          snprintf(name, 64, "texture%d", binding->bindPoint);
+          pushAlignedString(obj, name);
         }
 
         creatorOffset = getChunkSize(bytecode);
@@ -283,6 +338,41 @@ namespace dxapex {
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
           obj.push_back(tempCount); // Followed by DWORD count of temps. Not an operand!
+        }
+        
+        // Samplers
+        {
+          for (uint32_t i = 0; i < 16; i++) {
+            if (shdrCode.isSamplerUsed(i)) {
+
+              DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
+              samplerOp.setComponents(0);
+              samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+              samplerOp.setData(&i, 1);
+
+              DXBCOperation{ D3D10_SB_OPCODE_DCL_SAMPLER, false }
+                .appendOperand(samplerOp)
+                .push(obj);
+
+              DXBCOperand textureOp{ D3D10_SB_OPERAND_TYPE_RESOURCE, 1 };
+              textureOp.setData(&i, 1);
+              textureOp.setComponents(0);
+              textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+
+              DXBCOperation{ D3D10_SB_OPCODE_DCL_RESOURCE, false, UINT32_MAX, 1 }
+                .setExtra(ENCODE_D3D10_SB_RESOURCE_DIMENSION(D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D))
+                .appendOperand(textureOp)
+                .push(obj);
+
+              // Return type token.
+              uint32_t returnTypeToken = 0;
+              returnTypeToken |= ENCODE_D3D10_SB_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 0);
+              returnTypeToken |= ENCODE_D3D10_SB_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 1);
+              returnTypeToken |= ENCODE_D3D10_SB_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 2);
+              returnTypeToken |= ENCODE_D3D10_SB_RESOURCE_RETURN_TYPE(D3D10_SB_RETURN_TYPE_FLOAT, 3);
+              obj.push_back(returnTypeToken);
+            }
+          }
         }
 
         // Input
@@ -366,12 +456,14 @@ namespace dxapex {
         IOSGNElement* elementStart = (IOSGNElement*)nextPtr(obj);
 
         forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          IOSGNElement element;
+          IOSGNElement element; 
+
           element.nameOffset = 0; // <-- Must be set later!
           element.registerIndex = mapping.dxbcOperand.getRegNumber();
           element.semanticIndex = mapping.dclInfo.usageIndex;
 
           uint32_t baseMask = isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+          baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
           element.mask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
           uint32_t rwMask = element.mask;
 
