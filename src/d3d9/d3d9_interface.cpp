@@ -69,8 +69,20 @@ namespace dxapex {
     return D3D_OK;
   }
   UINT     STDMETHODCALLTYPE Direct3D9Ex::GetAdapterModeCount(UINT Adapter, D3DFORMAT Format) {
-    log::stub("Direct3D9Ex::GetAdapterModeCount");
-    return 0;
+    Com<IDXGIAdapter1> adapter;
+    HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    Com<IDXGIOutput> output;
+    result = adapter->EnumOutputs(0, &output);
+    if (FAILED(result))
+      return D3DERR_INVALIDCALL;
+
+    UINT count = 0;
+    output->GetDisplayModeList(DXGI_FORMAT_R32G32B32_FLOAT, 0, &count, nullptr);
+
+    return count;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
     return EnumAdapterModes(Adapter, D3DFMT_A8B8G8R8, 0, pMode);
