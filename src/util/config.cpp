@@ -33,16 +33,16 @@ namespace dxapex {
           initVar(var::UnimplementedFatal, "DXAPEX_UNIMPLEMENTEDFATAL", "0");
       }
 
-	  void initVar(var variable, const char* name, const char* default) {
+	  void initVar(var variable, const char* name, const char* defaultVal) {
         const char* value = getenv(name);
         const char* logending = "";
 
         if (value == nullptr) {
 	      logending = " [default]";
-	      value = default;
+	      value = defaultVal;
         }
 
-        value = value != nullptr ? value : default;
+        value = value != nullptr ? value : defaultVal;
 
         log::msg("%s=%s%s", name, value, logending);
 
