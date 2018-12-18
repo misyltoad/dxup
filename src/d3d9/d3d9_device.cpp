@@ -21,37 +21,111 @@ namespace dxapex {
     bool isValid = false;
   };
 
-  Direct3DDevice9Ex::Direct3DDevice9Ex(DeviceInitData* data)
-    : m_adapter(data->adapter)
-    , m_device(data->device)
-    , m_context(data->context)
-    , m_parent(data->parent)
-    , m_flags(0)
-    , m_creationParameters(*data->creationParameters) 
-    , m_deviceType(data->deviceType)
+  Direct3DDevice9Ex::Direct3DDevice9Ex(
+    IDXGIAdapter1* adapter,
+    ID3D11Device1* device,
+    ID3D11DeviceContext1* context,
+    Direct3D9Ex* parent,
+    D3DDEVICE_CREATION_PARAMETERS* creationParameters,
+    D3DPRESENT_PARAMETERS* presentParameters,
+    D3DDEVTYPE deviceType,
+    uint8_t flags
+  )
+    : m_adapter(adapter)
+    , m_device(device)
+    , m_context(context)
+    , m_parent(parent)
+    , m_flags(flags)
+    , m_creationParameters(*creationParameters) 
+    , m_deviceType(deviceType)
     , m_state{ new InternalRenderState }
-    , m_constants{ data->device, data->context }{
-    if (data->ex)
-      m_flags |= DeviceFlag_Ex;
+    , m_constants{ device, context } { }
 
-    m_device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&m_dxgiDevice);
+  HRESULT Direct3DDevice9Ex::Create(
+    IDXGIAdapter1* adapter,
+    ID3D11Device1* device,
+    ID3D11DeviceContext1* context,
+    Direct3D9Ex* parent,
+    D3DDEVICE_CREATION_PARAMETERS* creationParameters,
+    D3DPRESENT_PARAMETERS* presentParameters,
+    D3DDEVTYPE deviceType,
+    bool isEx,
+    IDirect3DDevice9Ex** outDevice
+    ) {
+    InitReturnPtr(outDevice);
 
-    Reset(data->presentParameters);
+    if (outDevice == nullptr)
+      return D3DERR_INVALIDCALL;
 
-    CreateAdditionalSwapChain(data->presentParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
+    uint8_t flags = 0;
 
-    SetImplicitState(data->presentParameters);
+    if (isEx)
+      flags |= DeviceFlag_Ex;
+
+    Com<IDXGIDevice1> dxgiDevice;
+    HRESULT result = device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
+
+    if (FAILED(result)) {
+      log::fail("Couldn't get IDXGIDevice1!");
+      return D3DERR_INVALIDCALL;
+    }
+
+    Direct3DDevice9Ex* d3d9Device = new Direct3DDevice9Ex(adapter, device, context, parent, creationParameters, presentParameters, deviceType, flags);
+    HRESULT result = d3d9Device->Reset(presentParameters);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create d3d9 device as Reset to default state failed.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    *outDevice = ref(d3d9Device);
+
+    return D3D_OK;
   }
 
-  void Direct3DDevice9Ex::SetImplicitState(D3DPRESENT_PARAMETERS* paramaters) {
+  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+    // Unbind current state...
+
+    SetVertexShader(nullptr);
+    SetPixelShader(nullptr);
+
+    for (uint32_t i = 0; i < 4; i++)
+      SetRenderTarget(0, nullptr);
+
+    // Setup new state...
+
+    HRESULT result = D3D_OK;
+
+    if (m_swapchains.size() == 0) {
+      result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
+
+      if (FAILED(result)) {
+        log::fail("Couldn't create implicit swapchain.");
+        return D3DERR_INVALIDCALL;
+      }
+    }
+    else {
+      result = GetInternalSwapchain(0)->Reset(pPresentationParameters);
+
+      if (FAILED(result))
+        return D3DERR_INVALIDCALL;
+    }
+
     Com<IDirect3DSurface9> backbuffer;
-    HRESULT result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+    result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+
+    if (FAILED(result)) {
+      log::fail("Couldn't get implicit backbuffer.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    SetRenderTarget(0, backbuffer.ptr());
 
     D3DVIEWPORT9 implicitViewport;
     implicitViewport.X = 0;
     implicitViewport.Y = 0;
-    implicitViewport.Height = paramaters->BackBufferHeight;
-    implicitViewport.Width = paramaters->BackBufferWidth;
+    implicitViewport.Height = pPresentationParameters->BackBufferHeight;
+    implicitViewport.Width = pPresentationParameters->BackBufferWidth;
     implicitViewport.MinZ = 0.0f;
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);
@@ -72,8 +146,14 @@ namespace dxapex {
       m_context->PSSetSamplers(i, 1, &state);
     }
 
-    if (!FAILED(result))
-      SetRenderTarget(0, backbuffer.ptr());
+    for (uint32_t i = 0; i < 6; i++) {
+      float plane[4] = { 0, 0, 0, 0 };
+      SetClipPlane(i, plane);
+    }
+
+    ShowCursor(false);
+
+    return D3D_OK;
   }
 
   Direct3DDevice9Ex::~Direct3DDevice9Ex() {
@@ -249,11 +329,6 @@ namespace dxapex {
         swapchainCount++;
     }
     return swapchainCount;
-  }
-  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-
-
-    return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Present(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) {
     return PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);

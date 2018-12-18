@@ -45,6 +45,26 @@ namespace dxapex {
       log::warn("Failed to get Swapchain IDXGIOutput1");
   }
 
+  HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
+    UINT BackBufferCount = parameters->BackBufferCount;
+    if (BackBufferCount == 0)
+      BackBufferCount = 1;
+
+    HRESULT result = m_swapchain->ResizeBuffers(
+      BackBufferCount,
+      parameters->BackBufferWidth,
+      parameters->BackBufferHeight,
+      convert::format(parameters->BackBufferFormat),
+      0);
+
+    if (FAILED(result)) {
+      log::fail("ResizeBuffers failed in swapchain reset.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    return D3D_OK;
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::QueryInterface(REFIID riid, void** ppvObj) {
     InitReturnPtr(ppvObj);
 

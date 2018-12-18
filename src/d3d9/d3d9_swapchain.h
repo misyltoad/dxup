@@ -26,6 +26,8 @@ namespace dxapex {
 
     HRESULT STDMETHODCALLTYPE PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex);
 
+    HRESULT Reset(D3DPRESENT_PARAMETERS* parameters);
+
     HRESULT TestSwapchain(HWND hDestWindowOverride, bool ex);
     HRESULT WaitForVBlank();
   private:

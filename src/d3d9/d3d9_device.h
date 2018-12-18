@@ -6,24 +6,12 @@
 
 namespace dxapex {
 
-  struct DeviceInitData {
-    IDXGIAdapter1* adapter;
-    ID3D11Device1* device;
-    ID3D11DeviceContext1* context;
-    bool ex;
-    Direct3D9Ex* parent;
-    D3DDEVICE_CREATION_PARAMETERS* creationParameters;
-    D3DPRESENT_PARAMETERS* presentParameters;
-    D3DDEVTYPE deviceType;
-  };
-
   struct InternalRenderState;
 
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
   public:
 
-    Direct3DDevice9Ex(DeviceInitData* deviceData);
     virtual ~Direct3DDevice9Ex();
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppv) override;
@@ -170,14 +158,36 @@ namespace dxapex {
     ID3D11Device* GetD3D11Device();
 
     void RefreshInputLayout();
-    void SetImplicitBindings(D3DPRESENT_PARAMETERS* paramaters);
 
     bool CanDraw();
     bool PrepareDraw();
     void FinishDraw();
     bool CanRefreshInputLayout();
 
+    static HRESULT Create(
+      IDXGIAdapter1* adapter,
+      ID3D11Device1* device,
+      ID3D11DeviceContext1* context,
+      Direct3D9Ex* parent,
+      D3DDEVICE_CREATION_PARAMETERS* creationParameters,
+      D3DPRESENT_PARAMETERS* presentParameters,
+      D3DDEVTYPE deviceType,
+      bool isEx,
+      IDirect3DDevice9Ex** outDevice
+      );
+
   private:
+
+    Direct3DDevice9Ex(
+      IDXGIAdapter1* adapter,
+      ID3D11Device1* device,
+      ID3D11DeviceContext1* context,
+      Direct3D9Ex* parent,
+      D3DDEVICE_CREATION_PARAMETERS* creationParameters,
+      D3DPRESENT_PARAMETERS* presentParameters,
+      D3DDEVTYPE deviceType,
+      uint8_t flags
+    );
 
     std::array< Com<IDirect3DSwapChain9Ex>, D3DPRESENT_BACK_BUFFERS_MAX_EX > m_swapchains;
 
@@ -189,9 +199,9 @@ namespace dxapex {
     Com<ID3D11DeviceContext1> m_context;
     D3D9ConstantBuffers m_constants;
 
-    const uint8_t DeviceFlag_Ex = 0x01;
-
+    static const uint8_t DeviceFlag_Ex = 0x01;
     uint8_t m_flags;
+
     Com<IDirect3D9Ex> m_parent;
     D3DDEVICE_CREATION_PARAMETERS m_creationParameters;
     D3DDEVTYPE m_deviceType;
