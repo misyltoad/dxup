@@ -31,6 +31,7 @@ namespace dxapex {
           initVar(var::ShaderSpew, "DXAPEX_SHADERSPEW", "0");
           initVar(var::ShaderDump, "DXAPEX_SHADERDUMP", "0");
           initVar(var::UnimplementedFatal, "DXAPEX_UNIMPLEMENTEDFATAL", "0");
+          initVar(var::InitialHideCursor, "DXAPEX_INITIALHIDECURSOR", "0");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {

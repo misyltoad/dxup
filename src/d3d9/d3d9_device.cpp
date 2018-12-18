@@ -251,7 +251,8 @@ namespace dxapex {
       SetClipPlane(i, plane);
     }
 
-    ShowCursor(false);
+    if (config::getBool(config::InitialHideCursor))
+      ShowCursor(false);
 
     return D3D_OK;
   }

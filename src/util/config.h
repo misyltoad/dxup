@@ -12,6 +12,7 @@ namespace dxapex {
       ShaderDump,
       RandomClearColour,
       UnimplementedFatal,
+      InitialHideCursor,
       Count,
     };
 
