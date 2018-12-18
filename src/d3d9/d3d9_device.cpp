@@ -40,14 +40,18 @@ namespace dxapex {
 
     CreateAdditionalSwapChain(data->presentParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
 
+    SetImplicitState(data->presentParameters);
+  }
+
+  void Direct3DDevice9Ex::SetImplicitState(D3DPRESENT_PARAMETERS* paramaters) {
     Com<IDirect3DSurface9> backbuffer;
     HRESULT result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
 
     D3DVIEWPORT9 implicitViewport;
     implicitViewport.X = 0;
     implicitViewport.Y = 0;
-    implicitViewport.Height = data->presentParameters->BackBufferHeight;
-    implicitViewport.Width = data->presentParameters->BackBufferWidth;
+    implicitViewport.Height = paramaters->BackBufferHeight;
+    implicitViewport.Width = paramaters->BackBufferWidth;
     implicitViewport.MinZ = 0.0f;
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);

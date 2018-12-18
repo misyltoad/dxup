@@ -170,6 +170,7 @@ namespace dxapex {
     ID3D11Device* GetD3D11Device();
 
     void RefreshInputLayout();
+    void SetImplicitBindings(D3DPRESENT_PARAMETERS* paramaters);
 
     bool CanDraw();
     bool PrepareDraw();
