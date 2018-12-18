@@ -510,8 +510,16 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) {
+    InitReturnPtr(ppRenderTarget);
+
+    if (ppRenderTarget == nullptr)
+      return D3DERR_INVALIDCALL;
+    
     if (RenderTargetIndex > m_state->renderTargets.size())
       return D3DERR_INVALIDCALL;
+
+    if (m_state->renderTargets[RenderTargetIndex] == nullptr)
+      return D3DERR_NOTFOUND;
 
     *ppRenderTarget = ref(m_state->renderTargets[RenderTargetIndex]);
 
