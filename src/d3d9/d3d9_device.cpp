@@ -13,12 +13,21 @@
 
 namespace dxapex {
 
+  namespace dirtyFlags {
+    const uint32_t vertexShader = 1 << 0;
+    const uint32_t vertexDecl = 1 << 1;
+    const uint32_t pixelShader = 1 << 2;
+    const uint32_t renderTargets = 1 << 3;
+    const uint32_t depthStencil = 1 << 4;
+  }
+
   struct InternalRenderState{
     Com<Direct3DVertexShader9> vertexShader;
     Com<Direct3DPixelShader9> pixelShader;
     Com<Direct3DVertexDeclaration9> vertexDecl;
+    Com<Direct3DSurface9> depthStencil;
     std::array<Com<Direct3DSurface9>, 4> renderTargets;
-    bool isValid = false;
+    uint32_t dirtyFlags = 0;
   };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
@@ -178,6 +187,7 @@ namespace dxapex {
 
     SetVertexShader(nullptr);
     SetPixelShader(nullptr);
+    SetDepthStencilSurface(nullptr);
 
     for (uint32_t i = 0; i < 4; i++)
       SetRenderTarget(0, nullptr);
@@ -479,7 +489,23 @@ namespace dxapex {
   void    STDMETHODCALLTYPE Direct3DDevice9Ex::GetGammaRamp(UINT iSwapChain, D3DGAMMARAMP* pRamp) {
     log::stub("Direct3DDevice9Ex::GetGammaRamp");
   }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
+    return CreateTextureInternal(Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, ppTexture, pSharedHandle);
+  }
+
+  HRESULT Direct3DDevice9Ex::CreateTextureInternal(
+    UINT Width, 
+    UINT Height,
+    UINT Levels,
+    DWORD Usage,
+    D3DFORMAT Format,
+    D3DPOOL Pool, 
+    D3DMULTISAMPLE_TYPE MultiSample,
+    DWORD MultisampleQuality,
+    BOOL Discard,
+    IDirect3DTexture9** ppTexture,
+    HANDLE* pSharedHandle) {
     InitReturnPtr(ppTexture);
     InitReturnPtr(pSharedHandle);
 
@@ -496,28 +522,36 @@ namespace dxapex {
     desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = 1;
-    desc.SampleDesc.Count = 1;
-    desc.SampleDesc.Quality = 0;
+
+    if (MultiSample == D3DMULTISAMPLE_NONE) // 0 samples -> 1 sample.
+      MultiSample = D3DMULTISAMPLE_NONMASKABLE;
+
+    desc.SampleDesc.Count = (UINT)MultiSample;
+    desc.SampleDesc.Quality = MultisampleQuality;
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
     desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
-      desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+      desc.BindFlags |= Usage & D3DUSAGE_RENDERTARGET ? D3D11_BIND_RENDER_TARGET : 0;
+      desc.BindFlags |= Usage & D3DUSAGE_DEPTHSTENCIL ? D3D11_BIND_DEPTH_STENCIL : 0;
+
       desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     }
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
 
-    if (FAILED(result))
+    if (FAILED(result)) {
+      log::fail("Failed to create texture.");
       return D3DERR_INVALIDCALL;
+    }
 
     Com<ID3D11ShaderResourceView> srv;
     m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage));
+    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
 
     return D3D_OK;
   }
@@ -578,12 +612,36 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateRenderTarget(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateRenderTarget");
-    return D3D_OK;
+    InitReturnPtr(ppSurface);
+    if (ppSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    Com<IDirect3DTexture9> d3d9Texture;
+
+    // NOTE(Josh): May need to handle Lockable in future.
+    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, &d3d9Texture, pSharedHandle);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create render target.");
+      return result;
+    }
+
+    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateDepthStencilSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateDepthStencilSurface");
-    return D3D_OK;
+    InitReturnPtr(ppSurface);
+    if (ppSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    Com<IDirect3DTexture9> d3d9Texture;
+    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, &d3d9Texture, pSharedHandle);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create depth stencil.");
+      return result;
+    }
+
+    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateSurface(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint) {
 
@@ -693,18 +751,37 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::CreateOffscreenPlainSurface");
     return D3D_OK;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
-    Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
-    m_state->renderTargets[RenderTargetIndex] = surface;
+  void Direct3DDevice9Ex::UpdateRenderTargets() {
 
     std::array<ID3D11RenderTargetView*, 4> rtvs = { nullptr, nullptr, nullptr, nullptr };
     for (uint32_t i = 0; i < 4; i++)
     {
-      if (m_state->renderTargets[i] != nullptr)
+      if (m_state->renderTargets[i] != nullptr) {
         rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget();
+        if (rtvs[i] == nullptr)
+          log::warn("No render target view for bound render target surface.");
+      }
     }
 
-    m_context->OMSetRenderTargets(4, &rtvs[0], nullptr);
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (m_state->depthStencil != nullptr) {
+      dsv = m_state->depthStencil->GetD3D11DepthStencil();
+      if (dsv == nullptr)
+        log::warn("No depth stencil view for bound depth stencil surface.");
+    }
+
+    m_context->OMSetRenderTargets(4, &rtvs[0], dsv);
+
+    m_state->dirtyFlags &= ~dirtyFlags::renderTargets;
+    m_state->dirtyFlags &= ~dirtyFlags::depthStencil;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
+    if (RenderTargetIndex >= 4)
+      return D3DERR_INVALIDCALL;
+
+    m_state->renderTargets[RenderTargetIndex] = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
+    m_state->dirtyFlags |= dirtyFlags::renderTargets;
 
     return D3D_OK;
   }
@@ -725,11 +802,22 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
-    log::stub("Direct3DDevice9Ex::SetDepthStencilSurface");
+    m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
+    m_state->dirtyFlags |= dirtyFlags::depthStencil;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
-    log::stub("Direct3DDevice9Ex::GetDepthStencilSurface");
+    InitReturnPtr(ppZStencilSurface);
+
+    if (ppZStencilSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->depthStencil == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppZStencilSurface = ref(m_state->depthStencil);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::BeginScene() {
@@ -1074,32 +1162,35 @@ namespace dxapex {
   }
 
   bool Direct3DDevice9Ex::CanDraw() {
-    return CanRefreshInputLayout() && m_state->isValid;
+    return !(m_state->dirtyFlags & dirtyFlags::vertexDecl &&
+             m_state->dirtyFlags & dirtyFlags::vertexShader);
+  }
+
+  void Direct3DDevice9Ex::UpdatePixelShader() {
+    if (m_state->pixelShader != nullptr)
+      m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
+    else
+      m_context->PSSetShader(nullptr, nullptr, 0);
+
+    m_state->dirtyFlags &= ~dirtyFlags::pixelShader;
   }
 
   bool Direct3DDevice9Ex::PrepareDraw() {
-    RefreshInputLayout();
+    if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
+      UpdateVertexShaderAndInputLayout();
+
+    if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencil)
+      UpdateRenderTargets();
+
+    if (m_state->dirtyFlags & dirtyFlags::pixelShader)
+      UpdatePixelShader();
 
     m_constants.prepareDraw();
 
     return CanDraw();
   }
 
-  bool Direct3DDevice9Ex::CanRefreshInputLayout() {
-    if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
-      return false;
-
-    return true;
-  }
-
-  void Direct3DDevice9Ex::RefreshInputLayout() {
-    if (!CanRefreshInputLayout())
-      return;
-
-    // Our state is already valid! No need to refresh
-    if (m_state->isValid)
-      return;
-
+  void Direct3DDevice9Ex::UpdateVertexShaderAndInputLayout() {
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
     auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
 
@@ -1116,12 +1207,11 @@ namespace dxapex {
       }
     }
 
-    if (layout == nullptr) {
-      m_state->isValid = false;
+    if (layout == nullptr)
       return;
-    }
 
-    m_state->isValid = true;
+    m_state->dirtyFlags &= ~dirtyFlags::vertexDecl;
+    m_state->dirtyFlags &= ~dirtyFlags::vertexShader;
 
     m_context->IASetInputLayout(layout);
 
@@ -1133,7 +1223,7 @@ namespace dxapex {
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
     m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
-    m_state->isValid = false;
+    m_state->dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
   }
@@ -1228,7 +1318,7 @@ namespace dxapex {
     }
 
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
-    m_state->isValid = false;
+    m_state->dirtyFlags |= dirtyFlags::vertexShader;
 
     return D3D_OK;
   }
@@ -1292,14 +1382,14 @@ namespace dxapex {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
+    m_state->dirtyFlags |= dirtyFlags::pixelShader;
+
     if (pShader == nullptr) {
       m_state->pixelShader = nullptr;
-      m_context->PSSetShader(nullptr, nullptr, 0);
-      return D3DERR_INVALIDCALL;
+      return D3D_OK;
     }
 
     m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
-    m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
 
     return D3D_OK;
   }

@@ -153,16 +153,30 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode) override;
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
+    HRESULT CreateTextureInternal(
+      UINT Width,
+      UINT Height,
+      UINT Levels,
+      DWORD Usage,
+      D3DFORMAT Format,
+      D3DPOOL Pool,
+      D3DMULTISAMPLE_TYPE MultiSample,
+      DWORD MultisampleQuality,
+      BOOL Discard,
+      IDirect3DTexture9** ppTexture,
+      HANDLE* pSharedHandle);
+
     void GetParent(Direct3D9Ex** parent);
     ID3D11DeviceContext* GetContext();
     ID3D11Device* GetD3D11Device();
 
-    void RefreshInputLayout();
+    void UpdateVertexShaderAndInputLayout();
+    void UpdateRenderTargets();
+    void UpdatePixelShader();
 
     bool CanDraw();
     bool PrepareDraw();
     void FinishDraw();
-    bool CanRefreshInputLayout();
 
     static HRESULT Create(
       UINT adapter,

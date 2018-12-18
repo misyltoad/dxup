@@ -29,7 +29,7 @@ namespace dxapex {
         return;
       }
       
-      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET));
+      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false));
     }
 
     Com<IDXGIOutput> output;

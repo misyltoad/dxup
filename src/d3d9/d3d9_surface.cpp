@@ -5,13 +5,24 @@
 
 namespace dxapex {
 
-  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage)
+  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard)
     : Direct3DSurface9Base(device, pool, usage)
     , m_container(container)
     , m_d3d11texture(texture)
     , m_subresource(subresource)
     , m_rtView(nullptr)
+    , m_discard(discard)
   {
+    if (m_subresource == 0 && usage & D3DUSAGE_DEPTHSTENCIL) {
+      if (texture != nullptr) {
+        HRESULT result = GetD3D11Device()->CreateDepthStencilView(texture, nullptr, &m_dsView);
+
+        if (FAILED(result))
+          log::warn("Failed to create depth stencil for surface!");
+      }
+      else
+        log::warn("No D3D11 Texture for Depth Stencil");
+    }
 
     if (m_subresource == 0 && usage & D3DUSAGE_RENDERTARGET) {
       if (texture != nullptr) {
@@ -209,9 +220,16 @@ namespace dxapex {
   ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget() {
     return m_rtView.ptr();
   }
+  ID3D11DepthStencilView* Direct3DSurface9::GetD3D11DepthStencil() {
+    return m_dsView.ptr();
+  }
 
   UINT Direct3DSurface9::GetSubresource() {
     return m_subresource;
+  }
+
+  BOOL Direct3DSurface9::GetDiscard() {
+    return m_discard;
   }
 
 }
