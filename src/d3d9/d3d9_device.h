@@ -187,7 +187,6 @@ namespace dxapex {
       ID3D11Device1* device,
       ID3D11DeviceContext1* context,
       Direct3D9Ex* parent,
-      D3DPRESENT_PARAMETERS* presentParameters,
       D3DDEVTYPE deviceType,
       DWORD behaviourFlags,
       uint8_t flags

@@ -28,7 +28,6 @@ namespace dxapex {
     ID3D11Device1* device,
     ID3D11DeviceContext1* context,
     Direct3D9Ex* parent,
-    D3DPRESENT_PARAMETERS* presentParameters,
     D3DDEVTYPE deviceType,
     DWORD behaviourFlags,
     uint8_t flags
@@ -154,7 +153,6 @@ namespace dxapex {
       device.ptr(),
       context.ptr(),
       parent, 
-      presentParameters,
       deviceType,
       behaviourFlags,
       flags);
@@ -173,6 +171,11 @@ namespace dxapex {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+    if (pPresentationParameters == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    
+
     // Unbind current state...
 
     SetVertexShader(nullptr);
