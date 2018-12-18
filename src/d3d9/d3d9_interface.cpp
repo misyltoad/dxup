@@ -69,20 +69,10 @@ namespace dxapex {
     return D3D_OK;
   }
   UINT     STDMETHODCALLTYPE Direct3D9Ex::GetAdapterModeCount(UINT Adapter, D3DFORMAT Format) {
-    Com<IDXGIAdapter1> adapter;
-    HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-    if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+    if (FAILED(UpdateDisplayModes(Adapter, Format)))
+      return 0;
 
-    Com<IDXGIOutput> output;
-    result = adapter->EnumOutputs(0, &output);
-    if (FAILED(result))
-      return D3DERR_INVALIDCALL;
-
-    UINT count = 0;
-    output->GetDisplayModeList(convert::format(Format), 0, &count, nullptr);
-
-    return count;
+    return (UINT)m_displayModes.size();
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
     return EnumAdapterModes(Adapter, D3DFMT_A8B8G8R8, 0, pMode);
@@ -318,6 +308,31 @@ namespace dxapex {
     if (!pMode)
       return D3DERR_INVALIDCALL;
 
+    if (FAILED(UpdateDisplayModes(Adapter, Format)))
+      return D3DERR_INVALIDCALL;
+
+    if (m_displayModes.size() <= Mode)
+      return D3DERR_INVALIDCALL;
+
+    DXGI_MODE_DESC& RequestedMode = m_displayModes[Mode];
+    pMode->Format = Format;
+    pMode->Width = RequestedMode.Width;
+    pMode->Height = RequestedMode.Height;
+    pMode->RefreshRate = RequestedMode.RefreshRate.Denominator;
+    pMode->ScanLineOrdering = convert::scanlineOrdering(RequestedMode.ScanlineOrdering);
+    pMode->Size = sizeof(D3DDISPLAYMODEEX);
+
+    return D3D_OK;
+  }
+
+  HRESULT Direct3D9Ex::UpdateDisplayModes(UINT Adapter, D3DFORMAT Format) {
+    if (m_displayModeAdapter == Adapter && m_displayModeFormats == Format && !m_displayModes.empty())
+      return D3D_OK;
+
+    m_displayModeAdapter = Adapter;
+    m_displayModeFormats = Format;
+    m_displayModes.clear();
+
     Com<IDXGIAdapter1> adapter;
     HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
     if (FAILED(Result))
@@ -333,33 +348,11 @@ namespace dxapex {
     DXGI_FORMAT dxgiFormat = convert::format(Format);
     Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
-    if (FAILED(Result) || ModeCount <= Mode)
-      return D3DERR_INVALIDCALL;
+    m_displayModes.resize(ModeCount);
 
-    const uint16_t StackMaxCount = 32;
-
-    DXGI_MODE_DESC stackDescs[StackMaxCount];
-    DXGI_MODE_DESC* pDescs = stackDescs;
-    std::vector<DXGI_MODE_DESC> heapDescs;
-
-    if (ModeCount > StackMaxCount) {
-      heapDescs.resize(ModeCount);
-      pDescs = &heapDescs[0];
-    }
-
-    std::reverse(pDescs, pDescs + StackMaxCount);
-
-    Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, pDescs);
+    Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, m_displayModes.data());
     if (FAILED(Result))
       return D3DERR_INVALIDCALL;
-
-    DXGI_MODE_DESC& RequestedMode = pDescs[Mode];
-    pMode->Format = Format;
-    pMode->Width = RequestedMode.Width;
-    pMode->Height = RequestedMode.Height;
-    pMode->RefreshRate = RequestedMode.RefreshRate.Denominator;
-    pMode->ScanLineOrdering = convert::scanlineOrdering(RequestedMode.ScanlineOrdering);
-    pMode->Size = sizeof(D3DDISPLAYMODEEX);
 
     return D3D_OK;
   }
