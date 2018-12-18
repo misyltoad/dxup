@@ -510,7 +510,11 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) {
-    log::stub("Direct3DDevice9Ex::GetRenderTarget");
+    if (RenderTargetIndex > m_state->renderTargets.size())
+      return D3DERR_INVALIDCALL;
+
+    *ppRenderTarget = ref(m_state->renderTargets[RenderTargetIndex]);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
