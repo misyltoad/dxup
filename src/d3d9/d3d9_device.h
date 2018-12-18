@@ -165,27 +165,31 @@ namespace dxapex {
     bool CanRefreshInputLayout();
 
     static HRESULT Create(
-      IDXGIAdapter1* adapter,
-      ID3D11Device1* device,
-      ID3D11DeviceContext1* context,
+      UINT adapter,
+      HWND window,
       Direct3D9Ex* parent,
-      D3DDEVICE_CREATION_PARAMETERS* creationParameters,
       D3DPRESENT_PARAMETERS* presentParameters,
       D3DDEVTYPE deviceType,
       bool isEx,
+      DWORD behaviourFlags,
       IDirect3DDevice9Ex** outDevice
       );
 
   private:
 
+    static HRESULT CreateD3D11Device(UINT adpater, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** adapter);
+    static void SetupD3D11Debug(ID3D11Device* device);
+
     Direct3DDevice9Ex(
+      UINT adapterNum,
       IDXGIAdapter1* adapter,
+      HWND window,
       ID3D11Device1* device,
       ID3D11DeviceContext1* context,
       Direct3D9Ex* parent,
-      D3DDEVICE_CREATION_PARAMETERS* creationParameters,
       D3DPRESENT_PARAMETERS* presentParameters,
       D3DDEVTYPE deviceType,
+      DWORD behaviourFlags,
       uint8_t flags
     );
 
@@ -195,7 +199,12 @@ namespace dxapex {
 
     Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device1> m_device;
+
+    UINT m_adapterNum;
     Com<IDXGIAdapter1> m_adapter;
+    HWND m_window;
+    DWORD m_behaviourFlags;
+
     Com<ID3D11DeviceContext1> m_context;
     D3D9ConstantBuffers m_constants;
 
@@ -203,7 +212,6 @@ namespace dxapex {
     uint8_t m_flags;
 
     Com<IDirect3D9Ex> m_parent;
-    D3DDEVICE_CREATION_PARAMETERS m_creationParameters;
     D3DDEVTYPE m_deviceType;
 
     struct PendingCursorUpdate {

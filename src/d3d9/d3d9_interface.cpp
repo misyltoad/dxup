@@ -255,123 +255,16 @@ namespace dxapex {
 
     InitReturnPtr(ppReturnedDeviceInterface);
 
-    Com<IDXGIAdapter1> adapter = nullptr;
-    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-
-    if (FAILED(Result))
-      return D3DERR_DEVICELOST;
-
-    UINT Flags = D3D11_CREATE_DEVICE_DISABLE_GPU_TIMEOUT | D3D11_CREATE_DEVICE_BGRA_SUPPORT; // Why isn't this a default?! ~ Josh
-
-    if (config::getBool(config::Debug))
-      Flags |= D3D11_CREATE_DEVICE_DEBUG;
-
-    D3D_FEATURE_LEVEL FeatureLevels[] =
-    {
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0,
-    };
-    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
-
-    ID3D11Device* pDX11Device = nullptr;
-    ID3D11DeviceContext* pImmediateContext = nullptr;
-
-    Result = D3D11CreateDevice(
-      adapter.ptr(),
-      D3D_DRIVER_TYPE_UNKNOWN,
-      nullptr,
-      Flags,
-      FeatureLevels,
-      ARRAYSIZE(FeatureLevels),
-      D3D11_SDK_VERSION,
-      &pDX11Device,
-      &Level,
-      &pImmediateContext
+    return Direct3DDevice9Ex::Create(
+      Adapter,
+      hFocusWindow,
+      this,
+      pPresentationParameters,
+      DeviceType,
+      true,
+      BehaviorFlags,
+      ppReturnedDeviceInterface
     );
-
-    if (Result == E_INVALIDARG) {
-      Result = D3D11CreateDevice(
-        adapter.ptr(),
-        D3D_DRIVER_TYPE_UNKNOWN,
-        nullptr,
-        Flags,
-        &FeatureLevels[1],
-        ARRAYSIZE(FeatureLevels) - 1,
-        D3D11_SDK_VERSION,
-        &pDX11Device,
-        &Level,
-        &pImmediateContext
-      );
-    }
-
-    if (FAILED(Result)) {
-      log::fail("Failed to create D3D11 Device.");
-      return D3DERR_DEVICELOST;
-    }
-
-    if (config::getBool(config::Debug)) {
-      Com<ID3D11Debug> d3dDebug;
-      if (SUCCEEDED(pDX11Device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug))) {
-        Com<ID3D11InfoQueue> d3dInfoQueue;
-        if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue))) {
-          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
-
-          std::array<D3D11_MESSAGE_ID, 1> messagesToHide = {
-          D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
-          };
-
-          D3D11_INFO_QUEUE_FILTER filter;
-          memset(&filter, 0, sizeof(filter));
-          filter.DenyList.NumIDs = messagesToHide.size();
-          filter.DenyList.pIDList = &messagesToHide[0];
-          d3dInfoQueue->AddStorageFilterEntries(&filter);
-        }
-      }
-    }
-
-    D3DDEVICE_CREATION_PARAMETERS CreationParameters;
-    CreationParameters.AdapterOrdinal = Adapter;
-    CreationParameters.BehaviorFlags = BehaviorFlags;
-    CreationParameters.DeviceType = D3DDEVTYPE_HAL;
-    CreationParameters.hFocusWindow = hFocusWindow;
-
-    RECT rect;
-    GetWindowRect(hFocusWindow, &rect);
-
-    if (!pPresentationParameters->BackBufferWidth)
-      pPresentationParameters->BackBufferWidth = rect.right;
-
-    if (!pPresentationParameters->BackBufferHeight)
-      pPresentationParameters->BackBufferHeight = rect.bottom;
-
-    if (!pPresentationParameters->BackBufferCount)
-      pPresentationParameters->BackBufferCount = 1;
-
-    if (pPresentationParameters->BackBufferFormat == D3DFMT_UNKNOWN)
-      pPresentationParameters->BackBufferFormat = D3DFMT_A8B8G8R8;
-
-    Com<ID3D11Device1> upgradedDevice;
-    pDX11Device->QueryInterface(__uuidof(ID3D11Device1), (void**)&upgradedDevice);
-
-    Com<ID3D11DeviceContext1> upgradedContext;
-    pImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&upgradedContext);
-
-    DeviceInitData initData;
-    initData.adapter = adapter.ptr();
-    initData.device = upgradedDevice.ptr();
-    initData.context = upgradedContext.ptr();
-    initData.ex = true;
-    initData.parent = this;
-    initData.creationParameters = &CreationParameters;
-    initData.presentParameters = pPresentationParameters;
-    initData.deviceType = DeviceType;
-
-    *ppReturnedDeviceInterface = ref(new Direct3DDevice9Ex(&initData));
-
-    return Result;
   }
   HRESULT  STDMETHODCALLTYPE Direct3D9Ex::GetAdapterLUID(UINT Adapter, LUID * pLUID) {
     if (!pLUID)

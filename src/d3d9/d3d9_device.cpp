@@ -22,59 +22,148 @@ namespace dxapex {
   };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
+    UINT adapterNum,
     IDXGIAdapter1* adapter,
+    HWND window,
     ID3D11Device1* device,
     ID3D11DeviceContext1* context,
     Direct3D9Ex* parent,
-    D3DDEVICE_CREATION_PARAMETERS* creationParameters,
     D3DPRESENT_PARAMETERS* presentParameters,
     D3DDEVTYPE deviceType,
+    DWORD behaviourFlags,
     uint8_t flags
   )
-    : m_adapter(adapter)
+    : m_adapterNum{ adapterNum }
+    , m_adapter(adapter)
+    , m_window{ window }
     , m_device(device)
     , m_context(context)
     , m_parent(parent)
+    , m_behaviourFlags{ behaviourFlags }
     , m_flags(flags)
-    , m_creationParameters(*creationParameters) 
     , m_deviceType(deviceType)
     , m_state{ new InternalRenderState }
     , m_constants{ device, context } { }
 
-  HRESULT Direct3DDevice9Ex::Create(
-    IDXGIAdapter1* adapter,
-    ID3D11Device1* device,
-    ID3D11DeviceContext1* context,
-    Direct3D9Ex* parent,
-    D3DDEVICE_CREATION_PARAMETERS* creationParameters,
-    D3DPRESENT_PARAMETERS* presentParameters,
-    D3DDEVTYPE deviceType,
-    bool isEx,
-    IDirect3DDevice9Ex** outDevice
-    ) {
-    InitReturnPtr(outDevice);
+  HRESULT Direct3DDevice9Ex::CreateD3D11Device(UINT adapter, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** dxgiAdapter) {
+    HRESULT result = parent->GetDXGIFactory()->EnumAdapters1(adapter, dxgiAdapter);
 
-    if (outDevice == nullptr)
-      return D3DERR_INVALIDCALL;
+    UINT Flags = D3D11_CREATE_DEVICE_DISABLE_GPU_TIMEOUT | D3D11_CREATE_DEVICE_BGRA_SUPPORT; // Why isn't this a default?! ~ Josh
 
-    uint8_t flags = 0;
+    if (config::getBool(config::Debug))
+      Flags |= D3D11_CREATE_DEVICE_DEBUG;
 
-    if (isEx)
-      flags |= DeviceFlag_Ex;
+    D3D_FEATURE_LEVEL FeatureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
+    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
 
-    Com<IDXGIDevice1> dxgiDevice;
-    HRESULT result = device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
+    Com<ID3D11Device> initialDevice;
+    Com<ID3D11DeviceContext> initialContext;
+
+    result = D3D11CreateDevice(
+      *dxgiAdapter,
+      D3D_DRIVER_TYPE_UNKNOWN,
+      nullptr,
+      Flags,
+      FeatureLevels,
+      ARRAYSIZE(FeatureLevels),
+      D3D11_SDK_VERSION,
+      &initialDevice,
+      &Level,
+      &initialContext
+    );
+
+    if (FAILED(result)) {
+      log::fail("Unable to create d3d11 device.");
+      return D3DERR_DEVICELOST;
+    }
+
+    result = initialDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)device);
+    HRESULT contextResult = initialContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)context);
+
+    if (FAILED(result) || FAILED(contextResult)) {
+      log::fail("Unable to upgrade to d3d11_1.");
+      return D3DERR_DEVICELOST;
+    }
+
+    result = initialDevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)dxgiDevice);
 
     if (FAILED(result)) {
       log::fail("Couldn't get IDXGIDevice1!");
       return D3DERR_INVALIDCALL;
     }
 
-    Direct3DDevice9Ex* d3d9Device = new Direct3DDevice9Ex(adapter, device, context, parent, creationParameters, presentParameters, deviceType, flags);
-    HRESULT result = d3d9Device->Reset(presentParameters);
+    return D3D_OK;
+  }
+
+  HRESULT Direct3DDevice9Ex::Create(
+    UINT adapter,
+    HWND window,
+    Direct3D9Ex* parent,
+    D3DPRESENT_PARAMETERS* presentParameters,
+    D3DDEVTYPE deviceType,
+    bool isEx,
+    DWORD behaviourFlags,
+    IDirect3DDevice9Ex** outDevice
+    ) {
+    InitReturnPtr(outDevice);
+
+    if (!outDevice || !presentParameters)
+      return D3DERR_INVALIDCALL;
+
+    Com<ID3D11Device1> device;
+    Com<ID3D11DeviceContext1> context;
+    Com<IDXGIAdapter1> dxgiAdapter;
+    Com<IDXGIDevice1> dxgiDevice;
+
+    HRESULT result = CreateD3D11Device(adapter, parent, &device, &context, &dxgiDevice, &dxgiAdapter);
+    SetupD3D11Debug(device.ptr());
+
+    if (FAILED(result))
+      return D3DERR_DEVICELOST;
+
+    uint8_t flags = 0;
+
+    if (isEx)
+      flags |= DeviceFlag_Ex;
+
+    RECT rect;
+    GetWindowRect(window, &rect);
+
+    if (!presentParameters->BackBufferWidth)
+      presentParameters->BackBufferWidth = rect.right;
+
+    if (!presentParameters->BackBufferHeight)
+      presentParameters->BackBufferHeight = rect.bottom;
+
+    if (!presentParameters->BackBufferCount)
+      presentParameters->BackBufferCount = 1;
+
+    if (presentParameters->BackBufferFormat == D3DFMT_UNKNOWN)
+      presentParameters->BackBufferFormat = D3DFMT_A8B8G8R8;
+
+    Direct3DDevice9Ex* d3d9Device = new Direct3DDevice9Ex(
+      adapter,
+      dxgiAdapter.ptr(),
+      window,
+      device.ptr(),
+      context.ptr(),
+      parent, 
+      presentParameters,
+      deviceType,
+      behaviourFlags,
+      flags);
+
+    result = d3d9Device->Reset(presentParameters);
 
     if (FAILED(result)) {
       log::fail("Failed to create d3d9 device as Reset to default state failed.");
+      delete d3d9Device;
       return D3DERR_INVALIDCALL;
     }
 
@@ -96,7 +185,7 @@ namespace dxapex {
 
     HRESULT result = D3D_OK;
 
-    if (m_swapchains.size() == 0) {
+    if (GetInternalSwapchain(0) == nullptr) {
       result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
 
       if (FAILED(result)) {
@@ -154,6 +243,33 @@ namespace dxapex {
     ShowCursor(false);
 
     return D3D_OK;
+  }
+
+  void Direct3DDevice9Ex::SetupD3D11Debug(ID3D11Device* device) {
+    if (config::getBool(config::Debug)) {
+
+      Com<ID3D11Debug> d3dDebug;
+      if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug))) {
+
+        Com<ID3D11InfoQueue> d3dInfoQueue;
+        if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue))) {
+
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+
+          std::array<D3D11_MESSAGE_ID, 1> messagesToHide = {
+            D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+          };
+
+          D3D11_INFO_QUEUE_FILTER filter;
+          memset(&filter, 0, sizeof(filter));
+          filter.DenyList.NumIDs = messagesToHide.size();
+          filter.DenyList.pIDList = &messagesToHide[0];
+          d3dInfoQueue->AddStorageFilterEntries(&filter);
+        }
+      }
+
+    }
   }
 
   Direct3DDevice9Ex::~Direct3DDevice9Ex() {
@@ -215,7 +331,10 @@ namespace dxapex {
     if (!pParameters)
       return D3DERR_INVALIDCALL;
 
-    *pParameters = m_creationParameters;
+    pParameters->AdapterOrdinal = m_adapterNum;
+    pParameters->BehaviorFlags = m_behaviourFlags;
+    pParameters->hFocusWindow = m_window;
+    pParameters->DeviceType = m_deviceType;
 
     return D3D_OK;
   }
@@ -262,7 +381,7 @@ namespace dxapex {
     SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
     SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
     SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    SwapChainDesc.OutputWindow = m_creationParameters.hFocusWindow;
+    SwapChainDesc.OutputWindow = m_window;
     SwapChainDesc.Windowed = true;
     SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
 
@@ -290,7 +409,7 @@ namespace dxapex {
       return result;
     }
 
-    parent->GetDXGIFactory()->MakeWindowAssociation(m_creationParameters.hFocusWindow, DXGI_MWA_NO_ALT_ENTER);
+    parent->GetDXGIFactory()->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER);
 
     for (size_t i = 0; i < m_swapchains.size(); i++)
     {
