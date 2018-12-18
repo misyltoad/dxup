@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <vector>
+#include <algorithm>
 #include "dx9asm_operations.h"
 
 namespace dxapex {
