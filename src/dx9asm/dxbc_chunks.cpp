@@ -206,7 +206,7 @@ namespace dxapex {
           VariableInfo* variables = (VariableInfo*)nextPtr(obj);
           forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
             VariableInfo info;
-            info.startOffset = i * 4 * sizeof(float);
+            info.startOffset = mapping.dx9Id * 4 * sizeof(float);
             pushObject(obj, info);
           });
 
@@ -248,7 +248,7 @@ namespace dxapex {
             info.typeOffset = variableTypeOffset;
 
             char name[6];
-            snprintf(name, 6, "c%d", i);
+            snprintf(name, 6, "c%d", mapping.dx9Id);
             info.nameOffset = getChunkSize(bytecode);
             pushAlignedString(obj, name, strlen(name));
           });
@@ -384,7 +384,12 @@ namespace dxapex {
         // Constant Buffer
         {
           const uint32_t constantBuffer = 0;
-          const uint32_t cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
+          uint32_t cbufferCount = 0;
+
+          for (auto& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
+            if (mapping.dx9Type == D3DSPR_CONST)
+              cbufferCount = max(cbufferCount, mapping.dx9Id);
+          }
 
           if (cbufferCount != 0) {
             uint32_t data[2] = { constantBuffer , cbufferCount };
