@@ -402,12 +402,15 @@ namespace dxapex {
     SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     SwapChainDesc.OutputWindow = m_window;
     SwapChainDesc.Windowed = true;
-    SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
+    //SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
 
-    if (SwapChainDesc.SampleDesc.Count == 0)
-      SwapChainDesc.SampleDesc.Count = 1;
+    //if (SwapChainDesc.SampleDesc.Count == 0)
+    //  SwapChainDesc.SampleDesc.Count = 1;
 
-    SwapChainDesc.SampleDesc.Quality = pPresentationParameters->MultiSampleQuality;
+    //SwapChainDesc.SampleDesc.Quality = pPresentationParameters->MultiSampleQuality;
+
+    SwapChainDesc.SampleDesc.Count = 1;
+    SwapChainDesc.SampleDesc.Quality = 0;
 
     Com<Direct3D9Ex> parent;
     GetParent(&parent);
@@ -531,22 +534,24 @@ namespace dxapex {
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = 1;
 
-    if (MultiSample == D3DMULTISAMPLE_NONE) // 0 samples -> 1 sample.
-      MultiSample = D3DMULTISAMPLE_NONMASKABLE;
+    UINT sampleCount = max(1, (UINT)MultiSample);
 
-    desc.SampleDesc.Count = (UINT)MultiSample;
-    desc.SampleDesc.Quality = MultisampleQuality;
+    bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
+    bool isRenderTarget = Usage & D3DUSAGE_RENDERTARGET;
+
+    //m_device->CheckMultisampleQualityLevels(desc.Format, sampleCount, )
+    desc.SampleDesc.Count = 1;//sampleCount;
+    desc.SampleDesc.Quality = 0;//equateMultisampleQuality ? sampleCount : 0;
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
-    bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
       if (!isDepthStencil)
         desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
-      desc.BindFlags |= Usage & D3DUSAGE_RENDERTARGET ? D3D11_BIND_RENDER_TARGET : 0;
-      desc.BindFlags |= Usage & D3DUSAGE_DEPTHSTENCIL ? D3D11_BIND_DEPTH_STENCIL : 0;
+      desc.BindFlags |= isRenderTarget ? D3D11_BIND_RENDER_TARGET : 0;
+      desc.BindFlags |= isRenderTarget ? D3D11_BIND_DEPTH_STENCIL : 0;
 
       desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     }
