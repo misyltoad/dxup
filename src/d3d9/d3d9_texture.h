@@ -63,7 +63,8 @@ namespace dxapex {
   class Direct3DTexture9 final : public Direct3DTexture9Base
   {
   public:
-    Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard);
+    Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard);
+    ~Direct3DTexture9();
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);
 
@@ -91,10 +92,15 @@ namespace dxapex {
       m_unmappedSubresources = 0;
     }
 
+    inline bool IsFakeSurface() {
+      return m_fakeSurface;
+    }
+
   private:
     uint64_t m_mappedSubresources;
     uint64_t m_unmappedSubresources;
-    std::vector<Com<IDirect3DSurface9>> m_surfaces;
+    bool m_fakeSurface;
+    std::vector<IDirect3DSurface9*> m_surfaces;
   };
 
 }

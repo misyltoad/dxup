@@ -157,6 +157,7 @@ namespace dxapex {
     void DoDepthDiscardCheck();
 
     HRESULT CreateTextureInternal(
+      bool FakeSurface,
       UINT Width,
       UINT Height,
       UINT Levels,

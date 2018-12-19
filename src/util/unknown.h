@@ -18,15 +18,13 @@ namespace dxapex {
 
     ULONG STDMETHODCALLTYPE AddRef() {
       ULONG refCount = m_refCount++;
-      if (refCount == 0ul)
-        AddRefPrivate();
 
       return refCount;
     }
 
     ULONG STDMETHODCALLTYPE Release() {
       ULONG refCount = --m_refCount;
-      if (refCount == 0)
+      if (refCount == 0 && m_refPrivate == 0)
         delete this;
       
       return refCount;
@@ -37,7 +35,9 @@ namespace dxapex {
     }
 
     void ReleasePrivate() {
-      if (--m_refPrivate == 0ul)
+      m_refPrivate--;
+
+      if (m_refCount == 0 && m_refPrivate == 0)
         delete this;
     }
 

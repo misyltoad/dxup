@@ -30,6 +30,9 @@ namespace dxapex {
       return GetStaging() != nullptr;
     }
 
+    ULONG STDMETHODCALLTYPE AddRef() override;
+    ULONG STDMETHODCALLTYPE Release() override;
+
     IDXGISurface1* GetDXGISurface();
     Direct3DTexture9* GetD3D9Texture();
     ID3D11RenderTargetView* GetD3D11RenderTarget();
@@ -40,7 +43,7 @@ namespace dxapex {
 
   private:
 
-    Com<IUnknown> m_container;
+    IUnknown* m_container;
     Com<ID3D11Texture2D> m_d3d11texture;
     Com<IDXGISurface1> m_surface;
     Com<ID3D11RenderTargetView> m_rtView;

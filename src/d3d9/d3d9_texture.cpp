@@ -3,8 +3,9 @@
 
 namespace dxapex {
 
-  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard)
+  Direct3DTexture9::Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard)
     : Direct3DTexture9Base(device, texture, srv, pool, usage)
+    , m_fakeSurface{ fakeSurface }
     , m_mappedSubresources{ 0 }
     , m_unmappedSubresources{ 0 }{
 
@@ -21,8 +22,23 @@ namespace dxapex {
     }
 
     m_surfaces.reserve(desc.MipLevels);
-    for (UINT i = 0; i < desc.MipLevels; i++)
-      m_surfaces.push_back(ref(new Direct3DSurface9(false, i, device, this, texture, pool, usage, discard)));
+    for (UINT i = 0; i < desc.MipLevels; i++) {
+      Direct3DSurface9* surface = new Direct3DSurface9(false, i, device, this, texture, pool, usage, discard);
+
+      if (!fakeSurface)
+        surface->AddRefPrivate();
+
+      m_surfaces.push_back(surface);
+    }
+  }
+
+  Direct3DTexture9::~Direct3DTexture9() {
+    if (!m_fakeSurface) {
+      for (IDirect3DSurface9* surface : m_surfaces) {
+        Direct3DSurface9* internalSurface = reinterpret_cast<Direct3DSurface9*>(surface);
+        internalSurface->ReleasePrivate();
+      }
+    }
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DTexture9::QueryInterface(REFIID riid, void** ppvObj) {

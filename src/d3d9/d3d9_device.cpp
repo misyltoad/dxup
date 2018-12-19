@@ -502,10 +502,11 @@ namespace dxapex {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
-    return CreateTextureInternal(Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, ppTexture, pSharedHandle);
+    return CreateTextureInternal(false, Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, ppTexture, pSharedHandle);
   }
 
   HRESULT Direct3DDevice9Ex::CreateTextureInternal(
+    bool FakeSurface,
     UINT Width, 
     UINT Height,
     UINT Levels,
@@ -568,7 +569,7 @@ namespace dxapex {
     if (!isDepthStencil)
       m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
+    *ppTexture = ref(new Direct3DTexture9(FakeSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
 
     return D3D_OK;
   }
@@ -636,7 +637,7 @@ namespace dxapex {
     Com<IDirect3DTexture9> d3d9Texture;
 
     // NOTE(Josh): May need to handle Lockable in future.
-    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, &d3d9Texture, pSharedHandle);
+    HRESULT result = CreateTextureInternal(true, Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, &d3d9Texture, pSharedHandle);
 
     if (FAILED(result)) {
       log::fail("Failed to create render target.");
@@ -651,7 +652,7 @@ namespace dxapex {
       return D3DERR_INVALIDCALL;
 
     Com<IDirect3DTexture9> d3d9Texture;
-    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, &d3d9Texture, pSharedHandle);
+    HRESULT result = CreateTextureInternal(true, Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, &d3d9Texture, pSharedHandle);
 
     if (FAILED(result)) {
       log::fail("Failed to create depth stencil.");

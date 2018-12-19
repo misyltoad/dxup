@@ -37,6 +37,8 @@ namespace dxapex {
 
     if (texture != nullptr)
       texture->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
+
+
   }
 
   HRESULT Direct3DSurface9::GetContainer(REFIID riid, void** ppContainer) {
@@ -199,6 +201,19 @@ namespace dxapex {
     return D3D_OK;
   }
 
+  ULONG STDMETHODCALLTYPE Direct3DSurface9::AddRef() {
+    if (m_container != nullptr)
+      m_container->AddRef();
+
+    return Direct3DSurface9Base::AddRef();
+  }
+  ULONG STDMETHODCALLTYPE Direct3DSurface9::Release() {
+    if (m_container != nullptr)
+      m_container->Release();
+
+    return Direct3DSurface9Base::Release();
+  }
+
   ID3D11Texture2D* Direct3DSurface9::GetMapping() {
     if (HasStaging())
       return GetStaging();
@@ -215,7 +230,7 @@ namespace dxapex {
     return m_surface.ptr();
   }
   Direct3DTexture9* Direct3DSurface9::GetD3D9Texture() {
-    return dynamic_cast<Direct3DTexture9*>(m_container.ptr());
+    return dynamic_cast<Direct3DTexture9*>(m_container);
   }
   ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget() {
     return m_rtView.ptr();
