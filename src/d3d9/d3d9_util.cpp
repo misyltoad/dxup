@@ -6,7 +6,7 @@ namespace dxapex {
 
   namespace convert {
 
-    using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT, 47>;
+    using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT, 48>;
 
     #define D3DFMT_INTZ ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z')))
     #define D3DFMT_RAWZ ((D3DFORMAT)(MAKEFOURCC('R','A','W','Z')))
@@ -54,6 +54,8 @@ namespace dxapex {
       { D3DFMT_R5G6B5, DXGI_FORMAT_B5G6R5_UNORM },
       { D3DFMT_A1R5G5B5, DXGI_FORMAT_B5G5R5A1_UNORM },
       { D3DFMT_A4R4G4B4, DXGI_FORMAT_B4G4R4A4_UNORM },
+
+      { D3DFMT_R8G8B8, DXGI_FORMAT_R8G8B8A8_UNORM },
 
       { D3DFMT_D15S1, DXGI_FORMAT_D24_UNORM_S8_UINT },
       { D3DFMT_D24S8, DXGI_FORMAT_D24_UNORM_S8_UINT },
