@@ -810,6 +810,8 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
+    DoDepthDiscardCheck();
+
     m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
     m_state->dirtyFlags |= dirtyFlags::depthStencil;
 
@@ -1566,9 +1568,19 @@ namespace dxapex {
     return swapchain->TestSwapchain(hDestinationWindow, true);
   }
 
+  void Direct3DDevice9Ex::DoDepthDiscardCheck() {
+    if (m_state->depthStencil != nullptr && m_state->depthStencil->GetDiscard()) {
+      ID3D11DepthStencilView* dsv = m_state->depthStencil->GetD3D11DepthStencil();
+      if (dsv)
+        m_context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 0.0f, 0);
+    }
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::PresentEx(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags) {
     // Not sure what swapchain to use here, going with this one ~ Josh
     HRESULT result = GetInternalSwapchain(0)->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+
+    DoDepthDiscardCheck();
 
     if (m_pendingCursorUpdate.update)
       SetCursorPosition(m_pendingCursorUpdate.x, m_pendingCursorUpdate.y, D3DCURSOR_IMMEDIATE_UPDATE);
