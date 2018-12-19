@@ -22,6 +22,7 @@ namespace dxapex {
   }
 
   struct InternalRenderState{
+    std::array<Com<IDirect3DBaseTexture9>, 20> textures;
     Com<Direct3DVertexShader9> vertexShader;
     Com<Direct3DPixelShader9> pixelShader;
     Com<Direct3DVertexDeclaration9> vertexDecl;
@@ -961,11 +962,40 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::GetClipStatus");
     return D3D_OK;
   }
+
+  HRESULT Direct3DDevice9Ex::MapStageToSampler(DWORD Stage, DWORD* Sampler){
+    if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
+      return D3DERR_INVALIDCALL;
+
+    // For vertex samplers.
+    if (Stage >= D3DVERTEXTEXTURESAMPLER0)
+      Stage = 16 + (Stage - D3DVERTEXTEXTURESAMPLER0);
+
+    *Sampler = Stage;
+
+    return D3D_OK;
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
-    log::stub("Direct3DDevice9Ex::GetTexture");
+    InitReturnPtr(ppTexture);
+
+    if (ppTexture == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (FAILED(MapStageToSampler(Stage, &Stage)))
+      return D3DERR_INVALIDCALL;
+
+    *ppTexture = ref(m_state->textures[Stage]);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
+    if (FAILED(MapStageToSampler(Stage, &Stage)))
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->textures[Stage] == pTexture)
+      return D3D_OK;
+
     Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
 
     ID3D11ShaderResourceView* srv = nullptr;
