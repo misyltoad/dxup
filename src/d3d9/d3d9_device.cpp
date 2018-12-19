@@ -80,7 +80,7 @@ namespace dxapex {
       nullptr,
       Flags,
       FeatureLevels,
-      ARRAYSIZE(FeatureLevels),
+      std::size(FeatureLevels),
       D3D11_SDK_VERSION,
       &initialDevice,
       &Level,
