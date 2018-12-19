@@ -40,8 +40,13 @@ namespace dxapex {
       IDXGIFactory1* GetDXGIFactory();
       HRESULT EnumAdapterModeFormatEx(UINT Adapter, D3DFORMAT Format, const D3DDISPLAYMODEFILTER* pFilter, UINT Mode, D3DDISPLAYMODEEX* pMode);
 
+      HRESULT UpdateDisplayModes(UINT adapter, D3DFORMAT format);
+
     private:
 
+      UINT m_displayModeAdapter;
+      D3DFORMAT m_displayModeFormats;
+      std::vector<DXGI_MODE_DESC> m_displayModes;
       Com<IDXGIFactory1> m_dxgiFactory;
 
   };

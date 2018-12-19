@@ -29,7 +29,7 @@ namespace dxapex {
         return;
       }
       
-      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET));
+      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false));
     }
 
     Com<IDXGIOutput> output;
@@ -43,6 +43,26 @@ namespace dxapex {
 
     if (FAILED(result))
       log::warn("Failed to get Swapchain IDXGIOutput1");
+  }
+
+  HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
+    UINT BackBufferCount = parameters->BackBufferCount;
+    if (BackBufferCount == 0)
+      BackBufferCount = 1;
+
+    HRESULT result = m_swapchain->ResizeBuffers(
+      BackBufferCount,
+      parameters->BackBufferWidth,
+      parameters->BackBufferHeight,
+      convert::format(parameters->BackBufferFormat),
+      0);
+
+    if (FAILED(result)) {
+      log::fail("ResizeBuffers failed in swapchain reset.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    return D3D_OK;
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::QueryInterface(REFIID riid, void** ppvObj) {

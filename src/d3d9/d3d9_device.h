@@ -6,24 +6,12 @@
 
 namespace dxapex {
 
-  struct DeviceInitData {
-    IDXGIAdapter1* adapter;
-    ID3D11Device1* device;
-    ID3D11DeviceContext1* context;
-    bool ex;
-    Direct3D9Ex* parent;
-    D3DDEVICE_CREATION_PARAMETERS* creationParameters;
-    D3DPRESENT_PARAMETERS* presentParameters;
-    D3DDEVTYPE deviceType;
-  };
-
   struct InternalRenderState;
 
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
   public:
 
-    Direct3DDevice9Ex(DeviceInitData* deviceData);
     virtual ~Direct3DDevice9Ex();
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppv) override;
@@ -90,6 +78,7 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE EndStateBlock(IDirect3DStateBlock9** ppSB) override;
     HRESULT STDMETHODCALLTYPE SetClipStatus(const D3DCLIPSTATUS9* pClipStatus) override;
     HRESULT STDMETHODCALLTYPE GetClipStatus(D3DCLIPSTATUS9* pClipStatus) override;
+    HRESULT MapStageToSampler(DWORD Stage, DWORD* Sampler);
     HRESULT STDMETHODCALLTYPE GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) override;
     HRESULT STDMETHODCALLTYPE SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) override;
     HRESULT STDMETHODCALLTYPE GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) override;
@@ -165,18 +154,60 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode) override;
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
+    void DoDepthDiscardCheck();
+
+    HRESULT CreateTextureInternal(
+      UINT Width,
+      UINT Height,
+      UINT Levels,
+      DWORD Usage,
+      D3DFORMAT Format,
+      D3DPOOL Pool,
+      D3DMULTISAMPLE_TYPE MultiSample,
+      DWORD MultisampleQuality,
+      BOOL Discard,
+      IDirect3DTexture9** ppTexture,
+      HANDLE* pSharedHandle);
+
     void GetParent(Direct3D9Ex** parent);
     ID3D11DeviceContext* GetContext();
     ID3D11Device* GetD3D11Device();
 
-    void RefreshInputLayout();
+    void UpdateVertexShaderAndInputLayout();
+    void UpdateRenderTargets();
+    void UpdatePixelShader();
 
     bool CanDraw();
     bool PrepareDraw();
     void FinishDraw();
-    bool CanRefreshInputLayout();
+
+    static HRESULT Create(
+      UINT adapter,
+      HWND window,
+      Direct3D9Ex* parent,
+      D3DPRESENT_PARAMETERS* presentParameters,
+      D3DDEVTYPE deviceType,
+      bool isEx,
+      DWORD behaviourFlags,
+      IDirect3DDevice9Ex** outDevice
+      );
 
   private:
+
+    static HRESULT CreateD3D11Device(UINT adpater, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** adapter);
+    static void SetupD3D11Debug(ID3D11Device* device);
+
+    Direct3DDevice9Ex(
+      UINT adapterNum,
+      IDXGIAdapter1* adapter,
+      HWND window,
+      ID3D11Device1* device,
+      ID3D11DeviceContext1* context,
+      Direct3D9Ex* parent,
+      D3DDEVTYPE deviceType,
+      DWORD behaviourFlags,
+      uint8_t flags
+    );
 
     std::array< Com<IDirect3DSwapChain9Ex>, D3DPRESENT_BACK_BUFFERS_MAX_EX > m_swapchains;
 
@@ -184,15 +215,19 @@ namespace dxapex {
 
     Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device1> m_device;
+
+    UINT m_adapterNum;
     Com<IDXGIAdapter1> m_adapter;
+    HWND m_window;
+    DWORD m_behaviourFlags;
+
     Com<ID3D11DeviceContext1> m_context;
     D3D9ConstantBuffers m_constants;
 
-    const uint8_t DeviceFlag_Ex = 0x01;
-
+    static const uint8_t DeviceFlag_Ex = 0x01;
     uint8_t m_flags;
+
     Com<IDirect3D9Ex> m_parent;
-    D3DDEVICE_CREATION_PARAMETERS m_creationParameters;
     D3DDEVTYPE m_deviceType;
 
     struct PendingCursorUpdate {

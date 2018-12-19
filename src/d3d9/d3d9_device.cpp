@@ -13,41 +13,220 @@
 
 namespace dxapex {
 
+  namespace dirtyFlags {
+    const uint32_t vertexShader = 1 << 0;
+    const uint32_t vertexDecl = 1 << 1;
+    const uint32_t pixelShader = 1 << 2;
+    const uint32_t renderTargets = 1 << 3;
+    const uint32_t depthStencil = 1 << 4;
+  }
+
   struct InternalRenderState{
+    std::array<Com<IDirect3DBaseTexture9>, 20> textures;
     Com<Direct3DVertexShader9> vertexShader;
     Com<Direct3DPixelShader9> pixelShader;
     Com<Direct3DVertexDeclaration9> vertexDecl;
+    Com<Direct3DSurface9> depthStencil;
     std::array<Com<Direct3DSurface9>, 4> renderTargets;
-    bool isValid = false;
+    uint32_t dirtyFlags = 0;
   };
 
-  Direct3DDevice9Ex::Direct3DDevice9Ex(DeviceInitData* data)
-    : m_adapter(data->adapter)
-    , m_device(data->device)
-    , m_context(data->context)
-    , m_parent(data->parent)
-    , m_flags(0)
-    , m_creationParameters(*data->creationParameters) 
-    , m_deviceType(data->deviceType)
+  Direct3DDevice9Ex::Direct3DDevice9Ex(
+    UINT adapterNum,
+    IDXGIAdapter1* adapter,
+    HWND window,
+    ID3D11Device1* device,
+    ID3D11DeviceContext1* context,
+    Direct3D9Ex* parent,
+    D3DDEVTYPE deviceType,
+    DWORD behaviourFlags,
+    uint8_t flags
+  )
+    : m_adapterNum{ adapterNum }
+    , m_adapter(adapter)
+    , m_window{ window }
+    , m_device(device)
+    , m_context(context)
+    , m_parent(parent)
+    , m_behaviourFlags{ behaviourFlags }
+    , m_flags(flags)
+    , m_deviceType(deviceType)
     , m_state{ new InternalRenderState }
-    , m_constants{ data->device, data->context }{
-    if (data->ex)
-      m_flags |= DeviceFlag_Ex;
+    , m_constants{ device, context } { }
 
-    m_device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&m_dxgiDevice);
+  HRESULT Direct3DDevice9Ex::CreateD3D11Device(UINT adapter, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** dxgiAdapter) {
+    HRESULT result = parent->GetDXGIFactory()->EnumAdapters1(adapter, dxgiAdapter);
 
-    Reset(data->presentParameters);
+    UINT Flags = D3D11_CREATE_DEVICE_DISABLE_GPU_TIMEOUT | D3D11_CREATE_DEVICE_BGRA_SUPPORT; // Why isn't this a default?! ~ Josh
 
-    CreateAdditionalSwapChain(data->presentParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
+    if (config::getBool(config::Debug))
+      Flags |= D3D11_CREATE_DEVICE_DEBUG;
+
+    D3D_FEATURE_LEVEL FeatureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
+    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
+
+    Com<ID3D11Device> initialDevice;
+    Com<ID3D11DeviceContext> initialContext;
+
+    result = D3D11CreateDevice(
+      *dxgiAdapter,
+      D3D_DRIVER_TYPE_UNKNOWN,
+      nullptr,
+      Flags,
+      FeatureLevels,
+      ARRAYSIZE(FeatureLevels),
+      D3D11_SDK_VERSION,
+      &initialDevice,
+      &Level,
+      &initialContext
+    );
+
+    if (FAILED(result)) {
+      log::fail("Unable to create d3d11 device.");
+      return D3DERR_DEVICELOST;
+    }
+
+    result = initialDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)device);
+    HRESULT contextResult = initialContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)context);
+
+    if (FAILED(result) || FAILED(contextResult)) {
+      log::fail("Unable to upgrade to d3d11_1.");
+      return D3DERR_DEVICELOST;
+    }
+
+    result = initialDevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)dxgiDevice);
+
+    if (FAILED(result)) {
+      log::fail("Couldn't get IDXGIDevice1!");
+      return D3DERR_INVALIDCALL;
+    }
+
+    return D3D_OK;
+  }
+
+  HRESULT Direct3DDevice9Ex::Create(
+    UINT adapter,
+    HWND window,
+    Direct3D9Ex* parent,
+    D3DPRESENT_PARAMETERS* presentParameters,
+    D3DDEVTYPE deviceType,
+    bool isEx,
+    DWORD behaviourFlags,
+    IDirect3DDevice9Ex** outDevice
+    ) {
+    InitReturnPtr(outDevice);
+
+    if (!outDevice || !presentParameters)
+      return D3DERR_INVALIDCALL;
+
+    Com<ID3D11Device1> device;
+    Com<ID3D11DeviceContext1> context;
+    Com<IDXGIAdapter1> dxgiAdapter;
+    Com<IDXGIDevice1> dxgiDevice;
+
+    HRESULT result = CreateD3D11Device(adapter, parent, &device, &context, &dxgiDevice, &dxgiAdapter);
+    SetupD3D11Debug(device.ptr());
+
+    if (FAILED(result))
+      return D3DERR_DEVICELOST;
+
+    uint8_t flags = 0;
+
+    if (isEx)
+      flags |= DeviceFlag_Ex;
+
+    RECT rect;
+    GetWindowRect(window, &rect);
+
+    if (!presentParameters->BackBufferWidth)
+      presentParameters->BackBufferWidth = rect.right;
+
+    if (!presentParameters->BackBufferHeight)
+      presentParameters->BackBufferHeight = rect.bottom;
+
+    if (!presentParameters->BackBufferCount)
+      presentParameters->BackBufferCount = 1;
+
+    if (presentParameters->BackBufferFormat == D3DFMT_UNKNOWN)
+      presentParameters->BackBufferFormat = D3DFMT_A8B8G8R8;
+
+    Direct3DDevice9Ex* d3d9Device = new Direct3DDevice9Ex(
+      adapter,
+      dxgiAdapter.ptr(),
+      window,
+      device.ptr(),
+      context.ptr(),
+      parent,
+      deviceType,
+      behaviourFlags,
+      flags);
+
+    result = d3d9Device->Reset(presentParameters);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create d3d9 device as Reset to default state failed.");
+      delete d3d9Device;
+      return D3DERR_INVALIDCALL;
+    }
+
+    *outDevice = ref(d3d9Device);
+
+    return D3D_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+    if (pPresentationParameters == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    // Unbind current state...
+
+    SetVertexShader(nullptr);
+    SetPixelShader(nullptr);
+    SetDepthStencilSurface(nullptr);
+
+    for (uint32_t i = 0; i < 4; i++)
+      SetRenderTarget(0, nullptr);
+
+    // Setup new state...
+
+    HRESULT result = D3D_OK;
+
+    if (GetInternalSwapchain(0) == nullptr) {
+      result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
+
+      if (FAILED(result)) {
+        log::fail("Couldn't create implicit swapchain.");
+        return D3DERR_INVALIDCALL;
+      }
+    }
+    else {
+      result = GetInternalSwapchain(0)->Reset(pPresentationParameters);
+
+      if (FAILED(result))
+        return D3DERR_INVALIDCALL;
+    }
 
     Com<IDirect3DSurface9> backbuffer;
-    HRESULT result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+    result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+
+    if (FAILED(result)) {
+      log::fail("Couldn't get implicit backbuffer.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    SetRenderTarget(0, backbuffer.ptr());
 
     D3DVIEWPORT9 implicitViewport;
     implicitViewport.X = 0;
     implicitViewport.Y = 0;
-    implicitViewport.Height = data->presentParameters->BackBufferHeight;
-    implicitViewport.Width = data->presentParameters->BackBufferWidth;
+    implicitViewport.Height = pPresentationParameters->BackBufferHeight;
+    implicitViewport.Width = pPresentationParameters->BackBufferWidth;
     implicitViewport.MinZ = 0.0f;
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);
@@ -68,8 +247,48 @@ namespace dxapex {
       m_context->PSSetSamplers(i, 1, &state);
     }
 
-    if (!FAILED(result))
-      SetRenderTarget(0, backbuffer.ptr());
+    for (uint32_t i = 0; i < 6; i++) {
+      float plane[4] = { 0, 0, 0, 0 };
+      SetClipPlane(i, plane);
+    }
+
+    if (pPresentationParameters->EnableAutoDepthStencil) {
+      Com<IDirect3DSurface9> autoDepthStencil;
+      CreateDepthStencilSurface(pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight, pPresentationParameters->AutoDepthStencilFormat, pPresentationParameters->MultiSampleType, pPresentationParameters->MultiSampleQuality, false, &autoDepthStencil, nullptr);
+      SetDepthStencilSurface(autoDepthStencil.ptr());
+    }
+
+    if (config::getBool(config::InitialHideCursor))
+      ShowCursor(false);
+
+    return D3D_OK;
+  }
+
+  void Direct3DDevice9Ex::SetupD3D11Debug(ID3D11Device* device) {
+    if (config::getBool(config::Debug)) {
+
+      Com<ID3D11Debug> d3dDebug;
+      if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug))) {
+
+        Com<ID3D11InfoQueue> d3dInfoQueue;
+        if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue))) {
+
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+
+          std::array<D3D11_MESSAGE_ID, 1> messagesToHide = {
+            D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+          };
+
+          D3D11_INFO_QUEUE_FILTER filter;
+          memset(&filter, 0, sizeof(filter));
+          filter.DenyList.NumIDs = messagesToHide.size();
+          filter.DenyList.pIDList = &messagesToHide[0];
+          d3dInfoQueue->AddStorageFilterEntries(&filter);
+        }
+      }
+
+    }
   }
 
   Direct3DDevice9Ex::~Direct3DDevice9Ex() {
@@ -120,98 +339,7 @@ namespace dxapex {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDeviceCaps(D3DCAPS9* pCaps) {
-
-    if (!pCaps)
-      return D3DERR_INVALIDCALL;
-
-    // Assuming you're not running a potato if you're using dxapex.
-    // Feel free to improve.
-
-    DXGI_ADAPTER_DESC adapterDesc;
-    m_adapter->GetDesc(&adapterDesc);
-    
-    pCaps->DeviceType = m_deviceType;
-    pCaps->AdapterOrdinal = 0;
-    pCaps->Caps = 0;
-    pCaps->Caps2 = D3DCAPS2_CANMANAGERESOURCE | D3DCAPS2_DYNAMICTEXTURES | D3DCAPS2_FULLSCREENGAMMA | D3DCAPS2_CANAUTOGENMIPMAP;
-    pCaps->Caps3 = D3DCAPS3_ALPHA_FULLSCREEN_FLIP_OR_DISCARD | D3DCAPS3_COPY_TO_VIDMEM | D3DCAPS3_COPY_TO_SYSTEMMEM | D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION;
-    pCaps->PresentationIntervals = D3DPRESENT_INTERVAL_DEFAULT | D3DPRESENT_INTERVAL_ONE | D3DPRESENT_INTERVAL_TWO | D3DPRESENT_INTERVAL_THREE | D3DPRESENT_INTERVAL_FOUR | D3DPRESENT_INTERVAL_IMMEDIATE;
-    pCaps->CursorCaps = D3DCURSORCAPS_COLOR | D3DCURSORCAPS_LOWRES;
-    pCaps->DevCaps = D3DDEVCAPS_CANBLTSYSTONONLOCAL | D3DDEVCAPS_CANRENDERAFTERFLIP | D3DDEVCAPS_DRAWPRIMITIVES2 | D3DDEVCAPS_DRAWPRIMITIVES2EX | D3DDEVCAPS_DRAWPRIMTLVERTEX | D3DDEVCAPS_EXECUTESYSTEMMEMORY | D3DDEVCAPS_EXECUTEVIDEOMEMORY | D3DDEVCAPS_HWRASTERIZATION | D3DDEVCAPS_HWTRANSFORMANDLIGHT | D3DDEVCAPS_PUREDEVICE | D3DDEVCAPS_TEXTURENONLOCALVIDMEM | D3DDEVCAPS_TEXTUREVIDEOMEMORY | D3DDEVCAPS_TLVERTEXSYSTEMMEMORY | D3DDEVCAPS_TLVERTEXVIDEOMEMORY;
-    pCaps->PrimitiveMiscCaps = D3DPMISCCAPS_MASKZ | D3DPMISCCAPS_CULLNONE | D3DPMISCCAPS_CULLCW | D3DPMISCCAPS_CULLCCW | D3DPMISCCAPS_COLORWRITEENABLE | D3DPMISCCAPS_CLIPPLANESCALEDPOINTS | D3DPMISCCAPS_TSSARGTEMP | D3DPMISCCAPS_BLENDOP | D3DPMISCCAPS_INDEPENDENTWRITEMASKS | D3DPMISCCAPS_FOGANDSPECULARALPHA | D3DPMISCCAPS_SEPARATEALPHABLEND | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING | D3DPMISCCAPS_FOGVERTEXCLAMPED;
-    pCaps->RasterCaps = D3DPRASTERCAPS_ANISOTROPY | D3DPRASTERCAPS_COLORPERSPECTIVE | D3DPRASTERCAPS_DITHER | D3DPRASTERCAPS_DEPTHBIAS | D3DPRASTERCAPS_FOGRANGE | D3DPRASTERCAPS_FOGTABLE | D3DPRASTERCAPS_FOGVERTEX | D3DPRASTERCAPS_MIPMAPLODBIAS | D3DPRASTERCAPS_MULTISAMPLE_TOGGLE | D3DPRASTERCAPS_SCISSORTEST | D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS | D3DPRASTERCAPS_WFOG | D3DPRASTERCAPS_ZFOG | D3DPRASTERCAPS_ZTEST;
-    pCaps->ZCmpCaps = D3DPCMPCAPS_NEVER | D3DPCMPCAPS_LESS | D3DPCMPCAPS_EQUAL | D3DPCMPCAPS_LESSEQUAL | D3DPCMPCAPS_GREATER | D3DPCMPCAPS_NOTEQUAL | D3DPCMPCAPS_GREATEREQUAL | D3DPCMPCAPS_ALWAYS;
-    pCaps->SrcBlendCaps = D3DPBLENDCAPS_ZERO | D3DPBLENDCAPS_ONE | D3DPBLENDCAPS_SRCCOLOR | D3DPBLENDCAPS_INVSRCCOLOR | D3DPBLENDCAPS_SRCALPHA | D3DPBLENDCAPS_INVSRCALPHA | D3DPBLENDCAPS_DESTALPHA | D3DPBLENDCAPS_INVDESTALPHA | D3DPBLENDCAPS_DESTCOLOR | D3DPBLENDCAPS_INVDESTCOLOR | D3DPBLENDCAPS_SRCALPHASAT | D3DPBLENDCAPS_BOTHSRCALPHA | D3DPBLENDCAPS_BOTHINVSRCALPHA | D3DPBLENDCAPS_BLENDFACTOR | D3DPBLENDCAPS_INVSRCCOLOR2 | D3DPBLENDCAPS_SRCCOLOR2;
-    pCaps->DestBlendCaps = pCaps->SrcBlendCaps;
-    pCaps->AlphaCmpCaps = D3DPCMPCAPS_NEVER | D3DPCMPCAPS_LESS | D3DPCMPCAPS_EQUAL | D3DPCMPCAPS_LESSEQUAL | D3DPCMPCAPS_GREATER | D3DPCMPCAPS_NOTEQUAL | D3DPCMPCAPS_GREATEREQUAL | D3DPCMPCAPS_ALWAYS;
-    pCaps->ShadeCaps = D3DPSHADECAPS_COLORGOURAUDRGB | D3DPSHADECAPS_SPECULARGOURAUDRGB | D3DPSHADECAPS_ALPHAGOURAUDBLEND | D3DPSHADECAPS_FOGGOURAUD;
-    pCaps->TextureCaps = D3DPTEXTURECAPS_ALPHA | D3DPTEXTURECAPS_ALPHAPALETTE | D3DPTEXTURECAPS_PERSPECTIVE | D3DPTEXTURECAPS_PROJECTED | D3DPTEXTURECAPS_CUBEMAP | D3DPTEXTURECAPS_VOLUMEMAP | D3DPTEXTURECAPS_POW2 | D3DPTEXTURECAPS_NONPOW2CONDITIONAL | D3DPTEXTURECAPS_CUBEMAP_POW2 | D3DPTEXTURECAPS_VOLUMEMAP_POW2 | D3DPTEXTURECAPS_MIPMAP | D3DPTEXTURECAPS_MIPVOLUMEMAP | D3DPTEXTURECAPS_MIPCUBEMAP;
-    pCaps->TextureFilterCaps = D3DPTFILTERCAPS_MINFPOINT | D3DPTFILTERCAPS_MINFLINEAR | D3DPTFILTERCAPS_MINFANISOTROPIC | D3DPTFILTERCAPS_MIPFPOINT | D3DPTFILTERCAPS_MIPFLINEAR | D3DPTFILTERCAPS_MAGFPOINT | D3DPTFILTERCAPS_MAGFLINEAR | D3DPTFILTERCAPS_MAGFANISOTROPIC;
-    pCaps->CubeTextureFilterCaps = pCaps->TextureFilterCaps;
-    pCaps->VolumeTextureFilterCaps = pCaps->TextureFilterCaps;
-    pCaps->TextureAddressCaps = D3DPTADDRESSCAPS_BORDER | D3DPTADDRESSCAPS_INDEPENDENTUV | D3DPTADDRESSCAPS_WRAP | D3DPTADDRESSCAPS_MIRROR | D3DPTADDRESSCAPS_CLAMP | D3DPTADDRESSCAPS_MIRRORONCE;
-    pCaps->VolumeTextureAddressCaps = pCaps->TextureAddressCaps;
-    pCaps->LineCaps = D3DLINECAPS_ALPHACMP | D3DLINECAPS_BLEND | D3DLINECAPS_TEXTURE | D3DLINECAPS_ZTEST | D3DLINECAPS_FOG;
-    pCaps->MaxTextureWidth = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    pCaps->MaxTextureHeight = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    pCaps->MaxVolumeExtent = D3D11_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
-    pCaps->MaxTextureRepeat = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-    pCaps->MaxTextureAspectRatio = pCaps->MaxTextureWidth;
-    pCaps->MaxAnisotropy = D3D11_REQ_MAXANISOTROPY;
-    pCaps->MaxVertexW = 1e10f;
-    pCaps->GuardBandLeft = -1e9f;
-    pCaps->GuardBandTop = -1e9f;
-    pCaps->GuardBandRight = 1e9f;
-    pCaps->GuardBandBottom = 1e9f;
-    pCaps->ExtentsAdjust = 0.0f;
-    pCaps->StencilCaps = D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE | D3DSTENCILCAPS_INCRSAT | D3DSTENCILCAPS_DECRSAT | D3DSTENCILCAPS_INVERT | D3DSTENCILCAPS_INCR | D3DSTENCILCAPS_DECR | D3DSTENCILCAPS_TWOSIDED;
-    pCaps->FVFCaps = D3DFVFCAPS_PSIZE;
-    pCaps->TextureOpCaps = D3DTEXOPCAPS_DISABLE | D3DTEXOPCAPS_SELECTARG1 | D3DTEXOPCAPS_SELECTARG2 | D3DTEXOPCAPS_MODULATE | D3DTEXOPCAPS_MODULATE2X | D3DTEXOPCAPS_MODULATE4X | D3DTEXOPCAPS_ADD | D3DTEXOPCAPS_ADDSIGNED | D3DTEXOPCAPS_ADDSIGNED2X | D3DTEXOPCAPS_SUBTRACT | D3DTEXOPCAPS_ADDSMOOTH | D3DTEXOPCAPS_BLENDDIFFUSEALPHA | D3DTEXOPCAPS_BLENDTEXTUREALPHA | D3DTEXOPCAPS_BLENDFACTORALPHA | D3DTEXOPCAPS_BLENDTEXTUREALPHAPM | D3DTEXOPCAPS_BLENDCURRENTALPHA | D3DTEXOPCAPS_PREMODULATE | D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR | D3DTEXOPCAPS_MODULATECOLOR_ADDALPHA | D3DTEXOPCAPS_MODULATEINVALPHA_ADDCOLOR | D3DTEXOPCAPS_MODULATEINVCOLOR_ADDALPHA | D3DTEXOPCAPS_BUMPENVMAP | D3DTEXOPCAPS_BUMPENVMAPLUMINANCE | D3DTEXOPCAPS_DOTPRODUCT3 | D3DTEXOPCAPS_MULTIPLYADD | D3DTEXOPCAPS_LERP;
-    pCaps->MaxTextureBlendStages = D3D11_REQ_BLEND_OBJECT_COUNT_PER_DEVICE;
-
-    pCaps->MaxSimultaneousTextures = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
-
-    pCaps->VertexProcessingCaps = D3DVTXPCAPS_TEXGEN | D3DVTXPCAPS_MATERIALSOURCE7 | D3DVTXPCAPS_DIRECTIONALLIGHTS | D3DVTXPCAPS_POSITIONALLIGHTS | D3DVTXPCAPS_LOCALVIEWER | D3DVTXPCAPS_TWEENING;
-    pCaps->MaxActiveLights = 8;
-    pCaps->MaxUserClipPlanes = 8;
-    pCaps->MaxVertexBlendMatrices = 4;
-    pCaps->MaxVertexBlendMatrixIndex = 7;
-    pCaps->MaxPointSize = 1.0f;
-    pCaps->MaxPrimitiveCount = 0xFFFFFFFF;
-    pCaps->MaxVertexIndex = 0xFFFFFFFF;
-    pCaps->MaxStreams = 1024;
-    pCaps->MaxStreamStride = 4096;
-    //pCaps->VertexShaderVersion = D3DVS_VERSION(3, 0);
-    pCaps->VertexShaderVersion = D3DVS_VERSION(1, 4); // Only sm1_1 support for now!
-    pCaps->MaxVertexShaderConst = 256;
-    //pCaps->PixelShaderVersion = D3DPS_VERSION(3, 0);
-    pCaps->PixelShaderVersion = D3DPS_VERSION(1, 4);
-    pCaps->PixelShader1xMaxValue = 65504.f;
-    pCaps->DevCaps2 = D3DDEVCAPS2_STREAMOFFSET | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES;
-    pCaps->MasterAdapterOrdinal = 0;
-    pCaps->AdapterOrdinalInGroup = 0;
-    pCaps->NumberOfAdaptersInGroup = 1;
-    pCaps->DeclTypes = D3DDTCAPS_UBYTE4 | D3DDTCAPS_UBYTE4N | D3DDTCAPS_SHORT2N | D3DDTCAPS_SHORT4N | D3DDTCAPS_USHORT2N | D3DDTCAPS_USHORT4N | D3DDTCAPS_UDEC3 | D3DDTCAPS_DEC3N | D3DDTCAPS_FLOAT16_2 | D3DDTCAPS_FLOAT16_4;
-    pCaps->NumSimultaneousRTs = 4;
-    pCaps->StretchRectFilterCaps = D3DPTFILTERCAPS_MINFPOINT | D3DPTFILTERCAPS_MINFLINEAR | D3DPTFILTERCAPS_MAGFPOINT | D3DPTFILTERCAPS_MAGFLINEAR;
-    pCaps->VS20Caps.Caps = D3DVS20CAPS_PREDICATION;
-    pCaps->VS20Caps.DynamicFlowControlDepth = 24;
-    pCaps->VS20Caps.StaticFlowControlDepth = 4;
-    pCaps->VS20Caps.NumTemps = 32;
-    pCaps->PS20Caps.Caps = D3DPS20CAPS_ARBITRARYSWIZZLE | D3DPS20CAPS_GRADIENTINSTRUCTIONS | D3DPS20CAPS_PREDICATION;
-    pCaps->PS20Caps.DynamicFlowControlDepth = 24;
-    pCaps->PS20Caps.StaticFlowControlDepth = 4;
-    pCaps->PS20Caps.NumTemps = 32;
-    pCaps->VertexTextureFilterCaps = pCaps->TextureFilterCaps;
-    pCaps->MaxVertexShader30InstructionSlots = 32768;
-    pCaps->MaxPixelShader30InstructionSlots = 32768;
-    pCaps->MaxVShaderInstructionsExecuted = 65535;
-    pCaps->MaxPShaderInstructionsExecuted = 65535;
-
-    pCaps->MaxNpatchTessellationLevel = 0.0f;
-    pCaps->Reserved5 = 0;
-
-    return D3D_OK;
+    return m_parent->GetDeviceCaps(0, D3DDEVTYPE_HAL, pCaps);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDisplayMode(UINT iSwapChain, D3DDISPLAYMODE* pMode) {
     log::stub("Direct3DDevice9Ex::GetDisplayMode");
@@ -222,7 +350,10 @@ namespace dxapex {
     if (!pParameters)
       return D3DERR_INVALIDCALL;
 
-    *pParameters = m_creationParameters;
+    pParameters->AdapterOrdinal = m_adapterNum;
+    pParameters->BehaviorFlags = m_behaviourFlags;
+    pParameters->hFocusWindow = m_window;
+    pParameters->DeviceType = m_deviceType;
 
     return D3D_OK;
   }
@@ -269,7 +400,7 @@ namespace dxapex {
     SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
     SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
     SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    SwapChainDesc.OutputWindow = m_creationParameters.hFocusWindow;
+    SwapChainDesc.OutputWindow = m_window;
     SwapChainDesc.Windowed = true;
     SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
 
@@ -297,7 +428,7 @@ namespace dxapex {
       return result;
     }
 
-    parent->GetDXGIFactory()->MakeWindowAssociation(m_creationParameters.hFocusWindow, DXGI_MWA_NO_ALT_ENTER);
+    parent->GetDXGIFactory()->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER);
 
     for (size_t i = 0; i < m_swapchains.size(); i++)
     {
@@ -337,11 +468,6 @@ namespace dxapex {
     }
     return swapchainCount;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-
-
-    return D3D_OK;
-  }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Present(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) {
     return PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);
   }
@@ -371,7 +497,23 @@ namespace dxapex {
   void    STDMETHODCALLTYPE Direct3DDevice9Ex::GetGammaRamp(UINT iSwapChain, D3DGAMMARAMP* pRamp) {
     log::stub("Direct3DDevice9Ex::GetGammaRamp");
   }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
+    return CreateTextureInternal(Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, ppTexture, pSharedHandle);
+  }
+
+  HRESULT Direct3DDevice9Ex::CreateTextureInternal(
+    UINT Width, 
+    UINT Height,
+    UINT Levels,
+    DWORD Usage,
+    D3DFORMAT Format,
+    D3DPOOL Pool, 
+    D3DMULTISAMPLE_TYPE MultiSample,
+    DWORD MultisampleQuality,
+    BOOL Discard,
+    IDirect3DTexture9** ppTexture,
+    HANDLE* pSharedHandle) {
     InitReturnPtr(ppTexture);
     InitReturnPtr(pSharedHandle);
 
@@ -388,28 +530,40 @@ namespace dxapex {
     desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = 1;
-    desc.SampleDesc.Count = 1;
-    desc.SampleDesc.Quality = 0;
+
+    if (MultiSample == D3DMULTISAMPLE_NONE) // 0 samples -> 1 sample.
+      MultiSample = D3DMULTISAMPLE_NONMASKABLE;
+
+    desc.SampleDesc.Count = (UINT)MultiSample;
+    desc.SampleDesc.Quality = MultisampleQuality;
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
-    desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+    bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
-      desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+      if (!isDepthStencil)
+        desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+      desc.BindFlags |= Usage & D3DUSAGE_RENDERTARGET ? D3D11_BIND_RENDER_TARGET : 0;
+      desc.BindFlags |= Usage & D3DUSAGE_DEPTHSTENCIL ? D3D11_BIND_DEPTH_STENCIL : 0;
+
       desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     }
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
 
-    if (FAILED(result))
+    if (FAILED(result)) {
+      log::fail("Failed to create texture.");
       return D3DERR_INVALIDCALL;
+    }
 
     Com<ID3D11ShaderResourceView> srv;
-    m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
+    if (!isDepthStencil)
+      m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage));
+    *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
 
     return D3D_OK;
   }
@@ -470,12 +624,36 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateRenderTarget(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateRenderTarget");
-    return D3D_OK;
+    InitReturnPtr(ppSurface);
+    if (ppSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    Com<IDirect3DTexture9> d3d9Texture;
+
+    // NOTE(Josh): May need to handle Lockable in future.
+    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, &d3d9Texture, pSharedHandle);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create render target.");
+      return result;
+    }
+
+    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateDepthStencilSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateDepthStencilSurface");
-    return D3D_OK;
+    InitReturnPtr(ppSurface);
+    if (ppSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    Com<IDirect3DTexture9> d3d9Texture;
+    HRESULT result = CreateTextureInternal(Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, &d3d9Texture, pSharedHandle);
+
+    if (FAILED(result)) {
+      log::fail("Failed to create depth stencil.");
+      return result;
+    }
+
+    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateSurface(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint) {
 
@@ -585,31 +763,75 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::CreateOffscreenPlainSurface");
     return D3D_OK;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
-    Direct3DSurface9* surface = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
-    m_state->renderTargets[RenderTargetIndex] = surface;
+  void Direct3DDevice9Ex::UpdateRenderTargets() {
 
     std::array<ID3D11RenderTargetView*, 4> rtvs = { nullptr, nullptr, nullptr, nullptr };
     for (uint32_t i = 0; i < 4; i++)
     {
-      if (m_state->renderTargets[i] != nullptr)
+      if (m_state->renderTargets[i] != nullptr) {
         rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget();
+        if (rtvs[i] == nullptr)
+          log::warn("No render target view for bound render target surface.");
+      }
     }
 
-    m_context->OMSetRenderTargets(4, &rtvs[0], nullptr);
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (m_state->depthStencil != nullptr) {
+      dsv = m_state->depthStencil->GetD3D11DepthStencil();
+      if (dsv == nullptr)
+        log::warn("No depth stencil view for bound depth stencil surface.");
+    }
+
+    m_context->OMSetRenderTargets(4, &rtvs[0], dsv);
+
+    m_state->dirtyFlags &= ~dirtyFlags::renderTargets;
+    m_state->dirtyFlags &= ~dirtyFlags::depthStencil;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
+    if (RenderTargetIndex >= 4)
+      return D3DERR_INVALIDCALL;
+
+    m_state->renderTargets[RenderTargetIndex] = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
+    m_state->dirtyFlags |= dirtyFlags::renderTargets;
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) {
-    log::stub("Direct3DDevice9Ex::GetRenderTarget");
+    InitReturnPtr(ppRenderTarget);
+
+    if (ppRenderTarget == nullptr)
+      return D3DERR_INVALIDCALL;
+    
+    if (RenderTargetIndex > m_state->renderTargets.size())
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->renderTargets[RenderTargetIndex] == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppRenderTarget = ref(m_state->renderTargets[RenderTargetIndex]);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
-    log::stub("Direct3DDevice9Ex::SetDepthStencilSurface");
+    DoDepthDiscardCheck();
+
+    m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
+    m_state->dirtyFlags |= dirtyFlags::depthStencil;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
-    log::stub("Direct3DDevice9Ex::GetDepthStencilSurface");
+    InitReturnPtr(ppZStencilSurface);
+
+    if (ppZStencilSurface == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->depthStencil == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppZStencilSurface = ref(m_state->depthStencil);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::BeginScene() {
@@ -640,11 +862,16 @@ namespace dxapex {
       }
     }
 
-    if (Flags & D3DCLEAR_STENCIL)
-      log::warn("No stencil view support yet! Cannot clear.");
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (m_state->depthStencil != nullptr)
+      dsv = m_state->depthStencil->GetD3D11DepthStencil();
 
-    if (Flags & D3DCLEAR_ZBUFFER)
-      log::warn("No depth view support yet! Cannot clear.");
+    if ((Flags & D3DCLEAR_STENCIL || Flags & D3DCLEAR_ZBUFFER) && dsv != nullptr) {
+      uint32_t clearFlags = Flags & D3DCLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0;
+      clearFlags |= Flags & D3DCLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0;
+
+      m_context->ClearDepthStencilView(dsv, clearFlags, Z, Stencil);
+    }
 
     return D3D_OK;
   }
@@ -752,11 +979,40 @@ namespace dxapex {
     log::stub("Direct3DDevice9Ex::GetClipStatus");
     return D3D_OK;
   }
+
+  HRESULT Direct3DDevice9Ex::MapStageToSampler(DWORD Stage, DWORD* Sampler){
+    if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
+      return D3DERR_INVALIDCALL;
+
+    // For vertex samplers.
+    if (Stage >= D3DVERTEXTEXTURESAMPLER0)
+      Stage = 16 + (Stage - D3DVERTEXTEXTURESAMPLER0);
+
+    *Sampler = Stage;
+
+    return D3D_OK;
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
-    log::stub("Direct3DDevice9Ex::GetTexture");
+    InitReturnPtr(ppTexture);
+
+    if (ppTexture == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (FAILED(MapStageToSampler(Stage, &Stage)))
+      return D3DERR_INVALIDCALL;
+
+    *ppTexture = ref(m_state->textures[Stage]);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
+    if (FAILED(MapStageToSampler(Stage, &Stage)))
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->textures[Stage] == pTexture)
+      return D3D_OK;
+
     Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
 
     ID3D11ShaderResourceView* srv = nullptr;
@@ -954,32 +1210,35 @@ namespace dxapex {
   }
 
   bool Direct3DDevice9Ex::CanDraw() {
-    return CanRefreshInputLayout() && m_state->isValid;
+    return !(m_state->dirtyFlags & dirtyFlags::vertexDecl &&
+             m_state->dirtyFlags & dirtyFlags::vertexShader);
+  }
+
+  void Direct3DDevice9Ex::UpdatePixelShader() {
+    if (m_state->pixelShader != nullptr)
+      m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
+    else
+      m_context->PSSetShader(nullptr, nullptr, 0);
+
+    m_state->dirtyFlags &= ~dirtyFlags::pixelShader;
   }
 
   bool Direct3DDevice9Ex::PrepareDraw() {
-    RefreshInputLayout();
+    if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
+      UpdateVertexShaderAndInputLayout();
+
+    if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencil)
+      UpdateRenderTargets();
+
+    if (m_state->dirtyFlags & dirtyFlags::pixelShader)
+      UpdatePixelShader();
 
     m_constants.prepareDraw();
 
     return CanDraw();
   }
 
-  bool Direct3DDevice9Ex::CanRefreshInputLayout() {
-    if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
-      return false;
-
-    return true;
-  }
-
-  void Direct3DDevice9Ex::RefreshInputLayout() {
-    if (!CanRefreshInputLayout())
-      return;
-
-    // Our state is already valid! No need to refresh
-    if (m_state->isValid)
-      return;
-
+  void Direct3DDevice9Ex::UpdateVertexShaderAndInputLayout() {
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
     auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
 
@@ -996,12 +1255,11 @@ namespace dxapex {
       }
     }
 
-    if (layout == nullptr) {
-      m_state->isValid = false;
+    if (layout == nullptr)
       return;
-    }
 
-    m_state->isValid = true;
+    m_state->dirtyFlags &= ~dirtyFlags::vertexDecl;
+    m_state->dirtyFlags &= ~dirtyFlags::vertexShader;
 
     m_context->IASetInputLayout(layout);
 
@@ -1013,12 +1271,21 @@ namespace dxapex {
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
     m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
-    m_state->isValid = false;
+    m_state->dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
-    log::stub("Direct3DDevice9Ex::GetVertexDeclaration");
+    InitReturnPtr(ppDecl);
+
+    if (ppDecl == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->vertexDecl == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppDecl = ref(m_state->vertexDecl);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetFVF(DWORD FVF) {
@@ -1102,16 +1369,27 @@ namespace dxapex {
     return CreateShader<true, IDirect3DVertexShader9, Direct3DVertexShader9, ID3D11VertexShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
-    if (pShader == nullptr)
+    if (pShader == nullptr) {
+      m_state->vertexShader = nullptr;
       return D3DERR_INVALIDCALL;
+    }
 
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
-    m_state->isValid = false;
+    m_state->dirtyFlags |= dirtyFlags::vertexShader;
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShader(IDirect3DVertexShader9** ppShader) {
-    log::stub("Direct3DDevice9Ex::GetVertexShader");
+    InitReturnPtr(ppShader);
+
+    if (ppShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->vertexShader == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppShader = ref(m_state->vertexShader);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
@@ -1170,19 +1448,28 @@ namespace dxapex {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
+    m_state->dirtyFlags |= dirtyFlags::pixelShader;
+
     if (pShader == nullptr) {
-      m_context->PSSetShader(nullptr, nullptr, 0);
-      return D3DERR_INVALIDCALL;
+      m_state->pixelShader = nullptr;
+      return D3D_OK;
     }
 
     m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
-    m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
-
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
-    log::stub("Direct3DDevice9Ex::GetPixelShader");
+    InitReturnPtr(ppShader);
+
+    if (ppShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->pixelShader == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppShader = ref(m_state->pixelShader);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
@@ -1285,9 +1572,19 @@ namespace dxapex {
     return swapchain->TestSwapchain(hDestinationWindow, true);
   }
 
+  void Direct3DDevice9Ex::DoDepthDiscardCheck() {
+    if (m_state->depthStencil != nullptr && m_state->depthStencil->GetDiscard()) {
+      ID3D11DepthStencilView* dsv = m_state->depthStencil->GetD3D11DepthStencil();
+      if (dsv)
+        m_context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 0.0f, 0);
+    }
+  }
+
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::PresentEx(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags) {
     // Not sure what swapchain to use here, going with this one ~ Josh
     HRESULT result = GetInternalSwapchain(0)->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+
+    DoDepthDiscardCheck();
 
     if (m_pendingCursorUpdate.update)
       SetCursorPosition(m_pendingCursorUpdate.x, m_pendingCursorUpdate.y, D3DCURSOR_IMMEDIATE_UPDATE);
