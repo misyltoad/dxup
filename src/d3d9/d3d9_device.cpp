@@ -1259,7 +1259,16 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
-    log::stub("Direct3DDevice9Ex::GetVertexDeclaration");
+    InitReturnPtr(ppDecl);
+
+    if (ppDecl == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->vertexDecl == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppDecl = ref(m_state->vertexDecl);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetFVF(DWORD FVF) {
