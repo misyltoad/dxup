@@ -77,10 +77,37 @@ namespace dxapex {
         m_registerMap.push_back(mapping);
       }
 
+      inline uint32_t getTotalTempCount() {
+        uint32_t mappedCount = getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
+        if (mappedCount == UINT32_MAX && m_highestInternalTemp == UINT32_MAX)
+          return 0;
+
+        if (mappedCount == UINT32_MAX)
+          return m_highestInternalTemp + 1;
+
+        if (m_highestInternalTemp == UINT32_MAX)
+          return mappedCount + 1;
+
+        return max(mappedCount, m_highestInternalTemp) + 1;
+      }
+
+      inline DXBCOperand getNextInternalTemp() {
+        m_highestInternalTemp = getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP) + 1;
+
+        DXBCOperand op{ D3D10_SB_OPERAND_TYPE_TEMP, false };
+        op.setDimension(D3D10_SB_OPERAND_INDEX_1D);
+        op.stripModifier();
+        op.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+        op.setData(&m_highestInternalTemp, 1);
+
+        return op;
+      }
+
       inline std::vector<RegisterMapping>& getRegisterMappings() {
         return m_registerMap;
       }
     private:
+      uint32_t m_highestInternalTemp = UINT32_MAX;
       std::vector<RegisterMapping> m_registerMap;
     };
 

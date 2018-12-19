@@ -333,7 +333,7 @@ namespace dxapex {
         }
 
         // Temps
-        uint32_t tempCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
+        uint32_t tempCount = shdrCode.getRegisterMap().getTotalTempCount();
         if (tempCount > 0)
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
