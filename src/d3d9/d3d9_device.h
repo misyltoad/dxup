@@ -154,6 +154,8 @@ namespace dxapex {
     HRESULT STDMETHODCALLTYPE ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode) override;
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
+    void DoDepthDiscardCheck();
+
     HRESULT CreateTextureInternal(
       UINT Width,
       UINT Height,

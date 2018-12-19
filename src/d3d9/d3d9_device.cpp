@@ -539,9 +539,12 @@ namespace dxapex {
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
-    desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+    bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
+      if (!isDepthStencil)
+        desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
       desc.BindFlags |= Usage & D3DUSAGE_RENDERTARGET ? D3D11_BIND_RENDER_TARGET : 0;
       desc.BindFlags |= Usage & D3DUSAGE_DEPTHSTENCIL ? D3D11_BIND_DEPTH_STENCIL : 0;
 
@@ -557,7 +560,8 @@ namespace dxapex {
     }
 
     Com<ID3D11ShaderResourceView> srv;
-    m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
+    if (!isDepthStencil)
+      m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
     *ppTexture = ref(new Direct3DTexture9(this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
 
