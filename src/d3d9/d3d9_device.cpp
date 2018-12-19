@@ -252,6 +252,32 @@ namespace dxapex {
       SetClipPlane(i, plane);
     }
 
+    if (pPresentationParameters->EnableAutoDepthStencil) {
+      bool lockable = false;
+      switch (presentParameters->AutoDepthStencilFormat)
+      {
+      case D3DFMT_D15S1:
+      case D3DFMT_D24S8:
+      case D3DFMT_D24X8:
+      case D3DFMT_D24X4S4:
+      case D3DFMT_D24FS8:
+      case D3DFMT_D32:
+      case D3DFMT_D16:
+      case D3DFMT_DF24:
+      case D3DFMT_DF16:
+      case D3DFMT_INTZ:
+        lockable = false;
+        break;
+      case D3DFMT_S8_LOCKABLE:
+      case D3DFMT_D16_LOCKABLE:
+      case D3DFMT_D32F_LOCKABLE:
+      case D3DFMT_D32_LOCKABLE:
+        lockable = true;
+        break;
+      }
+
+    }
+
     if (config::getBool(config::InitialHideCursor))
       ShowCursor(false);
 
