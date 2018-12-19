@@ -545,13 +545,13 @@ namespace dxapex {
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
+    if (!isDepthStencil)
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {
-      if (!isDepthStencil)
-        desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
       desc.BindFlags |= isRenderTarget ? D3D11_BIND_RENDER_TARGET : 0;
-      desc.BindFlags |= isRenderTarget ? D3D11_BIND_DEPTH_STENCIL : 0;
+      desc.BindFlags |= isDepthStencil ? D3D11_BIND_DEPTH_STENCIL : 0;
 
       desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     }
