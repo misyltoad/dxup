@@ -1363,7 +1363,16 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShader(IDirect3DVertexShader9** ppShader) {
-    log::stub("Direct3DDevice9Ex::GetVertexShader");
+    InitReturnPtr(ppShader);
+
+    if (ppShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->vertexShader == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppShader = ref(m_state->vertexShader);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
@@ -1434,7 +1443,16 @@ namespace dxapex {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
-    log::stub("Direct3DDevice9Ex::GetPixelShader");
+    InitReturnPtr(ppShader);
+
+    if (ppShader == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->pixelShader == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppShader = ref(m_state->pixelShader);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
