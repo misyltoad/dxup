@@ -1418,7 +1418,12 @@ namespace dxapex {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
-    ID3D11Buffer* buffer = vertexBuffer->GetD3D11Buffer();
+
+    ID3D11Buffer* buffer = nullptr;
+
+    if (vertexBuffer != nullptr)
+      buffer = vertexBuffer->GetD3D11Buffer();
+
     m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
 
     return D3D_OK;
