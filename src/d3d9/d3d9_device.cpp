@@ -29,6 +29,12 @@ namespace dxapex {
     Com<Direct3DSurface9> depthStencil;
     std::array<Com<Direct3DSurface9>, 4> renderTargets;
     uint32_t dirtyFlags = 0;
+
+    std::array<Com<Direct3DVertexBuffer9>, 16> vertexBuffers;
+    std::array<UINT, 16> vertexOffsets;
+    std::array<UINT, 16> vertexStrides;
+
+    Com<Direct3DIndexBuffer9> indexBuffer;
   };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
@@ -1417,6 +1423,9 @@ namespace dxapex {
     return m_constants.get(ShaderType::Vertex, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
+    if (StreamNumber >= 16)
+      return D3DERR_INVALIDCALL;
+
     Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
 
     ID3D11Buffer* buffer = nullptr;
@@ -1424,12 +1433,34 @@ namespace dxapex {
     if (vertexBuffer != nullptr)
       buffer = vertexBuffer->GetD3D11Buffer();
 
+    m_state->vertexBuffers[StreamNumber] = vertexBuffer;
+    m_state->vertexOffsets[StreamNumber] = OffsetInBytes;
+    m_state->vertexStrides[StreamNumber] = Stride;
+
     m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) {
-    log::stub("Direct3DDevice9Ex::GetStreamSource");
+    InitReturnPtr(ppStreamData);
+
+    if (StreamNumber >= 16 || ppStreamData == nullptr || pOffsetInBytes == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *pOffsetInBytes = 0;
+
+    if (pStride == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *pStride = 0;
+
+    if (m_state->vertexBuffers[StreamNumber] == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppStreamData = ref(m_state->vertexBuffers[StreamNumber]);
+    *pOffsetInBytes = m_state->vertexOffsets[StreamNumber];
+    *pStride = m_state->vertexStrides[StreamNumber];
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSourceFreq(UINT StreamNumber, UINT Setting) {
@@ -1444,15 +1475,31 @@ namespace dxapex {
     Direct3DIndexBuffer9* indexBuffer = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
 
     DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
-    if (indexBuffer->GetFormat() == D3DFMT_INDEX32)
-      format = DXGI_FORMAT_R32_UINT;
 
+    ID3D11Buffer* buffer = nullptr;
+    if (indexBuffer != nullptr) {
+      if (indexBuffer->GetFormat() == D3DFMT_INDEX32)
+        format = DXGI_FORMAT_R32_UINT;
+
+      buffer = indexBuffer->GetD3D11Buffer();
+    }
+
+    m_state->indexBuffer = indexBuffer;
     m_context->IASetIndexBuffer(indexBuffer->GetD3D11Buffer(), format, 0);
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
-    log::stub("Direct3DDevice9Ex::GetIndices");
+    InitReturnPtr(ppIndexData);
+
+    if (ppIndexData == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (m_state->indexBuffer == nullptr)
+      return D3DERR_NOTFOUND;
+
+    *ppIndexData = ref(m_state->indexBuffer);
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreatePixelShader(CONST DWORD* pFunction, IDirect3DPixelShader9** ppShader) {
