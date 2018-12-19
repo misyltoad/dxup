@@ -156,10 +156,10 @@ namespace dxapex {
     pCaps->MaxStreams = 1024;
     pCaps->MaxStreamStride = 4096;
     //pCaps->VertexShaderVersion = D3DVS_VERSION(3, 0);
-    pCaps->VertexShaderVersion = D3DVS_VERSION(1, 4); // Only sm1_1 support for now!
+    pCaps->VertexShaderVersion = D3DVS_VERSION(2, 0); // Only sm1_1 support for now!
     pCaps->MaxVertexShaderConst = 256;
     //pCaps->PixelShaderVersion = D3DPS_VERSION(3, 0);
-    pCaps->PixelShaderVersion = D3DPS_VERSION(1, 4);
+    pCaps->PixelShaderVersion = D3DPS_VERSION(2, 0);
     pCaps->PixelShader1xMaxValue = 65504.f;
     pCaps->DevCaps2 = D3DDEVCAPS2_STREAMOFFSET | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES;
     pCaps->MasterAdapterOrdinal = 0;
