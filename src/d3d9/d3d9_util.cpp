@@ -8,6 +8,11 @@ namespace dxapex {
 
     using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT, 34>;
 
+    #define D3DFMT_INTZ ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z')))
+    #define D3DFMT_RAWZ ((D3DFORMAT)(MAKEFOURCC('R','A','W','Z')))
+    #define D3DFMT_DF24 ((D3DFORMAT)(MAKEFOURCC('D','F','2','4')))
+    #define D3DFMT_DF16 ((D3DFORMAT)(MAKEFOURCC('D','F','1','6')))
+
     FormatConverter::TypeMapping formats[] = {
       { D3DFMT_UNKNOWN, DXGI_FORMAT_UNKNOWN },
       //{ D3DFMT_B32G32R32F, DXGI_FORMAT_R32G32B32_FLOAT },
