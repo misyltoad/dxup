@@ -850,11 +850,16 @@ namespace dxapex {
       }
     }
 
-    if (Flags & D3DCLEAR_STENCIL)
-      log::warn("No stencil view support yet! Cannot clear.");
+    ID3D11DepthStencilView* dsv = nullptr;
+    if (m_state->depthStencil != nullptr)
+      dsv = m_state->depthStencil->GetD3D11DepthStencil();
 
-    if (Flags & D3DCLEAR_ZBUFFER)
-      log::warn("No depth view support yet! Cannot clear.");
+    if ((Flags & D3DCLEAR_STENCIL || Flags & D3DCLEAR_ZBUFFER) && dsv != nullptr) {
+      uint32_t clearFlags = Flags & D3DCLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0;
+      clearFlags |= Flags & D3DCLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0;
+
+      m_context->ClearDepthStencilView(dsv, clearFlags, Z, Stencil);
+    }
 
     return D3D_OK;
   }
