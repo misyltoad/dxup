@@ -8,7 +8,7 @@ namespace dxapex {
 
   namespace dx9asm {
 
-    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t majorVersion, uint32_t minorVersion, const DX9Operand& operand, uint32_t regOffset) {
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, const DX9Operand& operand, uint32_t regOffset) {
       uint32_t writeMask = 0;
       uint32_t readMask = 0;
 
@@ -18,7 +18,7 @@ namespace dxapex {
       if (operand.isSrc())
         readMask |= calcReadMask(operand);
 
-      return lookupOrCreateRegisterMapping(type, majorVersion, minorVersion, operand.getRegType(), operand.getRegNumber() + regOffset, readMask, writeMask);
+      return lookupOrCreateRegisterMapping(translator, operand.getRegType(), operand.getRegNumber() + regOffset, readMask, writeMask);
     }
 
     struct TransientRegisterMapping {
@@ -36,9 +36,13 @@ namespace dxapex {
       {4, D3DDECLUSAGE_TEXCOORD},
       {5, D3DDECLUSAGE_TEXCOORD},
       {6, D3DDECLUSAGE_TEXCOORD},
+      {7, D3DDECLUSAGE_TEXCOORD},
+      {8, D3DDECLUSAGE_TEXCOORD},
+      {9, D3DDECLUSAGE_TEXCOORD},
+      {10, D3DDECLUSAGE_TEXCOORD},
 
-      {7, D3DDECLUSAGE_FOG},
-      {8, D3DDECLUSAGE_PSIZE},
+      {11, D3DDECLUSAGE_FOG},
+      {12, D3DDECLUSAGE_PSIZE},
     };
 
     uint32_t RegisterMap::getTransientId(DclInfo& info) {
@@ -58,7 +62,7 @@ namespace dxapex {
       return lastUnimplementedTransientId++;
     }
 
-    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask) {
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput) {
       RegisterMapping* mapping = getRegisterMapping(regType, regNum);
 
       if (mapping != nullptr) {
@@ -70,6 +74,7 @@ namespace dxapex {
 
       RegisterMapping newMapping;
       newMapping.dclInfo.type = UsageType::None;
+
       newMapping.dx9Id = regNum;
       newMapping.dx9Type = regType;
       newMapping.writeMask = writeMask;
@@ -78,40 +83,35 @@ namespace dxapex {
       newMapping.dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
       newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
       newMapping.dxbcOperand.stripModifier();
-      uint32_t dummyId = 0;
-      newMapping.dxbcOperand.setData(&dummyId, 1);
 
       uint32_t dxbcType = 0;
       bool addMapping = true;
 
+      // This may get set later depending on the following stuff.
+      newMapping.dxbcOperand.setData(&newMapping.dx9Id, 1);
+
       // LUT later!
       switch (regType) {
-      case D3DSPR_TEMP: { 
-        if (type == ShaderType::Pixel && majorVersion == 1) {
-          if (newMapping.dx9Id == 0) {
-            // Pixel Shader...
-            newMapping.dclInfo.type = UsageType::Output;
-            newMapping.dclInfo.target = true;
-            newMapping.dclInfo.usage = (D3DDECLUSAGE)0;
-            newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-
-            dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
-            break;
-          }
-        }
-
+      case D3DSPR_TEMP:
         dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
-      }
-      case D3DSPR_INPUT: dxbcType = D3D10_SB_OPERAND_TYPE_INPUT; break;
+
+      case D3DSPR_INPUT:
+        log::fail("Undeffed input.");
+        dxbcType = D3D10_SB_OPERAND_TYPE_INPUT; break;
+
       case D3DSPR_CONST: {
+
         const uint32_t constantBufferIndex = 0;
-        uint32_t dataWithDummyId[2] = { constantBufferIndex, 0 };
+        uint32_t dataWithDummyId[2] = { constantBufferIndex, newMapping.dx9Id };
         newMapping.dxbcOperand.setData(dataWithDummyId, 2);
         newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
         newMapping.dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
-        dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER; } break;
+        dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER;
+
+      } break;
+
       case D3DSPR_RASTOUT: {
-        newMapping.dclInfo.type = UsageType::Output;
+        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
 
         if (newMapping.dx9Id == D3DSRO_POSITION)
           newMapping.dclInfo.usage = D3DDECLUSAGE_POSITION;
@@ -122,31 +122,39 @@ namespace dxapex {
 
         newMapping.dclInfo.usageIndex = 0;
 
-        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
 
       } break;
-      case D3DSPR_TEXCRDOUT: {
-        newMapping.dclInfo.type = type == ShaderType::Pixel ? UsageType::Input : UsageType::Output;
+
+      case D3DSPR_TEXCRDOUT: { // D3DSPR_OUTPUT
+        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
         newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
         newMapping.dclInfo.usageIndex = newMapping.dx9Id;
 
-        dxbcType = type == ShaderType::Pixel ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
       } break;
+
       case D3DSPR_ATTROUT: {
-        newMapping.dclInfo.type = UsageType::Output;
+
+        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
         newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
         newMapping.dclInfo.usageIndex = newMapping.dx9Id;
 
-        dxbcType = D3D10_SB_OPERAND_TYPE_OUTPUT;
-      } break;
-      case D3DSPR_ADDR: {
-        if (type == ShaderType::Pixel) {
-          dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
-
-          break;
-        }
+        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        break;
       }
-      case D3DSPR_COLOROUT:
+
+      case D3DSPR_ADDR: dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
+
+      case D3DSPR_COLOROUT: {
+        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
+        newMapping.dclInfo.target = true;
+        newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
+        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        break;
+      }
+
       case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:
@@ -165,12 +173,17 @@ namespace dxapex {
 
       newMapping.dxbcOperand.setRegisterType(dxbcType);
 
-      bool transient = (type == ShaderType::Pixel && newMapping.dclInfo.type == UsageType::Input) ||
-                       (type == ShaderType::Vertex && newMapping.dclInfo.type == UsageType::Output);
+      bool transient = (translator.getShaderType() == ShaderType::Pixel && newMapping.dclInfo.type == UsageType::Input) ||
+                       (translator.getShaderType() == ShaderType::Vertex && newMapping.dclInfo.type == UsageType::Output);
 
-      addRegisterMapping(transient, true, newMapping);
+      bool generateId = !transient || (transient && translator.getMajorVersion() != 3);
 
-      return lookupOrCreateRegisterMapping(type, minorVersion, majorVersion, regType, regNum, readMask, writeMask);
+      if (dxbcType == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
+        generateId = false;
+
+      addRegisterMapping(transient, generateId, newMapping);
+
+      return lookupOrCreateRegisterMapping(translator, regType, regNum, readMask, writeMask);
     }
 
   }

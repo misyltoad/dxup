@@ -6,6 +6,8 @@ namespace dxapex {
 
   namespace dx9asm {
 
+    class ShaderCodeTranslator;
+
     class RegisterMap {
     public:
       inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
@@ -51,9 +53,9 @@ namespace dxapex {
         return getHighestIdForDXBCType(type) + 1;
       }
 
-      RegisterMapping* lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask);
+      RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput = false);
 
-      RegisterMapping* lookupOrCreateRegisterMapping(ShaderType type, uint32_t minorVersion, uint32_t majorVersion, const DX9Operand& operand, uint32_t regOffset = 0);
+      RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, const DX9Operand& operand, uint32_t regOffset = 0);
 
       uint32_t getTransientId(DclInfo& info);
 

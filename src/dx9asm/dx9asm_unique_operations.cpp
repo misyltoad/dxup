@@ -30,19 +30,48 @@ namespace dxapex {
       const DX9Operand* usageToken = operation.getOperandByType(optype::UsageToken);
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
-      RegisterMapping* mapping = m_map.lookupOrCreateRegisterMapping(getShaderType(), getMajorVersion(), getMinorVersion(), *dst);
+      RegisterMapping mapping;
+      mapping.dx9Id = dst->getRegNumber();
+      mapping.dx9Type = dst->getRegType();
+      mapping.readMask |= calcWriteMask(*dst);
+
+      mapping.dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      mapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
+      mapping.dxbcOperand.stripModifier();
+
+      mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
 
       if (dst->getRegType() == D3DSPR_INPUT)
-        mapping->dclInfo.type = UsageType::Input;
-      else if (dst->getRegType() == D3DSPR_OUTPUT)
-        mapping->dclInfo.type = UsageType::Output;
-      else {
-        log::warn("Unhandled reg type in dcl.");
-        mapping->dclInfo.type = UsageType::Output;
+        mapping.dclInfo.type = UsageType::Input;
+      else if (dst->getRegType() == D3DSPR_OUTPUT) {
+        mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
+        mapping.dclInfo.type = UsageType::Output;
       }
-      mapping->dclInfo.usage = usageToken->getUsage();
-      mapping->dclInfo.usageIndex = usageToken->getUsageIndex();
-      mapping->dclInfo.centroid = dst->centroid();
+      else {
+        log::fail("Unhandled reg type in dcl.");
+        mapping.dclInfo.type = UsageType::Output;
+      }
+      mapping.dclInfo.usage = usageToken->getUsage();
+      mapping.dclInfo.usageIndex = usageToken->getUsageIndex();
+
+      if (getShaderType() == ShaderType::Pixel && mapping.dclInfo.type == UsageType::Output) {
+        if (mapping.dclInfo.usage == D3DDECLUSAGE_COLOR)
+          mapping.dclInfo.target = true;
+        else if (mapping.dclInfo.usage == D3DDECLUSAGE_DEPTH)
+          log::fail("Writing to oDepth not supported yet.");
+      }
+
+      mapping.dclInfo.centroid = dst->centroid();
+
+      // This may get changed later...
+      mapping.dxbcOperand.setData(&mapping.dx9Id, 1);
+
+      bool transient = (getShaderType() == ShaderType::Pixel && mapping.dclInfo.type == UsageType::Input) ||
+                       (getShaderType() == ShaderType::Vertex && mapping.dclInfo.type == UsageType::Output);
+
+      bool generateId = !transient || (transient && getMajorVersion() != 3);
+
+      getRegisterMap().addRegisterMapping(transient, generateId, mapping);
       
       return true;
     }
@@ -60,13 +89,13 @@ namespace dxapex {
       if (getMajorVersion() < 2 && getMinorVersion() < 4) {
         // Fake a D3D9 texcoord register.
         RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
-          getShaderType(),
-          getMajorVersion(),
-          getMinorVersion(),
+          *this,
           D3DSPR_TEXCRDOUT,
           regNum,
           ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
-          0);
+          0,
+          true
+		  );
 
         texCoordOp = texCoordMapping->dxbcOperand;
 
@@ -80,7 +109,7 @@ namespace dxapex {
         texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
       }
 
-      RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(getShaderType(), getMajorVersion(), getMinorVersion(), dst);
+      RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(*this, dst);
       DXBCOperand dstOp = dstMapping->dxbcOperand;
       dstOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
       calculateDXBCSwizzleAndWriteMask(dstOp, dst);

@@ -1,5 +1,6 @@
 #include "dx9asm_translator.h"
 #include "dx9asm_operations.h"
+#include "dx9asm_modifiers.h"
 #include "../util/config.h"
 #include "../util/misc_helpers.h"
 #include "dxbc_bytecode.h"
@@ -34,6 +35,29 @@ namespace dxapex {
         if (!handleOperation(token))
           return false;
         token = nextToken();
+      }
+
+      // r0 in SM1 is the colour output register. Move r0 -> target here.
+      if (getShaderType() == ShaderType::Pixel && getMajorVersion() == 1) {
+        RegisterMapping* r0 = getRegisterMap().getRegisterMapping(D3DSPR_TEMP, 0);
+        DXBCOperand r0Op = r0->dxbcOperand;
+        r0Op.setSwizzleOrWritemask(noSwizzle);
+
+        if (r0 != nullptr) {
+          RegisterMapping* target = getRegisterMap().lookupOrCreateRegisterMapping(
+            *this,
+            D3DSPR_COLOROUT,
+            0,
+            0,
+            writeAll
+          );
+
+          DXBCOperand targetOp = target->dxbcOperand;
+          targetOp.setSwizzleOrWritemask(writeAll);
+
+          DXBCOperation{ D3D10_SB_OPCODE_MOV, false }
+          .appendOperand(targetOp).appendOperand(r0Op).push(*this);
+        }
       }
 
       DXBCOperation{ D3D10_SB_OPCODE_RET, false }.push(*this);

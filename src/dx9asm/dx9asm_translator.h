@@ -25,15 +25,15 @@ namespace dxapex {
         : m_base{code} 
         , m_head{ code } {}
 
-      inline uint32_t getHeaderToken() {
+      inline uint32_t getHeaderToken() const {
         return *m_base;
       }
 
-      inline uint32_t getMajorVersion() {
+      inline uint32_t getMajorVersion() const {
         return D3DSHADER_VERSION_MAJOR(getHeaderToken());
       }
 
-      inline uint32_t getMinorVersion() {
+      inline uint32_t getMinorVersion() const {
         return D3DSHADER_VERSION_MINOR(getHeaderToken());
       }
 
@@ -46,7 +46,7 @@ namespace dxapex {
           nextToken();
       }
 
-      inline ShaderType getShaderType() {
+      inline ShaderType getShaderType() const {
         return (getHeaderToken() & 0xFFFF0000) == 0xFFFF0000 ? ShaderType::Pixel : ShaderType::Vertex;
       }
 
