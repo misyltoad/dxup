@@ -3,7 +3,7 @@
 #include "dxbc_helpers.h"
 #include <d3d9types.h>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

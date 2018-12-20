@@ -1,6 +1,6 @@
 #pragma once
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

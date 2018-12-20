@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace dxapex {
+namespace dxup {
 
   namespace config {
 

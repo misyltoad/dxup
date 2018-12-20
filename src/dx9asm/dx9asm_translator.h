@@ -9,7 +9,7 @@
 #include "dxbc_bytecode.h"
 #include "dx9asm_register_map.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

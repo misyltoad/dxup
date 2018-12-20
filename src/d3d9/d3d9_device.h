@@ -4,7 +4,7 @@
 #include "d3d9_constant_buffer.h"
 #include <array>
 
-namespace dxapex {
+namespace dxup {
 
   struct InternalRenderState;
 

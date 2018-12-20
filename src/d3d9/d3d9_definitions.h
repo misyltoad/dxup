@@ -2,7 +2,7 @@
 
 #include "d3d9_includes.h"
 
-namespace dxapex {
+namespace dxup {
   class Direct3D9Ex;
   class Direct3DDevice9Ex;
   class Direct3DSwapChain9Ex;

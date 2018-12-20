@@ -3,7 +3,7 @@
 #include "d3d9_resource.h"
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   template <D3DRESOURCETYPE ResourceType, typename Base>
   class Direct3DBuffer9 : public Direct3DResource9<ResourceType, Base>

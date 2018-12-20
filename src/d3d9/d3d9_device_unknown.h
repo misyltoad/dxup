@@ -3,7 +3,7 @@
 #include "d3d9_base.h"
 #include "d3d9_device.h"
 
-namespace dxapex {
+namespace dxup {
 
   template <typename... Base>
   class D3D9DeviceUnknown : public Unknown<Base...> {

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace dxapex {
+namespace dxup {
 
   template <size_t Capacity, typename T>
   class FixedBuffer {

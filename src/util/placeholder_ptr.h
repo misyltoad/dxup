@@ -2,7 +2,7 @@
 
 #include "log.h"
 
-namespace dxapex {
+namespace dxup {
 
   template <typename T>
   class PlaceholderPtr {

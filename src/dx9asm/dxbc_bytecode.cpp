@@ -5,7 +5,7 @@
 #include "../util/misc_helpers.h"
 #include "../extern/gpuopen/DXBCChecksum.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

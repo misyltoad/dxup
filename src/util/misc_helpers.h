@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-namespace dxapex {
+namespace dxup {
 
   template <typename T>
   void InitReturnPtr(T* ptr) {

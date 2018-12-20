@@ -1,6 +1,6 @@
 #pragma once
 
-namespace dxapex {
+namespace dxup {
 
   template <typename T, typename J, size_t Size>
   class TypeConverter {

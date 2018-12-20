@@ -2,7 +2,7 @@
 
 #include <d3dcompiler.h>
 
-namespace dxapex {
+namespace dxup {
 
   namespace d3dcompiler {
 

@@ -1,6 +1,6 @@
 #include "d3d9_format.h"
 
-namespace dxapex {
+namespace dxup {
 
   const DXGIFormatSize &getDXGIFormatSizeInfo(DXGI_FORMAT format)
   {

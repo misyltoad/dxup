@@ -5,7 +5,7 @@
 #include <array>
 #include <memory>
 
-namespace dxapex {
+namespace dxup {
 
   using ShaderType = dx9asm::ShaderType;
 

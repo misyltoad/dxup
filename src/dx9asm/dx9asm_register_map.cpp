@@ -4,7 +4,7 @@
 #include "../util/config.h"
 #include <unordered_map>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

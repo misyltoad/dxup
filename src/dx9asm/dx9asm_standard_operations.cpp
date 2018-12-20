@@ -1,7 +1,7 @@
 #include "dx9asm_translator.h"
 #include "../util/config.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

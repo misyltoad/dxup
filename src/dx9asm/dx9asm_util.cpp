@@ -4,7 +4,7 @@
 #include "dx9asm_translator.h"
 #include "dxbc_helpers.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

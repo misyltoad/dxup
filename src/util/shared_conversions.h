@@ -1,7 +1,7 @@
 #include <d3d9.h>
 #include <string>
 
-namespace dxapex {
+namespace dxup {
 
     namespace convert {
 

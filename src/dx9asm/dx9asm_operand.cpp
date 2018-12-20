@@ -1,6 +1,6 @@
 #include "dx9asm_operand.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

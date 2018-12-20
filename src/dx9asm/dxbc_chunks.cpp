@@ -3,7 +3,7 @@
 #include "../util/placeholder_ptr.h"
 #include "dx9asm_modifiers.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

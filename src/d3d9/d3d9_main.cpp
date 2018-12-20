@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "d3d9_interface.h"
 
-namespace dxapex {
+namespace dxup {
   HRESULT CreateD3D9(IDirect3D9Ex** d3d9) {
     InitReturnPtr(d3d9);
 
@@ -22,43 +22,43 @@ namespace dxapex {
 
 IDirect3D9* STDMETHODCALLTYPE Direct3DCreate9(UINT nSDKVersion) {
   IDirect3D9Ex* pDirect3D = nullptr;
-  dxapex::CreateD3D9(&pDirect3D);
+  dxup::CreateD3D9(&pDirect3D);
 
   return pDirect3D;
 }
 
 HRESULT STDMETHODCALLTYPE Direct3DCreate9Ex(UINT nSDKVersion, IDirect3D9Ex** ppDirect3D9Ex) {
-  return dxapex::CreateD3D9(ppDirect3D9Ex);
+  return dxup::CreateD3D9(ppDirect3D9Ex);
 }
 
 int STDMETHODCALLTYPE D3DPERF_BeginEvent(D3DCOLOR col, LPCWSTR wszName) {
-  dxapex::log::stub("D3DPERF_BeginEvent");
+  dxup::log::stub("D3DPERF_BeginEvent");
   return 0;
 }
 
 int STDMETHODCALLTYPE D3DPERF_EndEvent(void) {
-  dxapex::log::stub("D3DPERF_EndEvent");
+  dxup::log::stub("D3DPERF_EndEvent");
   return 0;
 }
 
 void STDMETHODCALLTYPE D3DPERF_SetMarker(D3DCOLOR col, LPCWSTR wszName) {
-  dxapex::log::stub("D3DPERF_SetMarker");
+  dxup::log::stub("D3DPERF_SetMarker");
 }
 
 void STDMETHODCALLTYPE D3DPERF_SetRegion(D3DCOLOR col, LPCWSTR wszName) {
-  dxapex::log::stub("D3DPERF_SetRegion");
+  dxup::log::stub("D3DPERF_SetRegion");
 }
 
 BOOL STDMETHODCALLTYPE D3DPERF_QueryRepeatFrame(void) {
-  dxapex::log::stub("D3DPERF_QueryRepeatFrame");
+  dxup::log::stub("D3DPERF_QueryRepeatFrame");
   return FALSE;
 }
 
 void STDMETHODCALLTYPE D3DPERF_SetOptions(DWORD dwOptions) {
-  dxapex::log::stub("D3DPERF_SetOptions");
+  dxup::log::stub("D3DPERF_SetOptions");
 }
 
 DWORD STDMETHODCALLTYPE D3DPERF_GetStatus(void) {
-  dxapex::log::stub("D3DPERF_GetStatus");
+  dxup::log::stub("D3DPERF_GetStatus");
   return 0;
 }

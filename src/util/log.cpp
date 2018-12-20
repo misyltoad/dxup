@@ -5,7 +5,7 @@
 #include "windows_includes.h"
 #include "../../version.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace log {
 
@@ -19,7 +19,7 @@ namespace dxapex {
         fileValid = logFile != nullptr;
 
         if (fileValid)
-          fprintf(logFile, u8"DXUP - 🐸 - Version %s\n", DXAPEX_VERSION);
+          fprintf(logFile, u8"DXUP - 🐸 - Version %s\n", DXUP_VERSION);
       }
 
       char buffer[1024];

@@ -5,7 +5,7 @@
 #include <vector>
 #include "../dx9asm/dx9asm_translator.h"
 
-namespace dxapex {
+namespace dxup {
 
   struct InputLink {
     Com<ID3D11InputLayout> inputLayout;

@@ -4,7 +4,7 @@
 #include "dxbc_helpers.h"
 #include "../util/log.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

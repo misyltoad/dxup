@@ -2,7 +2,7 @@
 #include "dx9asm_register_mapping.h"
 #include "dx9asm_meta.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

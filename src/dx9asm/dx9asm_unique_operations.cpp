@@ -3,7 +3,7 @@
 #include "../util/fourcc.h"
 #include "../util/config.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

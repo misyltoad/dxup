@@ -4,7 +4,7 @@
 #include <list>
 #include <memory>
 
-namespace dxapex {
+namespace dxup {
 
   class PrivateDataD3D {
 

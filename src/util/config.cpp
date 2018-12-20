@@ -4,7 +4,7 @@
 #include <map>
 #include <array>
 
-namespace dxapex { 
+namespace dxup { 
 
   namespace config {
 
@@ -20,18 +20,18 @@ namespace dxapex {
     public:
 
       ConfigMgr() {
-		  initVar(var::EmitNop, "DXAPEX_EMITNOP", "0");
+		  initVar(var::EmitNop, "DXUP_EMITNOP", "0");
 
 #ifdef _DEBUG
-          initVar(var::Debug, "DXAPEX_DEBUG", "1");
+          initVar(var::Debug, "DXUP_DEBUG", "1");
 #else
-          initVar(var::Debug, "DXAPEX_DEBUG", "0");
+          initVar(var::Debug, "DXUP_DEBUG", "0");
 #endif
-          initVar(var::RandomClearColour, "DXAPEX_RANDOMCLEARCOLOUR", "0");
-          initVar(var::ShaderSpew, "DXAPEX_SHADERSPEW", "0");
-          initVar(var::ShaderDump, "DXAPEX_SHADERDUMP", "0");
-          initVar(var::UnimplementedFatal, "DXAPEX_UNIMPLEMENTEDFATAL", "0");
-          initVar(var::InitialHideCursor, "DXAPEX_INITIALHIDECURSOR", "0");
+          initVar(var::RandomClearColour, "DXUP_RANDOMCLEARCOLOUR", "0");
+          initVar(var::ShaderSpew, "DXUP_SHADERSPEW", "0");
+          initVar(var::ShaderDump, "DXUP_SHADERDUMP", "0");
+          initVar(var::UnimplementedFatal, "DXUP_UNIMPLEMENTEDFATAL", "0");
+          initVar(var::InitialHideCursor, "DXUP_INITIALHIDECURSOR", "0");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {
@@ -78,22 +78,22 @@ namespace dxapex {
 
     };
 
-    ConfigMgr dxapexConfig;
+    ConfigMgr dxupConfig;
 
     float getFloat(var variable) {
-      return dxapexConfig.getFloat(variable);
+      return dxupConfig.getFloat(variable);
     }
 
     int getInt(var variable) {
-      return dxapexConfig.getInt(variable);
+      return dxupConfig.getInt(variable);
     }
 
     const std::string& getString(var variable) {
-      return dxapexConfig.getString(variable);
+      return dxupConfig.getString(variable);
     }
 
     bool getBool(var variable) {
-      return dxapexConfig.getBool(variable);
+      return dxupConfig.getBool(variable);
     }
 
   }

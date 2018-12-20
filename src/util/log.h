@@ -1,7 +1,7 @@
 #pragma once
 #include <stdarg.h>
 
-namespace dxapex {
+namespace dxup {
   
   namespace log {
     void internal_write(const char* prefix, const char* fmt, va_list list);

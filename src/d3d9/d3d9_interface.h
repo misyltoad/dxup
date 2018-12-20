@@ -2,7 +2,7 @@
 
 #include "d3d9_base.h"
 
-namespace dxapex {
+namespace dxup {
 
   class Direct3D9Ex final : public Unknown<IDirect3D9Ex> {
 
@@ -35,7 +35,7 @@ namespace dxapex {
       HRESULT  STDMETHODCALLTYPE CreateDeviceEx(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pFullscreenDisplayMode, IDirect3DDevice9Ex** ppReturnedDeviceInterface) override;
       HRESULT  STDMETHODCALLTYPE GetAdapterLUID(UINT Adapter, LUID * pLUID) override;
 
-      // dxapex
+      // dxup
 
       IDXGIFactory1* GetDXGIFactory();
       HRESULT EnumAdapterModeFormatEx(UINT Adapter, D3DFORMAT Format, const D3DDISPLAYMODEFILTER* pFilter, UINT Mode, D3DDISPLAYMODEEX* pMode);

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

@@ -3,7 +3,7 @@
 #include "d3d9_resource.h"
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   using Direct3DSurface9Base = Direct3DResource9<D3DRTYPE_SURFACE, IDirect3DSurface9>;
 

@@ -5,7 +5,7 @@
 #include "../util/misc_helpers.h"
 #include "dxbc_bytecode.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

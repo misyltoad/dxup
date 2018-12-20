@@ -3,7 +3,7 @@
 #include "dxbc_header.h"
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

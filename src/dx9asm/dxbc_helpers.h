@@ -5,7 +5,7 @@
 #include <vector>
 #include "dx9asm_operations.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

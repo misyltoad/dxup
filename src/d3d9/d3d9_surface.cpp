@@ -3,7 +3,7 @@
 #include "d3d9_texture.h"
 #include "d3d9_format.h"
 
-namespace dxapex {
+namespace dxup {
 
   Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard)
     : Direct3DSurface9Base(device, pool, usage)

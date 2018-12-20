@@ -3,7 +3,7 @@
 #include "dx9asm_meta.h"
 #include "../util/fixed_buffer.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

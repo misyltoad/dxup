@@ -3,7 +3,7 @@
 #include "d3d9_device.h"
 #include "d3d9_device_unknown.h"
 
-namespace dxapex {
+namespace dxup {
 
   using Direct3DSwapChain9ExBase = D3D9DeviceUnknown<IDirect3DSwapChain9Ex>;
   class Direct3DSwapChain9Ex final : public Direct3DSwapChain9ExBase {

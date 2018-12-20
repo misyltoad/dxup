@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-namespace dxapex {
+namespace dxup {
 
   // Double ref-count tip from DXVK.
   // https://github.com/doitsujin/dxvk/blob/master/src/util/com/com_object.h

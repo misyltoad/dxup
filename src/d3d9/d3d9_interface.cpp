@@ -3,7 +3,7 @@
 #include "../util/config.h"
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   HRESULT STDMETHODCALLTYPE Direct3D9Ex::QueryInterface(REFIID riid, LPVOID* ppv) {
     InitReturnPtr(ppv);
@@ -337,7 +337,7 @@ namespace dxapex {
     return D3D_OK;
   }
 
-  // dxapex
+  // dxup
 
   IDXGIFactory1* Direct3D9Ex::GetDXGIFactory() {
     return m_dxgiFactory.ptr();

@@ -6,7 +6,7 @@
 #include "../extern/microsoft/d3d11TokenizedProgramFormat.hpp"
 #include <stdint.h>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

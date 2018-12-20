@@ -1,7 +1,7 @@
 #pragma once
 #include "../util/fourcc.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

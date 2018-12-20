@@ -4,7 +4,7 @@
 #include "d3d9_device_unknown.h"
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   class Direct3DVertexDeclaration9 : public D3D9DeviceUnknown<IDirect3DVertexDeclaration9> {
 

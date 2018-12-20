@@ -2,7 +2,7 @@
 
 #include "d3d9_base.h"
 
-namespace dxapex {
+namespace dxup {
 
   UINT alignPitch(UINT pitch);
 

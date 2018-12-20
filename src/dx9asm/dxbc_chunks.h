@@ -8,7 +8,7 @@
 #include "dxbc_stats.h"
 #include <string>
 
-namespace dxapex {
+namespace dxup {
 
   namespace dx9asm {
 

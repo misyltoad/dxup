@@ -4,7 +4,7 @@
 #include "../util/log.h"
 #include "../util/shared_conversions.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace convert {
     DXGI_FORMAT format(D3DFORMAT Format);

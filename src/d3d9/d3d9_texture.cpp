@@ -1,7 +1,7 @@
 #include "d3d9_texture.h"
 #include "d3d9_surface.h"
 
-namespace dxapex {
+namespace dxup {
 
   Direct3DTexture9::Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard)
     : Direct3DTexture9Base(device, texture, srv, pool, usage)

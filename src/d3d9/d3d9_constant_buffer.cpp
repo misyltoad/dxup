@@ -1,6 +1,6 @@
 #include "d3d9_constant_buffer.h"
 
-namespace dxapex {
+namespace dxup {
 
   struct BufferInfo {
     uint32_t elementSize;

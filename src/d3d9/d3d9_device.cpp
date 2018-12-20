@@ -11,7 +11,7 @@
 #include "../util/d3dcompiler_helpers.h"
 #include "d3d9_vertexdeclaration.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace dirtyFlags {
     const uint32_t vertexShader = 1 << 0;

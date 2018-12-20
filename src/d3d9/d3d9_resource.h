@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace dxapex {
+namespace dxup {
 
   template <D3DRESOURCETYPE ResourceType, typename... Base>
   class Direct3DResource9 : public D3D9DeviceUnknown<Base...> {

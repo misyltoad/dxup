@@ -2,7 +2,7 @@
 #include <array>
 #include <d3dcommon.h>
 
-namespace dxapex {
+namespace dxup {
 
   namespace convert {
 

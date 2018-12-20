@@ -1,7 +1,7 @@
 #include "private_data_d3d.h"
 #include <d3d9.h>
 
-namespace dxapex {
+namespace dxup {
 
   HRESULT PrivateDataD3D::SetPrivateData(REFGUID refguid, const void *pData, DWORD SizeOfData, DWORD Flags) {
     if (pData == nullptr || SizeOfData == 0)

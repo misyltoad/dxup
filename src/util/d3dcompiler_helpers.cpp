@@ -1,6 +1,6 @@
 #include "d3dcompiler_helpers.h"
 
-namespace dxapex {
+namespace dxup {
 
   namespace d3dcompiler {
 
