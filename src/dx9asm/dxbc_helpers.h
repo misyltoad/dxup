@@ -27,8 +27,9 @@ namespace dxup {
         return m_registerType;
       }
 
-      inline void setComponents(uint32_t components) {
+      inline DXBCOperand& setComponents(uint32_t components) {
         m_components = components;
+        return *this;
       }
 
       inline DXBCOperand& setupLiteral(uint32_t components) {
@@ -38,24 +39,30 @@ namespace dxup {
         return *this;
       }
 
-      inline void setRegisterType(uint32_t regType) {
+      inline DXBCOperand& setRegisterType(uint32_t regType) {
         m_registerType = regType;
+        return *this;
       }
-      inline void setDimension(uint32_t dimension) {
+      inline DXBCOperand& setDimension(uint32_t dimension) {
         m_dimension = dimension;
+        return *this;
       }
-      inline void setRepresentation(uint32_t index, uint32_t representation) {
+      inline DXBCOperand& setRepresentation(uint32_t index, uint32_t representation) {
         m_representation[index] = representation;
         m_representations = max(m_representations, index + 1);
+        return *this;
       }
-      inline void setSwizzleOrWritemask(uint32_t swizzlewrite) {
+      inline DXBCOperand& setSwizzleOrWritemask(uint32_t swizzlewrite) {
         m_swizzleOrWritemask = swizzlewrite;
+        return *this;
       }
-      inline void setModifier(uint32_t modifier) {
+      inline DXBCOperand& setModifier(uint32_t modifier) {
         m_modifier = modifier;
+        return *this;
       }
-      inline void stripModifier() {
+      inline DXBCOperand& stripModifier() {
         m_modifier = UINT32_MAX;
+        return *this;
       }
       inline DXBCOperand& setData(const uint32_t* data, uint32_t count) {
         if (count > 4) {
@@ -91,12 +98,14 @@ namespace dxup {
         return m_data[m_dataCount - 1];
       }
 
-      inline void addInstructionSize(uint32_t& instructionSize) {
+      inline DXBCOperand& addInstructionSize(uint32_t& instructionSize) {
         doPass(&instructionSize, nullptr);
+        return *this;
       }
 
-      inline void push(std::vector<uint32_t>& code) {
+      inline DXBCOperand& push(std::vector<uint32_t>& code) {
         doPass(nullptr, &code);
+        return *this;
       }
 
     protected:
@@ -139,11 +148,13 @@ namespace dxup {
         return *this;
       }
 
-      inline void setOpcode(uint32_t opcode) {
+      inline DXBCOperation& setOpcode(uint32_t opcode) {
         m_opcode = opcode;
+        return *this;
       }
-      inline void setSaturate(bool saturate) {
+      inline DXBCOperation& setSaturate(bool saturate) {
         m_saturate = saturate;
+        return *this;
       }
       inline DXBCOperation& appendOperand(const DXBCOperand& operand) {
         m_operands.push_back(operand);
