@@ -76,6 +76,34 @@ namespace dxapex {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+
+      DXBCOperand tempOp = getRegisterMap().getNextInternalTemp();
+      DXBCOperand srcOp = { *this, operation, *src0, 0 };
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+
+      // DP with self to get length squared.
+      DXBCOperation{ D3D10_SB_OPCODE_DP4, false }
+        .appendOperand(tempOp)
+        .appendOperand(srcOp)
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_RSQ, false }
+        .appendOperand(tempOp)
+        .appendOperand(tempOp)
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
+        .appendOperand(srcOp)
+        .appendOperand(dstOp)
+        .appendOperand(tempOp)
+        .push(*this);
+
+      return true;
+    }
+
     // Varadic Operand
     bool ShaderCodeTranslator::handleTex(DX9Operation& operation) {
       // SM1_1 impl for now.

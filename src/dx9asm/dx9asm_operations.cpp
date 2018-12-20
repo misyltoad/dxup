@@ -55,7 +55,7 @@ namespace dxapex {
         {"mova",    D3DSIO_MOVA, 1, { Dst, Src0 }, {}},
         {"mul",     D3DSIO_MUL, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MUL, 0}},
         {"nop",     D3DSIO_NOP, 1, { }, {D3D10_SB_OPCODE_NOP, 0}},
-        {"nrm",     D3DSIO_NRM, 1, { Dst, Src0, Src1 }, {}},
+        {"nrm",     D3DSIO_NRM, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleNrm},
         {"pow",     D3DSIO_POW, 1, { Dst, Src0, Src1 }, {}},
         {"rcp",     D3DSIO_RCP, 1, { Dst, Src0 }, {D3D11_SB_OPCODE_RCP, 0}},
         {"rep",     D3DSIO_REP, 1, { Src0 }, {}},

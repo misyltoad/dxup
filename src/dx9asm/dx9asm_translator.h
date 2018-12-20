@@ -66,7 +66,7 @@ namespace dxapex {
       bool handleDcl(DX9Operation& operation);
       bool handleTex(DX9Operation& operation);
       bool handleLit(DX9Operation& operation);
-      bool handleMad(DX9Operation& operation);
+      bool handleNrm(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
 
       inline std::vector<uint32_t>& getCode() {
