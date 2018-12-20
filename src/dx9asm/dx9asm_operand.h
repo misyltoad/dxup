@@ -15,6 +15,7 @@ namespace dxapex {
         Src0,
         Src1,
         Src2,
+        Src3,
         Vec4,
         Label,
         Bool,
@@ -41,7 +42,7 @@ namespace dxapex {
 
       inline bool isRegister() const {
         using namespace optype;
-        return type == Dst || type == Src0 || type == Src1 || type == Src2;
+        return type == Dst || type == Src0 || type == Src1 || type == Src2 || type == Src3;
       }
 
       inline bool isConstant() const {
@@ -51,7 +52,7 @@ namespace dxapex {
 
       inline bool isSrc() const {
         using namespace optype;
-        return type == Src0 || type == Src1 || type == Src2;
+        return type == Src0 || type == Src1 || type == Src2 || type == Src3;
       }
 
       inline bool isDst() const {
