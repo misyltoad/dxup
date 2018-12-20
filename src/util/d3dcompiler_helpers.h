@@ -10,4 +10,10 @@ namespace dxup {
 
   }
 
+  namespace d3dx {
+
+    bool dissasembleShader(HRESULT* result, LPCVOID pShader, BOOL EnableColorCode, LPCSTR pComments, ID3DBlob** ppDisassembly);
+
+  }
+
 }

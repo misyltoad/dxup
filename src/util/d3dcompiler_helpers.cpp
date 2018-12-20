@@ -34,4 +34,39 @@ namespace dxup {
 
   }
 
+  namespace d3dx {
+
+    HMODULE d3dxModule = nullptr;
+
+    void loadModule() {
+      if (d3dxModule == nullptr)
+        d3dxModule = LoadLibraryA("d3dx9.dll");
+
+      if (d3dxModule == nullptr)
+        d3dxModule = LoadLibraryA("D3DX9_40.dll");
+
+      if (d3dxModule == nullptr)
+        d3dxModule = LoadLibraryA("D3DX9_36.dll");
+
+      if (d3dxModule == nullptr)
+        d3dxModule = LoadLibraryA("d3dx9_32.dll");
+    }
+
+    bool dissasembleShader(HRESULT* result, LPCVOID pShader, BOOL EnableColorCode, LPCSTR pComments, ID3DBlob** ppDisassembly) {
+      loadModule();
+
+      if (!d3dxModule)
+        return false;
+
+      typedef HRESULT(WINAPI *D3DXDisassembleShaderFunc)(const DWORD* pShader, BOOL EnableColorCode, LPCSTR pComments, ID3DBlob** ppDisassembly); // It's not an ID3DBlob but the vtables match up.
+      D3DXDisassembleShaderFunc D3DXDisassembleShaderDynamic = (D3DXDisassembleShaderFunc)GetProcAddress(d3dxModule, "D3DXDisassembleShader");
+
+      HRESULT foundResult = D3DXDisassembleShaderDynamic((const DWORD*)pShader, EnableColorCode, pComments, ppDisassembly);
+      *result = foundResult;
+
+      return true;
+    }
+
+  }
+
 }

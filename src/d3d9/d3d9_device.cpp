@@ -1312,7 +1312,49 @@ namespace dxup {
     return D3D_OK;
   }
 
-    static int32_t shaderNum = 0;
+  static int32_t shaderNums[2] = { 0, 0 };
+
+  template <bool Vertex, bool D3D9>
+  void DoShaderDump(const uint32_t* func, uint32_t size, const char* type) {
+    uint32_t thisShaderNum = shaderNums[Vertex ? 0 : 1];
+
+    const char* shaderDumpPath = "shaderdump";
+    CreateDirectoryA(shaderDumpPath, nullptr);
+
+    char dxbcName[64];
+    snprintf(dxbcName, 64, Vertex ? "%s/vs_%d.%s" : "%s/ps_%d.%s", shaderDumpPath, thisShaderNum, type);
+
+    FILE* file = fopen(dxbcName, "wb");
+    fwrite(func, 1, size, file);
+    fclose(file);
+
+    // Disassemble.
+
+    char comments[2048];
+    Com<ID3DBlob> blob;
+
+    HRESULT result = D3DERR_INVALIDCALL;
+
+    if (!D3D9) {
+      if (!d3dcompiler::disassemble(&result, func, size, D3D_DISASM_ENABLE_COLOR_CODE, comments, &blob))
+        log::warn("Failed to load d3dcompiler module for disassembly.");
+    }
+    else {
+      if (!d3dx::dissasembleShader(&result, func, true, comments, &blob))
+        log::warn("Failed to load d3dx9 module for disassembly.");
+    }
+
+    if (FAILED(result))
+      log::warn("Failed to disassemble generated shader!");
+
+    if (blob != nullptr) {
+      snprintf(dxbcName, 64, Vertex ? "%s/vs_%d.%s.html" : "%s/ps_%d.%s.html", shaderDumpPath, thisShaderNum, type);
+
+      FILE* file = fopen(dxbcName, "wb");
+      fwrite(blob->GetBufferPointer(), 1, blob->GetBufferSize(), file);
+      fclose(file);
+    }
+  }
 
   template <bool Vertex, typename ID3D9, typename D3D9, typename D3D11>
   HRESULT CreateShader(CONST DWORD* pFunction, ID3D9** ppShader, ID3D11Device* device, Direct3DDevice9Ex* wrapDevice) {
@@ -1321,43 +1363,18 @@ namespace dxup {
     if (pFunction == nullptr || ppShader == nullptr)
       return D3DERR_INVALIDCALL;
 
+    shaderNums[Vertex ? 0 : 1]++;
+
+    const uint32_t* bytecodePtr = reinterpret_cast<const uint32_t*>(pFunction);
+
+    if (config::getBool(config::ShaderDump))
+      DoShaderDump<Vertex, true>(bytecodePtr, dx9asm::byteCodeLength(bytecodePtr), "dx9asm");
+
     dx9asm::ShaderBytecode* bytecode = nullptr;
-    dx9asm::toDXBC((const uint32_t*)pFunction, &bytecode);
+    dx9asm::toDXBC(bytecodePtr, &bytecode);
 
-    shaderNum++;
-
-    if (config::getBool(config::ShaderDump)) {
-
-      char name[64];
-      snprintf(name, 64, "shader_%d.bin", shaderNum);
-
-      FILE* file = fopen(name, "wb");
-      fwrite(bytecode->getBytecode(), 1, bytecode->getByteSize(), file);
-      fclose(file);
-      
-      // Disassemble.
-
-      char comments[2048];
-      Com<ID3DBlob> blob;
-
-      HRESULT result = S_OK;
-
-      if (!d3dcompiler::disassemble(&result, bytecode->getBytecode(), bytecode->getByteSize(), D3D_DISASM_ENABLE_COLOR_CODE, comments, &blob))
-        log::warn("Failed to load d3dcompiler module for disassembly.");
-
-      if (FAILED(result))
-        log::warn("Failed to disassemble generated shader!");
-
-      if (blob != nullptr) {
-
-        char name[64];
-        snprintf(name, 64, "shader_%d.html", shaderNum);
-
-        FILE* file = fopen(name, "wb");
-        fwrite(blob->GetBufferPointer(), 1, blob->GetBufferSize(), file);
-        fclose(file);
-      }
-    }
+    if (config::getBool(config::ShaderDump))
+      DoShaderDump<Vertex, false>((const uint32_t*)bytecode->getBytecode(), bytecode->getByteSize(), "dxbc");
 
     Com<D3D11> shader;
     HRESULT result = D3DERR_INVALIDCALL;
