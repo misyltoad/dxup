@@ -47,6 +47,26 @@ namespace dxup {
         mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
         mapping.dclInfo.type = UsageType::Output;
       }
+      else if (dst->getRegType() == D3DSPR_SAMPLER) {
+
+        SamplerDesc desc;
+        desc.index = dst->getRegNumber();
+        switch (dst->getTextureType())
+        {
+        default:
+        case D3DSTT_UNKNOWN:
+        case D3DSTT_2D:
+          desc.dimension = D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D; break;
+        case D3DSTT_CUBE:
+          desc.dimension = D3D10_SB_RESOURCE_DIMENSION_TEXTURECUBE; break;
+        case D3DSTT_VOLUME:
+          desc.dimension = D3D10_SB_RESOURCE_DIMENSION_TEXTURE3D; break;
+        }
+
+        m_samplers.push_back(desc);
+        return true;
+
+      }
       else {
         log::fail("Unhandled reg type in dcl.");
         mapping.dclInfo.type = UsageType::Output;
@@ -144,7 +164,15 @@ namespace dxup {
           log::warn("Sampler for texld isn't a sampler");
       }
 
-      m_samplerMask |= 1 << samplerRegNum;
+      if (!isSamplerUsed(samplerRegNum)) {
+        log::warn("Adding an implicit 2D sampler.");
+
+        SamplerDesc desc;
+        desc.index = samplerRegNum;
+        desc.dimension = D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D;
+
+        m_samplers.push_back(desc);
+      }
 
       // Why does this work?:
       // In SM1.1 - SM1.3 dst is a tx register, which we map to a temp, which is then moved later.

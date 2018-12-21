@@ -17,6 +17,11 @@ namespace dxup {
 
     class DX9Operation;
 
+    struct SamplerDesc {
+      uint32_t index;
+      uint32_t dimension;
+    };
+
     class ShaderCodeTranslator {
 
     public:
@@ -53,11 +58,25 @@ namespace dxup {
       bool handleOperation(uint32_t token);
 
       inline bool isSamplerUsed(uint32_t i) {
-        return m_samplerMask & (1u << i);
+        for (auto& desc : m_samplers) {
+          if (desc.index == i)
+            return true;
+        }
+        
+        return false;
       }
 
       inline bool isAnySamplerUsed() {
-        return m_samplerMask != 0;
+        return !m_samplers.empty();
+      }
+
+      inline SamplerDesc* getSampler(uint32_t i) {
+        for (auto& desc : m_samplers) {
+          if (desc.index == i)
+            return &desc;
+        }
+
+        return nullptr;
       }
 
       bool translate();
@@ -88,8 +107,7 @@ namespace dxup {
 
       RegisterMap m_map;
 
-      uint32_t m_samplerMask = 0;
-
+      std::vector<SamplerDesc> m_samplers;
       std::vector<uint32_t> m_dxbcCode;
     };
 

@@ -344,6 +344,7 @@ namespace dxup {
         {
           for (uint32_t i = 0; i < 16; i++) {
             if (shdrCode.isSamplerUsed(i)) {
+              SamplerDesc* sampler = shdrCode.getSampler(i);
 
               DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
               samplerOp.setComponents(0);
@@ -360,7 +361,7 @@ namespace dxup {
               textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
 
               DXBCOperation{ D3D10_SB_OPCODE_DCL_RESOURCE, false, UINT32_MAX, 1 }
-                .setExtra(ENCODE_D3D10_SB_RESOURCE_DIMENSION(D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D))
+                .setExtra(ENCODE_D3D10_SB_RESOURCE_DIMENSION(sampler->dimension))
                 .appendOperand(textureOp)
                 .push(obj);
 

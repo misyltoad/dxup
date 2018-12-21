@@ -91,6 +91,10 @@ namespace dxup {
         return getToken() & D3DSPDM_MSAMPCENTROID;
       }
 
+      inline uint32_t getTextureType() const {
+        return getToken() & D3DSP_TEXTURETYPE_MASK;
+      }
+
       inline uint32_t getRegNumber() const {
         return getToken() & D3DSP_REGNUM_MASK;
       }
