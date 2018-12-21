@@ -32,56 +32,88 @@ namespace dxup {
         switch (modifier) {
         case D3DSPSM_NONE: {
 
-          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
-          else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
-          else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
-          else
-            return dstOperand.stripModifier();
+          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & abs) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
+            break;
+          }
+          else {
+            dstOperand.stripModifier();
+            break;
+          }
 
         }
 
         case D3DSPSM_NEG: {
 
-          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
-          else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
-          else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.stripModifier();
-          else
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
+          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & abs) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & negate) {
+            dstOperand.stripModifier();
+            break;
+          }
+          else {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_NEG);
+            break;
+          }
 
         }
 
         case D3DSPSM_ABS: {
 
-          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
-          else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
-          else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
-          else
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & abs) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
+          else {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
 
         }
         case D3DSPSM_ABSNEG: {
 
-          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
-          else if (implicitOpInfo.implicitFlags & abs)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
-          else if (implicitOpInfo.implicitFlags & negate)
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
-          else
-            return dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+          if (implicitOpInfo.implicitFlags & abs && implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & abs) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
+          else if (implicitOpInfo.implicitFlags & negate) {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABS);
+            break;
+          }
+          else {
+            dstOperand.setModifier(D3D10_SB_OPERAND_MODIFIER_ABSNEG);
+            break;
+          }
 
         }
 
-        default: log::fail("Unimplemented operand modifier! (sm1 asm garbage?)");
+        default: log::fail("Unimplemented operand modifier! (sm1 asm garbage?)"); break;
         }
       }
     }
@@ -155,9 +187,9 @@ namespace dxup {
       }
 
       if (operand.isSrc())
-        return dstOperand.setSwizzleOrWritemask(calcSwizzle(operand));
+        dstOperand.setSwizzleOrWritemask(calcSwizzle(operand));
       else
-        return dstOperand.setSwizzleOrWritemask(calcWriteMask(operand));
+        dstOperand.setSwizzleOrWritemask(calcWriteMask(operand));
     }
 
   }
