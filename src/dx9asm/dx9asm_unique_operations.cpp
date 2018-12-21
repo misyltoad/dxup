@@ -67,8 +67,11 @@ namespace dxup {
         return true;
 
       }
+      else if (dst->getRegType() == D3DSPR_TEXTURE) {
+        // Don't need to do anything. Handled by sampler.
+      }
       else {
-        log::fail("Unhandled reg type in dcl.");
+        log::fail("Unhandled reg type in dcl, %d.", dst->getRegType());
         mapping.dclInfo.type = UsageType::Output;
       }
       mapping.dclInfo.usage = usageToken->getUsage();
