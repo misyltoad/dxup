@@ -106,20 +106,18 @@ namespace dxup {
 
     // Varadic Operand
     bool ShaderCodeTranslator::handleTex(DX9Operation& operation) {
-      // SM1_1 impl for now.
-
       DX9Operand dst{ lookupOperandInfo(optype::Dst), nextToken() };
-      uint32_t regNum = dst.getRegNumber();
-
-      m_samplerMask |= 1 << regNum;
+      uint32_t samplerRegNum = dst.getRegNumber();
 
       DXBCOperand texCoordOp;
-      if (getMajorVersion() < 2 && getMinorVersion() < 4) {
+
+      // sm_1.1 - sm1.3
+      if (getMajorVersion() == 1 && getMinorVersion() <= 3) {
         // Fake a D3D9 texcoord register.
         RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
           *this,
           D3DSPR_TEXCRDOUT,
-          regNum,
+          samplerRegNum,
           ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
           0,
           true
@@ -133,9 +131,25 @@ namespace dxup {
         );
       }
       else {
+        // SM1.4
         DX9Operand texCoord{ lookupOperandInfo(optype::Src0), nextToken() };
         texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
       }
+
+      if (getMajorVersion() >= 2) {
+        DX9Operand sampler{ lookupOperandInfo(optype::Src1), nextToken() };
+        samplerRegNum = sampler.getRegNumber();
+
+        if (sampler.getRegType() != D3DSPR_SAMPLER)
+          log::warn("Sampler for texld isn't a sampler");
+      }
+
+      m_samplerMask |= 1 << samplerRegNum;
+
+      // Why does this work?:
+      // In SM1.1 - SM1.3 dst is a tx register, which we map to a temp, which is then moved later.
+      // In SM1.4 the dst is a rx register, which we map to the right temp there.
+      // In SM2.0+ the dst is also an rx, and we use a sampler different to the reg number.
 
       RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(*this, dst);
       DXBCOperand dstOp = dstMapping->dxbcOperand;
@@ -144,12 +158,12 @@ namespace dxup {
       calculateDXBCModifiers(dstOp, operation, dst);
 
       DXBCOperand textureOp{ D3D10_SB_OPERAND_TYPE_RESOURCE, 1 };
-      textureOp.setData(&regNum, 1);
+      textureOp.setData(&samplerRegNum, 1);
       textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
       textureOp.setSwizzleOrWritemask(noSwizzle);
 
       DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
-      samplerOp.setData(&regNum, 1);
+      samplerOp.setData(&samplerRegNum, 1);
       samplerOp.setComponents(0);
       samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
 
