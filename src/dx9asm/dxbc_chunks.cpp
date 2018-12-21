@@ -148,6 +148,7 @@ namespace dxup {
           if (shdrCode.isAnySamplerUsed()) {
             for (uint32_t i = 0; i < 16; i++) {
               if (shdrCode.isSamplerUsed(i)) {
+                SamplerDesc* sampler = shdrCode.getSampler(i);
                 samplerBindings.push_back((ResourceBinding*)nextPtr(obj));
                 {
                   ResourceBinding binding{};
@@ -163,7 +164,7 @@ namespace dxup {
                   binding.bindingType = 2; // tex
                   binding.bindPoint = i;
                   binding.returnType = 5; // float
-                  binding.rvd = 4; // 2d
+                  binding.rvd = (uint32_t)sampler->dimension - 1;
                   binding.flags |= 0xc;
                   pushObject(obj, binding);
                   bindingCount++;
