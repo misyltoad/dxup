@@ -6,7 +6,7 @@ util_src = files([
   'd3dcompiler_helpers.cpp'
 ])
 
-util_lib = static_library('util', util_src,
+util_lib = static_library('util', util_src, dxup_version,
   override_options    : ['cpp_std='+dxup_cpp_std])
 
 util_dep = declare_dependency(

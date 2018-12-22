@@ -13,7 +13,8 @@ namespace dxup {
       // Should be enough to avoid any extra allocations.
       m_bytecode.reserve(4096 + shdrCode.getCode().size());
 
-      pushObject(m_bytecode, DXBCHeader());
+      DXBCHeader dxbcHeader{};
+      pushObject(m_bytecode, dxbcHeader);
 
       getHeader()->chunkOffsets[chunks::RDEF] = getByteSize();
       writeRDEF(*this, shdrCode);

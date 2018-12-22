@@ -50,8 +50,8 @@ namespace dxup {
     void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t i = 0;
       for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-        bool valid = mapping.dclInfo.type == UsageType::Input && Input ||
-                     mapping.dclInfo.type == UsageType::Output && !Input;
+        bool valid = (mapping.dclInfo.type == UsageType::Input && Input) ||
+                     (mapping.dclInfo.type == UsageType::Output && !Input);
 
         if (!valid)
           continue;
@@ -175,7 +175,8 @@ namespace dxup {
           if (constantBufferCount != 0) {
             // Resource Binding
             constantBinding = (ResourceBinding*)nextPtr(obj);
-            pushObject(obj, ResourceBinding{});
+            ResourceBinding binding{};
+            pushObject(obj, binding);
             bindingCount++;
           }
 
@@ -389,7 +390,7 @@ namespace dxup {
 
           for (auto& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
             if (mapping.dx9Type == D3DSPR_CONST)
-              cbufferCount = max(cbufferCount, mapping.dx9Id);
+              cbufferCount = std::max(cbufferCount, mapping.dx9Id);
           }
 
           if (cbufferCount != 0) {
@@ -429,7 +430,8 @@ namespace dxup {
 
         PlaceholderPtr<uint32_t> headerChunkSize{ "[STAT] Chunk Header - Chunk Data Size", &((ChunkHeader*)nextPtr(obj))->size };
         ChunkHeader{ fourcc("STAT") }.push(obj); // [PUSH] Chunk Header
-        pushObject(obj, STATData{}); // [PUSH] Dummy Stat Data
+        STATData statData{};
+        pushObject(obj, statData); // [PUSH] Dummy Stat Data
         uint32_t size = sizeof(STATData);
 
         headerChunkSize = getChunkSize(bytecode);
@@ -485,7 +487,7 @@ namespace dxup {
 
         uint32_t count = 0;
         forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          elementStart[i].nameOffset = getChunkSize(bytecode);
+          elementStart[i].nameOffset = this->getChunkSize(bytecode);
           pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
 
           count++;
@@ -493,7 +495,7 @@ namespace dxup {
 
         elementCount = count;
 
-        headerChunkSize = getChunkSize(bytecode);
+        headerChunkSize = this->getChunkSize(bytecode);
       }
     };
 

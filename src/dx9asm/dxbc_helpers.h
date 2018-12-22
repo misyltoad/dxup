@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <vector>
+#include <algorithm>
 #include "dx9asm_operations.h"
 
 namespace dxup {
@@ -49,7 +50,7 @@ namespace dxup {
       }
       inline DXBCOperand& setRepresentation(uint32_t index, uint32_t representation) {
         m_representation[index] = representation;
-        m_representations = max(m_representations, index + 1);
+        m_representations = std::max(m_representations, index + 1);
         return *this;
       }
       inline DXBCOperand& setSwizzleOrWritemask(uint32_t swizzlewrite) {

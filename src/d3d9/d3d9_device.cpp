@@ -86,7 +86,7 @@ namespace dxup {
       nullptr,
       Flags,
       FeatureLevels,
-      ARRAYSIZE(FeatureLevels),
+      std::size(FeatureLevels),
       D3D11_SDK_VERSION,
       &initialDevice,
       &Level,
@@ -541,7 +541,7 @@ namespace dxup {
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = 1;
 
-    UINT sampleCount = max(1, (UINT)MultiSample);
+    UINT sampleCount = std::max(1u, (UINT)MultiSample);
 
     bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
     bool isRenderTarget = Usage & D3DUSAGE_RENDERTARGET;

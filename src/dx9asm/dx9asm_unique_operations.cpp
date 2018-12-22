@@ -2,6 +2,7 @@
 #include "dx9asm_modifiers.h"
 #include "../util/fourcc.h"
 #include "../util/config.h"
+#include <functional>
 
 namespace dxup {
 

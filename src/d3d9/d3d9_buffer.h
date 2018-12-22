@@ -14,14 +14,14 @@ namespace dxup {
       D3D11_BUFFER_DESC desc;
       m_buffer->GetDesc(&desc);
 
-      if (desc.Usage == D3D11_USAGE_DEFAULT || !(m_usage & D3DUSAGE_WRITEONLY)) {
+      if (desc.Usage == D3D11_USAGE_DEFAULT || !(this->m_usage & D3DUSAGE_WRITEONLY)) {
         // If we are not a dynamic resource or we need read access on our dynamic, we have a staging buffer.
         // We then map this and CopySubresourceRegion on unmapping.
         // If we don't need the staging res. will be nullptr, some logic relies on this.  
 
-        makeStaging(desc, m_usage);
+        makeStaging(desc, this->m_usage);
 
-        GetD3D11Device()->CreateBuffer(&desc, nullptr, &m_stagingBuffer);
+        this->GetD3D11Device()->CreateBuffer(&desc, nullptr, &m_stagingBuffer);
       }
     }
 
@@ -46,7 +46,7 @@ namespace dxup {
         return D3DERR_INVALIDCALL;
 
       D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = GetContext()->Map(GetMapping(), 0, CalcMapType(Flags), CalcMapFlags(Flags), &resource);
+      HRESULT result = this->GetContext()->Map(GetMapping(), 0, this->CalcMapType(Flags), this->CalcMapFlags(Flags), &resource);
 
       // D3D9 docs say this isn't a thing. I will investigate this later as I don't believe them.
       //if (result == DXGI_ERROR_WAS_STILL_DRAWING)
@@ -60,10 +60,10 @@ namespace dxup {
       return D3D_OK;
     }
     HRESULT STDMETHODCALLTYPE Unlock() override {
-      GetContext()->Unmap(GetMapping(), 0);
+      this->GetContext()->Unmap(GetMapping(), 0);
 
       if (HasStaging())
-        GetContext()->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, GetStaging(), 0, nullptr);
+        this->GetContext()->CopySubresourceRegion(m_buffer.ptr(), 0, 0, 0, 0, GetStaging(), 0, nullptr);
 
       return D3D_OK;
     }
