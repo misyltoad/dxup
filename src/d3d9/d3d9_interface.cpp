@@ -52,8 +52,25 @@ namespace dxup {
     output->GetDesc(&outDesc);
 
     strcpy(pIdentifier->Driver, "DXUP Generic Device");
-    wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
-    wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+
+    #ifdef CP_UNIXCP
+    static constexpr int cp = CP_UNIXCP;
+    #else
+    static constexpr int cp = CP_ACP;
+    #endif
+    //wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
+    size_t len = ::WideCharToMultiByte(cp, 0, desc.Description, -1, nullptr, 0, nullptr, nullptr);
+    if (len <= 1)
+      strcpy(pIdentifier->Description, "");
+    else
+      ::WideCharToMultiByte(cp, 0, desc.Description, -1, pIdentifier->Description, len - 1, nullptr, nullptr);
+
+    //wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+    len = ::WideCharToMultiByte(cp, 0, outDesc.DeviceName, -1, nullptr, 0, nullptr, nullptr);
+    if (len <= 1)
+      strcpy(pIdentifier->DeviceName, "");
+    else
+      ::WideCharToMultiByte(cp, 0, outDesc.DeviceName, -1, pIdentifier->DeviceName, len - 1, nullptr, nullptr);
 
     std::memset(&pIdentifier->DriverVersion, 0, sizeof(LARGE_INTEGER));
 
