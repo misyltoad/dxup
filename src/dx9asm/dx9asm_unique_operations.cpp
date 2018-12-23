@@ -154,23 +154,7 @@ namespace dxup {
         // SM1.4+
         DX9Operand texCoord{ lookupOperandInfo(optype::Src0), nextToken() };
 
-        if (texCoord.getRegType() == D3DSPR_TEXTURE) {
-          RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
-            *this,
-            D3DSPR_TEXCRDOUT,
-            texCoord.getRegNumber(),
-            calcReadMask(texCoord),
-            0,
-            true
-          );
-
-          texCoordOp = texCoordMapping->dxbcOperand;
-
-          calculateDXBCSwizzleAndWriteMask(texCoordOp, texCoord);
-          calculateDXBCModifiers(texCoordOp, operation, texCoord);
-        }
-        else
-          texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
+        texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
       }
 
       if (getMajorVersion() >= 2) {
