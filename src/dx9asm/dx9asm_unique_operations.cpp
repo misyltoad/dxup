@@ -41,8 +41,17 @@ namespace dxup {
 
       mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
 
-      if (dst->getRegType() == D3DSPR_INPUT || dst->getRegType() == D3DSPR_TEXTURE)
+      mapping.dclInfo.usage = usageToken->getUsage();
+      mapping.dclInfo.usageIndex = usageToken->getUsageIndex();
+
+      if (dst->getRegType() == D3DSPR_INPUT) {
         mapping.dclInfo.type = UsageType::Input;
+      }
+      else if (dst->getRegType() == D3DSPR_TEXTURE) {
+        mapping.dclInfo.type = UsageType::Input;
+        mapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
+        mapping.dclInfo.usageIndex = dst->getRegNumber();
+      }
       else if (dst->getRegType() == D3DSPR_OUTPUT) {
         mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
         mapping.dclInfo.type = UsageType::Output;
@@ -71,8 +80,6 @@ namespace dxup {
         log::fail("Unhandled reg type in dcl, %d.", dst->getRegType());
         mapping.dclInfo.type = UsageType::Output;
       }
-      mapping.dclInfo.usage = usageToken->getUsage();
-      mapping.dclInfo.usageIndex = usageToken->getUsageIndex();
 
       if (getShaderType() == ShaderType::Pixel && mapping.dclInfo.type == UsageType::Output) {
         if (mapping.dclInfo.usage == D3DDECLUSAGE_COLOR)
