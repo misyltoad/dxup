@@ -55,7 +55,7 @@ namespace dxup {
         }
       }
 
-      log::warn("Unable to find transient register! Creating a new transient mapping.");
+      log::warn("Unable to find transient register! Creating a new transient mapping:\nUsage: %lu\nUsage Index: %lu", info.usage, info.usageIndex);
 
       TransientRegisterMapping mapping;
       mapping.d3d9Usage = info.usage;
