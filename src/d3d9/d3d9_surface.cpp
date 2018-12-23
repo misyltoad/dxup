@@ -126,7 +126,8 @@ namespace dxup {
       if (FAILED(result))
         return D3DERR_INVALIDCALL;
 
-      GetD3D9Texture()->SetSubresourceMapped(m_subresource);
+      if (GetD3D9Texture())
+        GetD3D9Texture()->SetSubresourceMapped(m_subresource);
 
       size_t offset = 0;
 
@@ -155,7 +156,9 @@ namespace dxup {
   HRESULT Direct3DSurface9::UnlockRect() {
     if (GetMapping() != nullptr) {
       GetContext()->Unmap(GetMapping(), m_subresource);
-      GetD3D9Texture()->SetSubresourceUnmapped(m_subresource);
+
+      if (GetD3D9Texture())
+        GetD3D9Texture()->SetSubresourceUnmapped(m_subresource);
     }
     else if (m_surface != nullptr)
       m_surface->Unmap();
@@ -173,15 +176,19 @@ namespace dxup {
         box.back = 1;
       }
 
-      if (GetD3D9Texture()->CanPushStaging()) {
-        uint64_t delta = GetD3D9Texture()->GetChangedSubresources();
-        for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
-          if ( delta & (1ull << i) )
-            GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), i, box.left, box.top, 0, GetStaging(), i, m_useRect ? &box : nullptr);
-        }
+      if (GetD3D9Texture()) {
+        if (GetD3D9Texture()->CanPushStaging()) {
+          uint64_t delta = GetD3D9Texture()->GetChangedSubresources();
+          for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
+            if (delta & (1ull << i))
+              GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), i, box.left, box.top, 0, GetStaging(), i, m_useRect ? &box : nullptr);
+          }
 
-        GetD3D9Texture()->ResetSubresourceMapInfo();
+          GetD3D9Texture()->ResetSubresourceMapInfo();
+        }
       }
+      else
+        GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), m_subresource, box.left, box.top, 0, GetStaging(), m_subresource, m_useRect ? &box : nullptr);
     }
 
     return D3D_OK;
@@ -222,10 +229,10 @@ namespace dxup {
     return GetD3D11Texture2D();
   }
   ID3D11Texture2D* Direct3DSurface9::GetStaging() {
-    return GetD3D9Texture()->GetStaging();
+    return GetD3D9Texture() ? GetD3D9Texture()->GetStaging() : nullptr;
   }
   ID3D11Texture2D* Direct3DSurface9::GetD3D11Texture2D() {
-    return GetD3D9Texture()->GetResource();
+    return m_d3d11texture.ptr();
   }
   IDXGISurface1* Direct3DSurface9::GetDXGISurface() {
     return m_surface.ptr();
