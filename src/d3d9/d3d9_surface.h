@@ -12,7 +12,7 @@ namespace dxup {
     
   public:
 
-    Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard);
+    Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format);
 
     HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppv) override;
     HRESULT WINAPI GetContainer(REFIID riid, void** ppContainer) override;
@@ -54,6 +54,7 @@ namespace dxup {
 
     UINT m_subresource;
     BOOL m_discard;
+    D3DFORMAT m_format;
   };
 
 }

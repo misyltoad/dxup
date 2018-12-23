@@ -3,7 +3,7 @@
 
 namespace dxup {
 
-  Direct3DTexture9::Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard)
+  Direct3DTexture9::Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
     : Direct3DTexture9Base(device, texture, srv, pool, usage)
     , m_fakeSurface{ fakeSurface }
     , m_mappedSubresources{ 0 }
@@ -23,7 +23,7 @@ namespace dxup {
 
     m_surfaces.reserve(desc.MipLevels);
     for (UINT i = 0; i < desc.MipLevels; i++) {
-      Direct3DSurface9* surface = new Direct3DSurface9(false, i, device, this, texture, pool, usage, discard);
+      Direct3DSurface9* surface = new Direct3DSurface9(false, i, device, this, texture, pool, usage, discard, format);
 
       if (!fakeSurface)
         surface->AddRefPrivate();

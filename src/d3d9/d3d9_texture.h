@@ -63,7 +63,7 @@ namespace dxup {
   class Direct3DTexture9 final : public Direct3DTexture9Base
   {
   public:
-    Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard);
+    Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format);
     ~Direct3DTexture9();
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj);

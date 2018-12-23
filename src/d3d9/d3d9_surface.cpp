@@ -5,13 +5,14 @@
 
 namespace dxup {
 
-  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard)
+  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
     : Direct3DSurface9Base(device, pool, usage)
     , m_container(container)
     , m_d3d11texture(texture)
     , m_subresource(subresource)
     , m_rtView(nullptr)
     , m_discard(discard)
+    , m_format(format)
   {
     if (m_subresource == 0 && usage & D3DUSAGE_DEPTHSTENCIL) {
       if (texture != nullptr) {
@@ -73,7 +74,7 @@ namespace dxup {
       if (FAILED(Result))
         return Result;
 
-      pDesc->Format = convert::format(dxgiDesc.Format);
+      pDesc->Format = m_format;
       pDesc->Height = dxgiDesc.Height;
       pDesc->Width = dxgiDesc.Width;
       pDesc->Pool = m_pool;
@@ -86,7 +87,7 @@ namespace dxup {
       D3D11_TEXTURE2D_DESC desc;
       GetD3D11Texture2D()->GetDesc(&desc);
       
-      pDesc->Format = convert::format(desc.Format);
+      pDesc->Format = m_format;
       pDesc->Height = desc.Height;
       pDesc->Width = desc.Width;
       pDesc->Pool = m_pool;

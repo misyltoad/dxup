@@ -28,8 +28,11 @@ namespace dxup {
         log::warn("Failed to get swapchain buffer as ID3D11Texture2D.");
         return;
       }
+
+      D3D11_TEXTURE2D_DESC desc;
+      texture->GetDesc(&desc);
       
-      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false));
+      m_buffers[i] = ref(new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false, convert::format(desc.Format)));
     }
 
     Com<IDXGIOutput> output;

@@ -575,7 +575,7 @@ namespace dxup {
     if (!isDepthStencil)
       m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(FakeSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard));
+    *ppTexture = ref(new Direct3DTexture9(FakeSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
 
     return D3D_OK;
   }
