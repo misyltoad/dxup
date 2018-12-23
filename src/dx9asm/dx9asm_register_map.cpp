@@ -22,44 +22,49 @@ namespace dxup {
     }
 
     struct TransientRegisterMapping {
-      uint32_t regNum;
+      uint32_t dxbcRegNum;
+
+      uint32_t d3d9UsageIndex;
       uint32_t d3d9Usage;
     };
     std::vector<TransientRegisterMapping> transientMappings = {
-      {0, D3DDECLUSAGE_POSITION},
+      {0, 0, D3DDECLUSAGE_POSITION},
 
-      {1, D3DDECLUSAGE_COLOR},
-      {2, D3DDECLUSAGE_COLOR},
+      {1, 0, D3DDECLUSAGE_COLOR},
+      {2, 1, D3DDECLUSAGE_COLOR},
 
       // SM1 Up me later!
-      {3, D3DDECLUSAGE_TEXCOORD},
-      {4, D3DDECLUSAGE_TEXCOORD},
-      {5, D3DDECLUSAGE_TEXCOORD},
-      {6, D3DDECLUSAGE_TEXCOORD},
-      {7, D3DDECLUSAGE_TEXCOORD},
-      {8, D3DDECLUSAGE_TEXCOORD},
-      {9, D3DDECLUSAGE_TEXCOORD},
-      {10, D3DDECLUSAGE_TEXCOORD},
+      {3, 0, D3DDECLUSAGE_TEXCOORD},
+      {4, 1, D3DDECLUSAGE_TEXCOORD},
+      {5, 2, D3DDECLUSAGE_TEXCOORD},
+      {6, 3, D3DDECLUSAGE_TEXCOORD},
+      {7, 4, D3DDECLUSAGE_TEXCOORD},
+      {8, 5, D3DDECLUSAGE_TEXCOORD},
+      {9, 6, D3DDECLUSAGE_TEXCOORD},
+      {10, 7, D3DDECLUSAGE_TEXCOORD},
 
-      {11, D3DDECLUSAGE_FOG},
-      {12, D3DDECLUSAGE_PSIZE},
+      {11, 0, D3DDECLUSAGE_FOG},
+      {12, 0, D3DDECLUSAGE_PSIZE},
     };
 
     uint32_t RegisterMap::getTransientId(DclInfo& info) {
-      uint32_t countOfMyType = 0;
-      static uint32_t lastUnimplementedTransientId = 14;
-
       for (const TransientRegisterMapping& mapping : transientMappings) {
         if (mapping.d3d9Usage == info.usage) {
-          if (countOfMyType == info.usageIndex)
-            return mapping.regNum;
-
-          countOfMyType++;
+          if (mapping.d3d9UsageIndex == info.usageIndex)
+            return mapping.dxbcRegNum;
         }
       }
 
-      log::warn("Unable to find transient register!");
-      return lastUnimplementedTransientId++;
+      log::warn("Unable to find transient register! Creating a new transient mapping.");
+
+      TransientRegisterMapping mapping;
+      mapping.d3d9Usage = info.usage;
+      mapping.d3d9UsageIndex = info.usageIndex;
+      mapping.dxbcRegNum = transientMappings.size();
+
+      transientMappings.push_back(mapping);
+
+      return mapping.dxbcRegNum;
     }
 
     RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput) {
