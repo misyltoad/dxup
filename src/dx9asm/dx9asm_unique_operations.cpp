@@ -41,7 +41,7 @@ namespace dxup {
 
       mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
 
-      if (dst->getRegType() == D3DSPR_INPUT)
+      if (dst->getRegType() == D3DSPR_INPUT || dst->getRegType() == D3DSPR_TEXTURE)
         mapping.dclInfo.type = UsageType::Input;
       else if (dst->getRegType() == D3DSPR_OUTPUT) {
         mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
@@ -66,9 +66,6 @@ namespace dxup {
         m_samplers.push_back(desc);
         return true;
 
-      }
-      else if (dst->getRegType() == D3DSPR_TEXTURE) {
-        // Don't need to do anything. Handled by sampler.
       }
       else {
         log::fail("Unhandled reg type in dcl, %d.", dst->getRegType());
