@@ -51,7 +51,7 @@ namespace dxup {
 
         SamplerDesc desc;
         desc.index = dst->getRegNumber();
-        switch (dst->getTextureType())
+        switch (usageToken->getTextureType())
         {
         default:
         case D3DSTT_UNKNOWN:
