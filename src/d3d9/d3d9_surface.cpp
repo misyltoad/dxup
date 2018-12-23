@@ -46,6 +46,11 @@ namespace dxup {
     if (!ppContainer || m_container == nullptr)
       return D3DERR_INVALIDCALL;
 
+    if (riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IDirect3DDevice9Ex)) {
+      *ppContainer = (void*)ref(m_device);
+      return D3D_OK;
+    }
+
     return FAILED(m_container->QueryInterface(riid, ppContainer)) ? D3DERR_INVALIDCALL : D3D_OK;
   }
 
