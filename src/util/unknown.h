@@ -48,56 +48,56 @@ namespace dxup {
 
   // COM Automatic Reference Counter from DXVK.
   // https://github.com/doitsujin/dxvk/blob/master/src/util/com/com_pointer.h
-  template<typename T>
-  class Com {
+  template<typename T, bool Private>
+  class ComBase {
 
   public:
     
-    Com() { }
-    Com(std::nullptr_t) { }
-    Com(T* object)
+    ComBase() { }
+    ComBase(std::nullptr_t) { }
+    ComBase(T* object)
     : m_ptr(object) {
       this->incRef();
     }
     
-    Com(const Com& other)
+    ComBase(const ComBase& other)
     : m_ptr(other.m_ptr) {
       this->incRef();
     }
     
-    Com(Com&& other)
+    ComBase(ComBase&& other)
     : m_ptr(other.m_ptr) {
       other.m_ptr = nullptr;
     }
     
-    Com& operator = (T* object) {
+    ComBase& operator = (T* object) {
       this->decRef();
       m_ptr = object;
       this->incRef();
       return *this;
     }
     
-    Com& operator = (const Com& other) {
+    ComBase& operator = (const ComBase& other) {
       other.incRef();
       this->decRef();
       m_ptr = other.m_ptr;
       return *this;
     }
     
-    Com& operator = (Com&& other) {
+    ComBase& operator = (ComBase&& other) {
       this->decRef();
       this->m_ptr = other.m_ptr;
       other.m_ptr = nullptr;
       return *this;
     }
     
-    Com& operator = (std::nullptr_t) {
+    ComBase& operator = (std::nullptr_t) {
       this->decRef();
       m_ptr = nullptr;
       return *this;
     }
     
-    ~Com() {
+    ~ComBase() {
       this->decRef();
     }
     
@@ -108,8 +108,8 @@ namespace dxup {
     T**       operator & ()       { return &m_ptr; }
     T* const* operator & () const { return &m_ptr; }
     
-    bool operator == (const Com<T>& other) const { return m_ptr == other.m_ptr; }
-    bool operator != (const Com<T>& other) const { return m_ptr != other.m_ptr; }
+    bool operator == (const ComBase<T, Private>& other) const { return m_ptr == other.m_ptr; }
+    bool operator != (const ComBase<T, Private>& other) const { return m_ptr != other.m_ptr; }
     
     bool operator == (const T* other) const { return m_ptr == other; }
     bool operator != (const T* other) const { return m_ptr != other; }
@@ -131,16 +131,30 @@ namespace dxup {
     T* m_ptr = nullptr;
     
     void incRef() const {
-      if (m_ptr != nullptr)
-        m_ptr->AddRef();
+      if (m_ptr != nullptr) {
+        if constexpr (Private)
+          m_ptr->AddRefPrivate();
+        else
+          m_ptr->AddRef();
+      }
     }
     
     void decRef() const {
-      if (m_ptr != nullptr)
-        m_ptr->Release();
+      if (m_ptr != nullptr) {
+        if constexpr (Private)
+          m_ptr->ReleasePrivate();
+        else
+          m_ptr->Release();
+      }
     }
     
   };
+
+  template <typename T>
+  using Com = ComBase<T, false>;
+
+  template <typename T>
+  using ComPrivate = ComBase<T, true>;
   
   template<typename T>
   T* ref(T* object) {
@@ -156,4 +170,10 @@ namespace dxup {
 	  return object.ptr();
   }
 
+  template<typename T>
+  T* ref(ComPrivate<T> object) {
+    if (object != nullptr)
+      object->AddRef();
+    return object.ptr();
+  }
 }

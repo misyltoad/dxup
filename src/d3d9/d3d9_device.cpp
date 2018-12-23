@@ -22,15 +22,24 @@ namespace dxup {
   }
 
   struct InternalRenderState{
-    std::array<Com<IDirect3DBaseTexture9>, 20> textures;
-    Com<Direct3DVertexShader9> vertexShader;
-    Com<Direct3DPixelShader9> pixelShader;
-    Com<Direct3DVertexDeclaration9> vertexDecl;
-    Com<Direct3DSurface9> depthStencil;
-    std::array<Com<Direct3DSurface9>, 4> renderTargets;
+
+    InternalRenderState() {
+      std::memset(textures.data(), 0, sizeof(IDirect3DBaseTexture9*) * textures.size());
+      std::memset(vertexOffsets.data(), 0, sizeof(UINT) * vertexOffsets.size());
+      std::memset(vertexStrides.data(), 0, sizeof(UINT) * vertexStrides.size());
+    }
+
+    // Manual COM
+    std::array<IDirect3DBaseTexture9*, 20> textures;
+
+    ComPrivate<Direct3DVertexShader9> vertexShader;
+    ComPrivate<Direct3DPixelShader9> pixelShader;
+    ComPrivate<Direct3DVertexDeclaration9> vertexDecl;
+    ComPrivate<Direct3DSurface9> depthStencil;
+    std::array<ComPrivate<Direct3DSurface9>, 4> renderTargets;
     uint32_t dirtyFlags = 0;
 
-    std::array<Com<Direct3DVertexBuffer9>, 16> vertexBuffers;
+    std::array<ComPrivate<Direct3DVertexBuffer9>, 16> vertexBuffers;
     std::array<UINT, 16> vertexOffsets;
     std::array<UINT, 16> vertexStrides;
 
@@ -1025,13 +1034,23 @@ namespace dxup {
     if (m_state->textures[Stage] == pTexture)
       return D3D_OK;
 
-    Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
+    if (m_state->textures[Stage] != nullptr) {
+      Direct3DTexture9* currentTex2D = dynamic_cast<Direct3DTexture9*>(m_state->textures[Stage]);
+      if (currentTex2D)
+        currentTex2D->ReleasePrivate();
+      else
+        log::warn("Unable to find what texture stage really is to release internally.");
+    }
 
     ID3D11ShaderResourceView* srv = nullptr;
-    if (texture2D != nullptr)
+
+    Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
+    if (texture2D != nullptr) {
+      m_state->textures[Stage] = pTexture;
       srv = texture2D->GetSRV();
+    }
     else
-      log::warn("Request to bind a texture that I don't know how!");
+      log::warn("Request to bind texture but I don't know what it is!");
 
     if (srv != nullptr)
       m_context->PSSetShaderResources(Stage, 1, &srv);
