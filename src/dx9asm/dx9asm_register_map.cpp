@@ -148,7 +148,7 @@ namespace dxup {
         if (translator.getShaderType() == ShaderType::Pixel) {
 
           // SM2 or 1.4
-          if (translator.getMajorVersion() >= 2 || (translator.getMajorVersion() == 1 && translator.getMinorVersion() == 4) {
+          if (translator.getMajorVersion() >= 2 || (translator.getMajorVersion() == 1 && translator.getMinorVersion() == 4)) {
             newMapping.dclInfo.type = UsageType::Input;
             newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
             newMapping.dclInfo.usageIndex = newMapping.dx9Id;
