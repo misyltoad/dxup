@@ -32,9 +32,7 @@ namespace dxup {
       D3D11_TEXTURE2D_DESC desc;
       texture->GetDesc(&desc);
       
-      Direct3DSurface9* surface = new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false, convert::format(desc.Format));
-      surface->AddRefPrivate();
-      m_buffers[i] = surface;
+      m_buffers[i] = new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false, convert::format(desc.Format));
     }
 
     Com<IDXGIOutput> output;

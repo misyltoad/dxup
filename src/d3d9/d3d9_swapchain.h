@@ -35,7 +35,7 @@ namespace dxup {
     Com<IDXGISwapChain1> m_swapchain;
     Com<IDXGIOutput1> m_output;
     D3DPRESENT_PARAMETERS m_presentationParameters;
-    std::array<Com<IDirect3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
+    std::array<ComPrivate<IDirect3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
 
   };
 
