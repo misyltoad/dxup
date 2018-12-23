@@ -56,7 +56,7 @@ namespace dxup {
 
       if (m_modifier != UINT32_MAX) {
         if (code != nullptr)
-          code->push_back(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_modifier)));
+          code->push_back(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_modifier));
 
         if (instructionSize != nullptr)
           (*instructionSize)++;
