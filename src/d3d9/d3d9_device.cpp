@@ -1222,7 +1222,7 @@ namespace dxup {
   }
 
   bool Direct3DDevice9Ex::CanDraw() {
-    return !(m_state->dirtyFlags & dirtyFlags::vertexDecl &&
+    return !(m_state->dirtyFlags & dirtyFlags::vertexDecl ||
              m_state->dirtyFlags & dirtyFlags::vertexShader);
   }
 
@@ -1251,6 +1251,9 @@ namespace dxup {
   }
 
   void Direct3DDevice9Ex::UpdateVertexShaderAndInputLayout() {
+    if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
+      return;
+
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
     auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
 
