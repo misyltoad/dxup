@@ -2,6 +2,7 @@
 
 #include "d3d9_device.h"
 #include "d3d9_device_unknown.h"
+#include "d3d9_surface.h"
 
 namespace dxup {
 
@@ -35,7 +36,7 @@ namespace dxup {
     Com<IDXGISwapChain1> m_swapchain;
     Com<IDXGIOutput1> m_output;
     D3DPRESENT_PARAMETERS m_presentationParameters;
-    std::array<ComPrivate<IDirect3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
+    std::array<ComPrivate<Direct3DSurface9>, D3DPRESENT_BACK_BUFFERS_MAX_EX> m_buffers;
 
   };
 
