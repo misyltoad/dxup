@@ -1413,7 +1413,7 @@ namespace dxup {
       return D3DERR_INVALIDCALL;
     }
 
-    *ppShader = ref(new D3D9(wrapDevice, pFunction, shader.ptr(), bytecode));
+    *ppShader = ref(new D3D9(shaderNums[Vertex ? 0 : 1], wrapDevice, pFunction, shader.ptr(), bytecode));
 
     return D3D_OK;
   }

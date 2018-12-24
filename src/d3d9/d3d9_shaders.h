@@ -17,8 +17,9 @@ namespace dxup {
 
   public:
 
-    Direct3DShader9(Direct3DDevice9Ex* device, const DWORD* code, D3D11Shader* shader, dx9asm::ShaderBytecode* translation)
+    Direct3DShader9(uint32_t shaderNum, Direct3DDevice9Ex* device, const DWORD* code, D3D11Shader* shader, dx9asm::ShaderBytecode* translation)
       : m_shader { shader }
+      , m_shaderNum{ shaderNum }
       , m_translation{ translation }
       , D3D9DeviceUnknown<Base>(device) {
 
@@ -86,6 +87,7 @@ namespace dxup {
 
   private:
 
+    const uint32_t m_shaderNum;
     std::vector<InputLink> m_inputLinks;
     std::vector<uint32_t> m_dx9asm;
     Com<D3D11Shader> m_shader;
