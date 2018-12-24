@@ -10,6 +10,7 @@ namespace dxup {
       {Src0, 1},
       {Src1, 1},
       {Src2, 1},
+      {Src3, 1},
       {Vec4, 4},
       {Label, 1},
       {Bool, 1},
