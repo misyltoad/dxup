@@ -444,7 +444,7 @@ namespace dxup {
       struct IOSGNElement {
         uint32_t nameOffset;
         uint32_t semanticIndex;
-        uint32_t systemValueType = 0;
+        uint32_t systemValueType = D3D_NAME_UNDEFINED;
         uint32_t componentType = D3D_SVT_FLOAT;
         uint32_t registerIndex;
         uint32_t mask = 0;
@@ -462,37 +462,75 @@ namespace dxup {
 
         IOSGNElement* elementStart = (IOSGNElement*)nextPtr(obj);
 
-        forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          IOSGNElement element; 
+        if (shdrCode.isTransient(isInput(ChunkType))) {
+          for (auto& transMapping : RegisterMap::getTransientMappings()) {
+            IOSGNElement element;
 
-          element.nameOffset = 0; // <-- Must be set later!
-          element.registerIndex = mapping.dxbcOperand.getRegNumber();
-          element.semanticIndex = mapping.dclInfo.usageIndex;
+            element.nameOffset = 0; // <-- Must be set later!
+            element.registerIndex = transMapping.dxbcRegNum;
+            element.semanticIndex = transMapping.dxbcSemanticIndex;
 
-          uint32_t baseMask = isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
-          baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
-          element.mask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
-          uint32_t rwMask = element.mask;
+            uint32_t baseMask = 0;
+            forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+              if (mapping.dclInfo.usage == transMapping.d3d9Usage && mapping.dclInfo.usageIndex == transMapping.d3d9UsageIndex)
+                baseMask |= isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+            });
+            
+            baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
+            element.mask = 0xFFu;
+            uint32_t rwMask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
 
-          if (!isInput(ChunkType))
-            rwMask = rwMask ^ 0xFFu;
+            if (!isInput(ChunkType))
+              rwMask = rwMask ^ 0xFFu;
 
-          rwMask = rwMask << 8;
-          element.mask |= rwMask;
+            rwMask = rwMask << 8;
+            element.mask |= rwMask;
 
-          element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage);
-          pushObject(obj, element);
-        });
+            pushObject(obj, element);
+          }
 
-        uint32_t count = 0;
-        forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          elementStart[i].nameOffset = getChunkSize(bytecode);
-          pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
+          uint32_t count = 0;
+          for (auto& transMapping : RegisterMap::getTransientMappings()) {
+            elementStart[count].nameOffset = getChunkSize(bytecode);
+            pushAlignedString(obj, transMapping.dxbcSemanticName);
+            count++;
+          }
 
-          count++;
-        });
+          elementCount = count;
+        }
+        else {
+          forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+            IOSGNElement element;
 
-        elementCount = count;
+            element.nameOffset = 0; // <-- Must be set later!
+            element.registerIndex = mapping.dxbcOperand.getRegNumber();
+            element.semanticIndex = mapping.dclInfo.usageIndex;
+
+            uint32_t baseMask = isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+            baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
+            element.mask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
+            uint32_t rwMask = element.mask;
+
+            if (!isInput(ChunkType))
+              rwMask = rwMask ^ 0xFFu;
+
+            rwMask = rwMask << 8;
+            element.mask |= rwMask;
+
+            element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage);
+            pushObject(obj, element);
+          });
+
+          uint32_t count = 0;
+          forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+            elementStart[i].nameOffset = getChunkSize(bytecode);
+            pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
+
+            count++;
+          });
+
+          elementCount = count;
+        }
 
         headerChunkSize = getChunkSize(bytecode);
       }

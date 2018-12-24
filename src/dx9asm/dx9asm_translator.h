@@ -55,6 +55,15 @@ namespace dxup {
         return (getHeaderToken() & 0xFFFF0000) == 0xFFFF0000 ? ShaderType::Pixel : ShaderType::Vertex;
       }
 
+      inline bool isTransient(bool input) const {
+        return (getShaderType() == ShaderType::Pixel && input) ||
+               (getShaderType() == ShaderType::Vertex && !input);
+      }
+
+      inline bool shouldGenerateId(bool transient) const {
+        return true;//!transient || (transient && getMajorVersion() != 3);
+      }
+
       bool handleOperation(uint32_t token);
 
       inline bool isSamplerUsed(uint32_t i) {

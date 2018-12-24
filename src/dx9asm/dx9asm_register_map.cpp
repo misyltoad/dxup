@@ -21,31 +21,29 @@ namespace dxup {
       return lookupOrCreateRegisterMapping(translator, operand.getRegType(), operand.getRegNumber() + regOffset, readMask, writeMask);
     }
 
-    struct TransientRegisterMapping {
-      uint32_t dxbcRegNum;
-
-      uint32_t d3d9UsageIndex;
-      uint32_t d3d9Usage;
-    };
     std::vector<TransientRegisterMapping> transientMappings = {
-      {0, 0, D3DDECLUSAGE_POSITION},
-
-      {1, 0, D3DDECLUSAGE_COLOR},
-      {2, 1, D3DDECLUSAGE_COLOR},
+      {0, 0, D3DDECLUSAGE_POSITION, "SV_Position", 0},
 
       // SM1 Up me later!
-      {3, 0, D3DDECLUSAGE_TEXCOORD},
-      {4, 1, D3DDECLUSAGE_TEXCOORD},
-      {5, 2, D3DDECLUSAGE_TEXCOORD},
-      {6, 3, D3DDECLUSAGE_TEXCOORD},
-      {7, 4, D3DDECLUSAGE_TEXCOORD},
-      {8, 5, D3DDECLUSAGE_TEXCOORD},
-      {9, 6, D3DDECLUSAGE_TEXCOORD},
-      {10, 7, D3DDECLUSAGE_TEXCOORD},
+      {3, 0, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 0},
+      {4, 1, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 1},
+      {5, 2, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 2},
+      {6, 3, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 3},
+      {7, 4, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 4},
+      {8, 5, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 5},
+      {9, 6, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 6},
+      {10, 7, D3DDECLUSAGE_TEXCOORD, "TEXCOORD", 7},
 
-      {11, 0, D3DDECLUSAGE_FOG},
-      {12, 0, D3DDECLUSAGE_PSIZE},
+      {11, 0, D3DDECLUSAGE_COLOR, "TEXCOORD", 8},
+      {12, 1, D3DDECLUSAGE_COLOR, "TEXCOORD", 9},
+
+      {13, 0, D3DDECLUSAGE_FOG, "TEXCOORD", 10},
+      {14, 0, D3DDECLUSAGE_PSIZE, "TEXCOORD", 11},
     };
+
+    std::vector<TransientRegisterMapping>& RegisterMap::getTransientMappings() {
+      return transientMappings;
+    }
 
     uint32_t RegisterMap::getTransientId(DclInfo& info) {
       for (const TransientRegisterMapping& mapping : transientMappings) {
@@ -192,10 +190,9 @@ namespace dxup {
 
       newMapping.dxbcOperand.setRegisterType(dxbcType);
 
-      bool transient = (translator.getShaderType() == ShaderType::Pixel && newMapping.dclInfo.type == UsageType::Input) ||
-                       (translator.getShaderType() == ShaderType::Vertex && newMapping.dclInfo.type == UsageType::Output);
-
-      bool generateId = !transient || (transient && translator.getMajorVersion() != 3);
+      bool io = newMapping.dclInfo.type != UsageType::None;
+      bool transient = io && translator.isTransient(newMapping.dclInfo.type == UsageType::Input);
+      bool generateId = translator.shouldGenerateId(transient);
 
       if (dxbcType == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
         generateId = false;

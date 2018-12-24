@@ -93,10 +93,9 @@ namespace dxup {
       // This may get changed later...
       mapping.dxbcOperand.setData(&mapping.dx9Id, 1);
 
-      bool transient = (getShaderType() == ShaderType::Pixel && mapping.dclInfo.type == UsageType::Input) ||
-                       (getShaderType() == ShaderType::Vertex && mapping.dclInfo.type == UsageType::Output);
-
-      bool generateId = !transient || (transient && getMajorVersion() != 3);
+      bool io = mapping.dclInfo.type != UsageType::None;
+      bool transient = io && isTransient(mapping.dclInfo.type == UsageType::Input);
+      bool generateId = shouldGenerateId(transient);
 
       getRegisterMap().addRegisterMapping(transient, generateId, mapping);
       

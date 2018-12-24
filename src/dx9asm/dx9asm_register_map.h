@@ -8,6 +8,16 @@ namespace dxup {
 
     class ShaderCodeTranslator;
 
+    struct TransientRegisterMapping {
+      uint32_t dxbcRegNum;
+
+      uint32_t d3d9UsageIndex;
+      uint32_t d3d9Usage;
+
+      const char* dxbcSemanticName;
+      uint32_t dxbcSemanticIndex;
+    };
+
     class RegisterMap {
     public:
       inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
@@ -48,6 +58,8 @@ namespace dxup {
 
         return highestIdForType;
       }
+
+      static std::vector<TransientRegisterMapping>& getTransientMappings();
 
       inline uint32_t getDXBCTypeCount(uint32_t type) const {
         return getHighestIdForDXBCType(type) + 1;
