@@ -1395,16 +1395,18 @@ namespace dxup {
     dx9asm::ShaderBytecode* bytecode = nullptr;
     dx9asm::toDXBC(bytecodePtr, &bytecode);
 
-    if (config::getBool(config::ShaderDump) && bytecode)
+    if (config::getBool(config::ShaderDump) && bytecode != nullptr)
       DoShaderDump<Vertex, false>((const uint32_t*)bytecode->getBytecode(), bytecode->getByteSize(), "dxbc");
 
     Com<D3D11> shader;
     HRESULT result = D3DERR_INVALIDCALL;
 
-    if (Vertex)
-      result = device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11VertexShader**) &shader);
-    else
-      result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**) &shader);
+    if (bytecode != nullptr) {
+      if (Vertex)
+        result = device->CreateVertexShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11VertexShader**)&shader);
+      else
+        result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**)&shader);
+    }
 
     if (FAILED(result)) {
       log::fail("Shader translation failed!");
