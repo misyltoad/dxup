@@ -27,6 +27,10 @@ namespace dxup {
       std::memcpy(&m_dx9asm[0], code, m_dx9asm.size());
     }
 
+    ~Direct3DShader9() {
+      delete m_translation;
+    }
+
     HRESULT STDMETHODCALLTYPE GetFunction(void* pShader, UINT* pSizeOfData) override {
       if (pSizeOfData == nullptr)
         return D3DERR_INVALIDCALL;
