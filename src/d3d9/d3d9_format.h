@@ -4,9 +4,6 @@
 
 namespace dxup {
 
-  UINT alignPitch(UINT pitch);
-
-
   struct DXGIFormatSize {
     UINT pixelBytes;
     UINT blockWidth;
@@ -14,6 +11,8 @@ namespace dxup {
   };
 
   const DXGIFormatSize &getDXGIFormatSizeInfo(DXGI_FORMAT format);
-  UINT calculatePitch(DXGI_FORMAT format, UINT width);
+
+  uint32_t alignWidthForFormat(bool down, DXGI_FORMAT format, uint32_t width);
+  uint32_t alignHeightForFormat(bool down, DXGI_FORMAT format, uint32_t height);
 
 }

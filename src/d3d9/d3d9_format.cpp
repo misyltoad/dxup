@@ -1,4 +1,5 @@
 #include "d3d9_format.h"
+#include "../util/misc_helpers.h"
 
 namespace dxup {
 
@@ -162,17 +163,23 @@ namespace dxup {
       return sizeUnknown;
     }
   }
-  
-  UINT alignPitch(UINT pitch) {
-    // Be generous, 256 aligned pitch.
-    return ((pitch - 1) / 256 + 1) * 256;
+
+  uint32_t alignWidthForFormat(bool down, DXGI_FORMAT format, uint32_t width) {
+    uint32_t widthBlockSize = getDXGIFormatSizeInfo(format).blockWidth;
+
+    if (down)
+      return alignDown(width, widthBlockSize);
+    else
+      return alignTo(width, widthBlockSize);
   }
 
-  UINT calculatePitch(DXGI_FORMAT format, UINT width) {
-    auto& formatInfo = getDXGIFormatSizeInfo(format);
-    UINT pitch = width * formatInfo.pixelBytes;
+  uint32_t alignHeightForFormat(bool down, DXGI_FORMAT format, uint32_t height) {
+    uint32_t heightBlockSize = getDXGIFormatSizeInfo(format).blockHeight;
 
-    return alignPitch(pitch);
+    if (down)
+      return alignDown(height, heightBlockSize);
+    else
+      return alignTo(height, heightBlockSize);
   }
 
 }

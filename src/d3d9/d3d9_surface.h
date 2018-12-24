@@ -55,6 +55,7 @@ namespace dxup {
     UINT m_subresource;
     BOOL m_discard;
     D3DFORMAT m_format;
+    DXGI_FORMAT m_dxgiFormat;
   };
 
 }

@@ -30,9 +30,19 @@ namespace dxup {
   }
 
   template <typename T>
+  T alignTo(T num, T align) {
+    return ((num + align - 1) / align) * align;
+  }
+
+  template <typename T>
+  T alignDown(T num, T align) {
+    return (num / align) * align;
+  }
+
+  template <typename T>
   void pushAlignedString(std::vector<T>& vec, const char* str, size_t len) {
     len++; // for NULL terminator
-    size_t paddedLen = len + (sizeof(T) - (len % sizeof(T)));
+    size_t paddedLen = alignTo(len, sizeof(T));
 
     uint32_t* end = nextPtr(vec);
     vec.resize(vec.size() + (paddedLen / sizeof(T)));

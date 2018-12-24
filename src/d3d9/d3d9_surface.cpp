@@ -42,7 +42,18 @@ namespace dxup {
     if (texture != nullptr)
       texture->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
 
-
+    if (GetD3D11Texture2D()) {
+      D3D11_TEXTURE2D_DESC desc;
+      GetD3D11Texture2D()->GetDesc(&desc);
+      m_dxgiFormat = desc.Format;
+    }
+    else if (m_surface != nullptr) {
+      DXGI_SURFACE_DESC desc;
+      m_surface->GetDesc(&desc);
+      m_dxgiFormat = desc.Format;
+    }
+    else
+      log::warn("Unknown surface type and therefore format.");
   }
 
   HRESULT Direct3DSurface9::GetContainer(REFIID riid, void** ppContainer) {
@@ -175,10 +186,12 @@ namespace dxup {
       D3D11_BOX box = { 0 };
 
       if (m_useRect) {
-        box.left = m_stagingRect.left;
-        box.top = m_stagingRect.top;
-        box.right = m_stagingRect.right;
-        box.bottom = m_stagingRect.bottom;
+        
+
+        box.left = alignWidthForFormat(true, m_dxgiFormat, m_stagingRect.left);
+        box.top = alignHeightForFormat(true, m_dxgiFormat, m_stagingRect.top);
+        box.right = alignWidthForFormat(false, m_dxgiFormat, m_stagingRect.right);
+        box.bottom = alignHeightForFormat(false, m_dxgiFormat, m_stagingRect.bottom);
         
         box.front = 0;
         box.back = 1;
