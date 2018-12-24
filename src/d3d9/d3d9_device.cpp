@@ -1395,7 +1395,7 @@ namespace dxup {
     dx9asm::ShaderBytecode* bytecode = nullptr;
     dx9asm::toDXBC(bytecodePtr, &bytecode);
 
-    if (config::getBool(config::ShaderDump))
+    if (config::getBool(config::ShaderDump) && bytecode)
       DoShaderDump<Vertex, false>((const uint32_t*)bytecode->getBytecode(), bytecode->getByteSize(), "dxbc");
 
     Com<D3D11> shader;
