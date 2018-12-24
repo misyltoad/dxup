@@ -1225,7 +1225,7 @@ namespace dxup {
       D3D11_INPUT_ELEMENT_DESC desc;
       
       desc.SemanticName = convert::declUsage(true, false, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
-      desc.SemanticIndex = 0;
+      desc.SemanticIndex = pVertexElements[i].UsageIndex;
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
       desc.InputSlot = pVertexElements[i].UsageIndex;
       desc.AlignedByteOffset = pVertexElements[i].Offset;
