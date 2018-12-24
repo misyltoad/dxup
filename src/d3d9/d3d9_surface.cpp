@@ -14,6 +14,9 @@ namespace dxup {
     , m_discard(discard)
     , m_format(format)
   {
+    if (m_container != nullptr)
+      m_container->AddRef();
+
     if (m_subresource == 0 && usage & D3DUSAGE_DEPTHSTENCIL) {
       if (texture != nullptr) {
         HRESULT result = GetD3D11Device()->CreateDepthStencilView(texture, nullptr, &m_dsView);
