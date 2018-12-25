@@ -164,7 +164,14 @@ namespace dxup {
                   binding.bindingType = 2; // tex
                   binding.bindPoint = i;
                   binding.returnType = 5; // float
-                  binding.rvd = (uint32_t)sampler->dimension - 1;
+
+                  if (sampler->dimension == D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D)
+                    binding.rvd = 4;
+                  else if (sampler->dimension == D3D10_SB_RESOURCE_DIMENSION_TEXTURE3D)
+                    binding.rvd = 8;
+                  else if (sampler->dimension == D3D10_SB_RESOURCE_DIMENSION_TEXTURECUBE)
+                    binding.rvd = 9;
+
                   binding.flags |= 0xc;
                   pushObject(obj, binding);
                   bindingCount++;
