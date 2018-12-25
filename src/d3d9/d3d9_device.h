@@ -175,6 +175,7 @@ namespace dxup {
     ID3D11Device* GetD3D11Device();
 
     void UpdateVertexShaderAndInputLayout();
+    void UpdateRasterizer();
     void UpdateRenderTargets();
     void UpdatePixelShader();
 

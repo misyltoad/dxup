@@ -10,6 +10,7 @@
 #include "../util/config.h"
 #include "../util/d3dcompiler_helpers.h"
 #include "d3d9_vertexdeclaration.h"
+#include "d3d9_state_cache.h"
 
 namespace dxup {
 
@@ -19,6 +20,7 @@ namespace dxup {
     const uint32_t pixelShader = 1 << 2;
     const uint32_t renderTargets = 1 << 3;
     const uint32_t depthStencil = 1 << 4;
+    const uint32_t rasterizer = 1 << 5;
   }
 
   struct InternalRenderState{
@@ -45,6 +47,10 @@ namespace dxup {
     std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
 
     Com<Direct3DIndexBuffer9> indexBuffer;
+
+    struct {
+      StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
+    } caches;
   };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
@@ -359,7 +365,7 @@ namespace dxup {
     SetRenderState(D3DRS_COLORWRITEENABLE3, 0x0000000F);
     SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
     SetRenderState(D3DRS_SRGBWRITEENABLE, 0);
-    SetRenderState(D3DRS_DEPTHBIAS, FtoDW(0.0f));
+    SetRenderState(D3DRS_DEPTHBIAS, floatToDword(0.0f));
     SetRenderState(D3DRS_WRAP8, 0);
     SetRenderState(D3DRS_WRAP9, 0);
     SetRenderState(D3DRS_WRAP10, 0);
@@ -933,8 +939,62 @@ namespace dxup {
     log::stub("Direct3DDevice9Ex::CreateOffscreenPlainSurface");
     return D3D_OK;
   }
-  void Direct3DDevice9Ex::UpdateRenderTargets() {
 
+  namespace convert {
+    D3D11_CULL_MODE cullMode(DWORD mode) {
+      switch (mode) {
+      case D3DCULL_NONE: return D3D11_CULL_NONE;
+      case D3DCULL_CW: return D3D11_CULL_FRONT;
+      default:
+      case D3DCULL_CCW: return D3D11_CULL_BACK;
+      }
+    }
+
+    D3D11_FILL_MODE fillMode(DWORD mode) {
+      switch (mode) {
+      case D3DFILL_POINT: return D3D11_FILL_WIREFRAME;
+      case D3DFILL_WIREFRAME: return D3D11_FILL_WIREFRAME;
+      default:
+      case D3DFILL_SOLID: return D3D11_FILL_SOLID;
+      }
+    }
+  }
+
+  void Direct3DDevice9Ex::UpdateRasterizer() {
+    D3D11_RASTERIZER_DESC1 desc;
+    desc.AntialiasedLineEnable = false;
+    desc.CullMode = convert::cullMode(m_state->renderState[D3DRS_CULLMODE]);
+    desc.DepthBias = 0;
+    desc.DepthBiasClamp = 0.0f;
+    desc.DepthClipEnable = true;
+    desc.FillMode = convert::fillMode(m_state->renderState[D3DRS_FILLMODE]);
+    desc.ForcedSampleCount = 0;
+    desc.FrontCounterClockwise = false;
+    desc.MultisampleEnable = false;
+    desc.ScissorEnable = false;
+    desc.SlopeScaledDepthBias = 0;
+
+    ID3D11RasterizerState1* state = m_state->caches.rasterizer.lookupObject(desc);
+
+    if (state == nullptr) {
+      Com<ID3D11RasterizerState1> comState;
+
+      HRESULT result = m_device->CreateRasterizerState1(&desc, &comState);
+      if (FAILED(result)) {
+        log::fail("Failed to create rasterizer state.");
+        return;
+      }
+
+      m_state->caches.rasterizer.pushState(desc, comState.ptr());
+      state = comState.ptr();
+    }
+
+    m_context->RSSetState(state);
+
+    m_state->dirtyFlags &= ~dirtyFlags::rasterizer;
+  }
+
+  void Direct3DDevice9Ex::UpdateRenderTargets() {
     std::array<ID3D11RenderTargetView*, 4> rtvs = { nullptr, nullptr, nullptr, nullptr };
     for (uint32_t i = 0; i < 4; i++)
     {
@@ -1127,6 +1187,11 @@ namespace dxup {
 
     if (m_state->renderState[State] == Value)
       return D3D_OK;
+
+    m_state->renderState[State] = Value;
+
+    if (State == D3DRS_CULLMODE || State == D3DRS_FILLMODE)
+      m_state->dirtyFlags |= dirtyFlags::rasterizer;
 
     return D3D_OK;
   }
@@ -1430,6 +1495,9 @@ namespace dxup {
 
     if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencil)
       UpdateRenderTargets();
+
+    if (m_state->dirtyFlags & dirtyFlags::rasterizer)
+      UpdateRasterizer();
 
     if (m_state->dirtyFlags & dirtyFlags::pixelShader)
       UpdatePixelShader();
