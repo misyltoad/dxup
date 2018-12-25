@@ -1193,7 +1193,7 @@ namespace dxup {
     if (State == D3DRS_CULLMODE || State == D3DRS_FILLMODE)
       m_state->dirtyFlags |= dirtyFlags::rasterizer;
     else
-      log::warn("Unhandled render state: %lu", Value);
+      log::warn("Unhandled render state: %lu", State);
 
     return D3D_OK;
   }
