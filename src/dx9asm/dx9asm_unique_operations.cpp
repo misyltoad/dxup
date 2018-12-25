@@ -129,6 +129,37 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleSlt(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+      DXBCOperand src1Op = { *this, operation, *src1, 0 };
+
+      DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpDst = tempOpSrc;
+      tempOpSrc.setSwizzleOrWritemask(noSwizzle);
+      tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
+
+      DXBCOperation{ D3D10_SB_OPCODE_LT, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(src0Op)
+        .appendOperand(src1Op)
+        .push(*this);
+
+      // Bithacking for uint32_t 0xFFFFFFFF -> float 1.0f. uint32_t 0x00000000 -> float 0.0f.
+      const uint32_t andFixup = 0x3f800000;
+      DXBCOperation{ D3D10_SB_OPCODE_AND, false }
+        .appendOperand(dstOp)
+        .appendOperand(tempOpSrc)
+        .appendOperand(DXBCOperand{ andFixup, andFixup, andFixup, andFixup })
+        .push(*this);
+
+      return true;
+    }
+
     bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
@@ -254,9 +285,6 @@ namespace dxup {
       RegisterMapping mapping;
       mapping.dx9Id = dst->getRegNumber();
       mapping.dx9Type = dst->getRegType();
-      mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_IMMEDIATE32);
-      mapping.dxbcOperand.stripModifier();
-      mapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_0D);
       uint32_t data[4];
       vec4->getValues(data);
       mapping.dxbcOperand.setData(data, 4);

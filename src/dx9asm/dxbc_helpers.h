@@ -23,6 +23,12 @@ namespace dxup {
         m_dimension = dimension;
       }
 
+      DXBCOperand(uint32_t literal0, uint32_t literal1, uint32_t literal2, uint32_t literal3) {
+        uint32_t data[4] = { literal0, literal1, literal2, literal3 };
+        setupLiteral(4);
+        setData(data, 4);
+      }
+
       inline uint32_t getRegisterType() const {
         return m_registerType;
       }
@@ -34,6 +40,9 @@ namespace dxup {
 
       inline DXBCOperand& setupLiteral(uint32_t components) {
         m_components = components;
+        stripModifier();
+        setRegisterType(D3D10_SB_OPERAND_TYPE_IMMEDIATE32);
+        setDimension(D3D10_SB_OPERAND_INDEX_0D);
         for (uint32_t i = 0; i < 4; i++)
           setRepresentation(i, 0);
         return *this;
@@ -55,6 +64,9 @@ namespace dxup {
       inline DXBCOperand& setSwizzleOrWritemask(uint32_t swizzlewrite) {
         m_swizzleOrWritemask = swizzlewrite;
         return *this;
+      }
+      inline uint32_t getSwizzleOrWritemask() const {
+        return m_swizzleOrWritemask;
       }
       inline DXBCOperand& setModifier(uint32_t modifier) {
         m_modifier = modifier;
