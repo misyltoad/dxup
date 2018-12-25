@@ -159,8 +159,12 @@ namespace dxup {
           }
           else
             dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
-          break;
         }
+        else {
+          dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
+        }
+
+        break;
       }
 
       case D3DSPR_COLOROUT: {
