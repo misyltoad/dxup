@@ -110,7 +110,7 @@ namespace dxup {
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
 
       // dst = round(src)
-      // Human rounding, dst is an addr.
+      // Human rounding, dst is an addr register which is mapped to a temp for us.
       DXBCOperation{ D3D10_SB_OPCODE_ROUND_NI, false }
         .appendOperand(dstOp)
         .appendOperand(srcOp)
