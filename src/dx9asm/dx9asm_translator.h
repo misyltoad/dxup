@@ -79,6 +79,14 @@ namespace dxup {
         return !m_samplers.empty();
       }
 
+      inline void markIndirect() {
+        m_indirectConstantUsed = true;
+      }
+
+      inline bool isIndirectMarked() {
+        return m_indirectConstantUsed;
+      }
+
       inline SamplerDesc* getSampler(uint32_t i) {
         for (auto& desc : m_samplers) {
           if (desc.index == i)
@@ -114,6 +122,7 @@ namespace dxup {
       const uint32_t* m_base = nullptr;
       const uint32_t* m_head = nullptr;
       const CTHeader* m_ctab = nullptr;
+      bool m_indirectConstantUsed = false;
 
       RegisterMap m_map;
 

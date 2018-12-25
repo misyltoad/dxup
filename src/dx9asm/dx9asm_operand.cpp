@@ -14,8 +14,10 @@ namespace dxup {
       : m_info{ info } {
       std::memcpy(m_dx9tokens, tokens, sizeof(uint32_t) * info->sizeInTokens);
 
-      if (isIndirect())
+      if (isIndirect()) {
         m_dx9tokens[info->sizeInTokens] = translator.nextToken();
+        translator.markIndirect();
+      }
     }
 
     using namespace optype;

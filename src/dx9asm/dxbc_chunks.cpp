@@ -397,6 +397,7 @@ namespace dxup {
             uint32_t data[2] = { constantBuffer , cbufferCount };
             DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
               .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setData(data, 2))
+              .setExtra(ENCODE_D3D10_SB_D3D10_SB_CONSTANT_BUFFER_ACCESS_PATTERN(shdrCode.isIndirectMarked() ? D3D10_SB_CONSTANT_BUFFER_DYNAMIC_INDEXED : D3D10_SB_CONSTANT_BUFFER_IMMEDIATE_INDEXED))
               .push(obj);
           }
         }
