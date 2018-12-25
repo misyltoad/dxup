@@ -19,7 +19,7 @@ namespace dxup {
     const uint32_t vertexDecl = 1 << 1;
     const uint32_t pixelShader = 1 << 2;
     const uint32_t renderTargets = 1 << 3;
-    const uint32_t depthStencil = 1 << 4;
+    const uint32_t depthStencilView = 1 << 4;
     const uint32_t rasterizer = 1 << 5;
   }
 
@@ -1015,7 +1015,7 @@ namespace dxup {
     m_context->OMSetRenderTargets(4, &rtvs[0], dsv);
 
     m_state->dirtyFlags &= ~dirtyFlags::renderTargets;
-    m_state->dirtyFlags &= ~dirtyFlags::depthStencil;
+    m_state->dirtyFlags &= ~dirtyFlags::depthStencilView;
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
@@ -1047,7 +1047,7 @@ namespace dxup {
     DoDepthDiscardCheck();
 
     m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
-    m_state->dirtyFlags |= dirtyFlags::depthStencil;
+    m_state->dirtyFlags |= dirtyFlags::depthStencilView;
 
     return D3D_OK;
   }
@@ -1495,7 +1495,7 @@ namespace dxup {
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
 
-    if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencil)
+    if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencilView)
       UpdateRenderTargets();
 
     if (m_state->dirtyFlags & dirtyFlags::rasterizer)
