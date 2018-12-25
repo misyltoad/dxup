@@ -159,6 +159,7 @@ namespace dxup {
       else {
         // SM1.4+
         DX9Operand texCoord{ lookupOperandInfo(optype::Src0), nextToken() };
+        texCoord.setUsedComponents(2);
 
         texCoordOp = DXBCOperand{ *this, operation, texCoord, 0 };
       }

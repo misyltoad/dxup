@@ -13,7 +13,16 @@ namespace dxup {
         DXBCOperation dxbcOperation{ operation };
 
         for (uint32_t i = 0; i < operation.operandCount(); i++) {
-          const DX9Operand* operand = operation.getOperandByIndex(i);
+          DX9Operand* operand = operation.getOperandByIndex(i);
+
+          if (operand->getType() == optype::Src0)
+            operand->setUsedComponents(operation.getImplicitInfo().componentCounts[0]);
+          else if (operand->getType() == optype::Src1)
+            operand->setUsedComponents(operation.getImplicitInfo().componentCounts[1]);
+          else if (operand->getType() == optype::Src2)
+            operand->setUsedComponents(operation.getImplicitInfo().componentCounts[2]);
+          else if (operand->getType() == optype::Src3)
+            operand->setUsedComponents(operation.getImplicitInfo().componentCounts[3]);
 
           uint32_t regOffset = operand->getType() == optype::Src1 ? col : 0;
           DXBCOperand dbxcOperand{ *this, operation, *operand, regOffset };

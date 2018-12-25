@@ -165,12 +165,22 @@ namespace dxup {
       inline void getValues(uint32_t* asTokens) const {
         std::memcpy(asTokens, m_dx9tokens, 4 * sizeof(uint32_t));
       }
+
+      inline void setUsedComponents(uint32_t componentCount) {
+        m_usedComponents = componentCount;
+      }
+
+      inline uint32_t getUsedComponents() const {
+        return m_usedComponents;
+      }
+
     private:
 
       inline uint32_t getToken(uint32_t index = 0) const {
         return m_dx9tokens[index];
       }
 
+      uint32_t m_usedComponents = 4;
       uint32_t m_dx9tokens[4];
       const OperandInfo* m_info;
     };

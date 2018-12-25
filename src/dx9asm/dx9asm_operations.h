@@ -20,11 +20,22 @@ namespace dxup {
     class DX9ToDXBCImplicitConversionInfo {
     public:
       DX9ToDXBCImplicitConversionInfo() : valid{ false }, dxbcOpcode{ 0 }, implicitFlags{ 0 } {}
-      DX9ToDXBCImplicitConversionInfo(uint32_t opcode, uint32_t flags) : valid{ true }, dxbcOpcode{ opcode }, implicitFlags{ flags } {}
+      DX9ToDXBCImplicitConversionInfo(uint32_t opcode,
+                                      uint32_t flags,
+                                      uint32_t src0Comp = 4,
+                                      uint32_t src1Comp = 4,
+                                      uint32_t src2Comp = 4,
+                                      uint32_t src3Comp = 4)
+        : valid{ true }
+        , dxbcOpcode{ opcode }
+        , implicitFlags{ flags }
+        , componentCounts{ src0Comp, src1Comp, src2Comp, src3Comp } {}
 
       uint32_t dxbcOpcode;
       uint32_t implicitFlags;
       bool valid;
+
+      uint32_t componentCounts[4];
     };
 
     typedef bool(ShaderCodeTranslator::*UniqueFunction)(DX9Operation&);
@@ -92,6 +103,10 @@ namespace dxup {
 
       inline size_t operandCount() const {
         return m_operands.size();
+      }
+
+      inline DX9Operand* getOperandByIndex(size_t i) {
+        return &m_operands[i];
       }
 
       inline const DX9Operand* getOperandByIndex(size_t i) const {

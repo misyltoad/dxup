@@ -118,11 +118,32 @@ namespace dxup {
       }
     }
 
+    uint32_t fixSwizzle(uint32_t numUsed, uint32_t dx9swizzle) {
+      uint32_t outSwizzle = 0;
+
+      for (uint32_t i = 0; i < 4; i++) {
+        // Move them all into X_* swizzled space.
+        uint32_t shift = i * 2;
+        bool used = i <= numUsed - 1;
+
+        uint32_t firstSwizzleInMyShift = ((dx9swizzle & 0x00030000) >> shift);
+        uint32_t thisSwizzle = (dx9swizzle & (0x00030000 << shift));
+        if (used)
+          outSwizzle |= thisSwizzle;
+        else
+          outSwizzle |= firstSwizzleInMyShift;
+      }
+
+      return outSwizzle;
+    }
+
     uint32_t calcSwizzle(const DX9Operand& operand) {
       uint32_t dx9swizzle = operand.getSwizzleData();
 
       if (!operand.isSrc() || !operand.isRegister())
         return 0;
+
+      dx9swizzle = fixSwizzle(operand.getUsedComponents(), dx9swizzle);
 
       if (dx9swizzle == D3DVS_NOSWIZZLE)
         return noSwizzle;
@@ -139,6 +160,8 @@ namespace dxup {
 
       if (!operand.isSrc() || !operand.isRegister())
         return 0;
+
+      dx9swizzle = fixSwizzle(operand.getUsedComponents(), dx9swizzle);
 
       uint32_t readMask = 0;
 
