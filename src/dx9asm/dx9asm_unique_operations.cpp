@@ -146,6 +146,7 @@ namespace dxup {
       DXBCOperation{ D3D10_SB_OPCODE_DP4, false }
         .appendOperand(tempOpDst)
         .appendOperand(srcOp)
+        .appendOperand(srcOp)
         .push(*this);
 
       DXBCOperation{ D3D10_SB_OPCODE_RSQ, false }
