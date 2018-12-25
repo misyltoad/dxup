@@ -1044,13 +1044,19 @@ namespace dxup {
 
     ID3D11ShaderResourceView* srv = nullptr;
 
-    Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
-    if (texture2D != nullptr) {
-      m_state->textures[Stage] = pTexture;
-      srv = texture2D->GetSRV();
+    m_state->textures[Stage] = pTexture;
+
+    if (pTexture) {
+      Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
+      if (texture2D != nullptr) {
+        texture2D->AddRefPrivate();
+        srv = texture2D->GetSRV();
+      }
+      else {
+        m_state->textures[Stage] = nullptr;
+        log::warn("Request to bind texture but I don't know what it is!");
+      }
     }
-    else
-      log::warn("Request to bind texture but I don't know what it is!");
 
     if (srv != nullptr)
       m_context->PSSetShaderResources(Stage, 1, &srv);
