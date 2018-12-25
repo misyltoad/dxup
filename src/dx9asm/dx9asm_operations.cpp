@@ -58,7 +58,7 @@ namespace dxup {
         {"max",     D3DSIO_MAX, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MAX, 0}},
         {"min",     D3DSIO_MIN, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MIN, 0}},
         {"mov",     D3DSIO_MOV, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_MOV, 0}},
-        {"mova",    D3DSIO_MOVA, 1, { Dst, Src0 }, {}},
+        {"mova",    D3DSIO_MOVA, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleMova},
         {"mul",     D3DSIO_MUL, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MUL, 0}},
         {"nop",     D3DSIO_NOP, 1, { }, {D3D10_SB_OPCODE_NOP, 0}},
         {"nrm",     D3DSIO_NRM, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleNrm},

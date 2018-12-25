@@ -102,6 +102,29 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleMova(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand srcOp = { *this, operation, *src0, 0 };
+
+      // dst = round(src)
+      // Human rounding, dst is an addr.
+      DXBCOperation{ D3D10_SB_OPCODE_ROUND_NI, false }
+        .appendOperand(dstOp)
+        .appendOperand(srcOp)
+        .push(*this);
+
+      // dst = int(dst)
+      DXBCOperation{ D3D10_SB_OPCODE_FTOI, false }
+        .appendOperand(dstOp)
+        .appendOperand(dstOp)
+        .push(*this);
+
+      return true;
+    }
+
     bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
