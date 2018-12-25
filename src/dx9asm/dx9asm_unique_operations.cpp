@@ -155,8 +155,8 @@ namespace dxup {
         .push(*this);
 
       DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
-        .appendOperand(srcOp)
         .appendOperand(dstOp)
+        .appendOperand(srcOp)
         .appendOperand(tempOpSrc)
         .push(*this);
 
