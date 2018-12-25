@@ -118,7 +118,7 @@ namespace dxup {
         for (uint32_t i = 0; i < info->sizeInTokens; i++)
           tokens[i] = translator.nextToken();
 
-        m_operands.emplace_back(info, tokens);
+        m_operands.emplace_back(translator, info, tokens);
       }
     }
 

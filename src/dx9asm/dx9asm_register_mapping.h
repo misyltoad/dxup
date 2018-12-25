@@ -26,6 +26,9 @@ namespace dxup {
       uint32_t dx9Id;
       DXBCOperand dxbcOperand;
 
+      DXBCOperand relativeOperand;
+      bool hasRelativeOperand = false;
+
       uint32_t readMask = 0;
       uint32_t writeMask = 0;
 

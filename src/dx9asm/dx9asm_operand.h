@@ -65,26 +65,28 @@ namespace dxup {
 
     class DX9Operand {
     public:
-      DX9Operand(const OperandInfo* info, uint32_t token) 
-        : m_info{ info } {
-        m_dx9tokens[0] = token;
-      }
+      DX9Operand(const OperandInfo* info, uint32_t token);
 
-      DX9Operand(const OperandInfo* info, const uint32_t* tokens)
-        : m_info{ info } {
-        std::memcpy(m_dx9tokens, tokens, sizeof(uint32_t) * info->sizeInTokens);
-      }
+      DX9Operand(ShaderCodeTranslator& translator, const OperandInfo* info, const uint32_t* tokens);
 
       inline OperandType getType() const {
         return m_info->type;
       }
 
       inline uint32_t getSizeInTokens() const {
-        return m_info->sizeInTokens;
+        return m_info->sizeInTokens + isIndirect();
       }
 
       inline const OperandInfo* getInfo() const {
         return m_info;
+      }
+
+      inline uint32_t isIndirect() const {
+        return (getRegType() == D3DSPR_CONST && getToken() & D3DSHADER_ADDRESSMODE_MASK) ? 1 : 0;
+      }
+
+      inline uint32_t getRelativeOperand() const {
+        return m_dx9tokens[m_info->sizeInTokens];
       }
 
       inline bool centroid() const {

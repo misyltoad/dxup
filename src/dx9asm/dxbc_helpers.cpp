@@ -1,6 +1,7 @@
 #include "dxbc_helpers.h"
 #include "dx9asm_modifiers.h"
 #include "dx9asm_translator.h"
+#include "dx9asm_register_map.h"
 #include "dx9asm_util.h"
 #include "../extern/microsoft/d3d11TokenizedProgramFormat.hpp"
 
@@ -12,7 +13,20 @@ namespace dxup {
       RegisterMapping* mapping = state.getRegisterMap().lookupOrCreateRegisterMapping(state, operand, regOffset);
       std::memcpy(this, &mapping->dxbcOperand, sizeof(DXBCOperand));
 
-      if (isLiteral()) {
+      if (operand.isIndirect()) {
+        const uint32_t constantBufferIndex = 0;
+        uint32_t dataWithDummyId[2] = { constantBufferIndex, operand.getRegNumber() };
+        setData(dataWithDummyId, 2);
+
+        setRegisterType(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
+        setDimension(D3D10_SB_OPERAND_INDEX_2D);
+
+        setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+        setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32_PLUS_RELATIVE);
+
+        const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, DX9Operand{ lookupOperandInfo(optype::Src0), operand.getRelativeOperand() });
+        m_relativeIndex = address->dxbcOperand.getRegNumber();
+      } else if (isLiteral()) {
         if (operand.isSrc())
           setSwizzleOrWritemask(noSwizzle);
         else
@@ -65,6 +79,29 @@ namespace dxup {
       for (uint32_t i = 0; i < m_dataCount; i++) {
         if (code != nullptr)
           code->push_back(m_data[i]);
+
+        if (instructionSize != nullptr)
+          (*instructionSize)++;
+      }
+
+      //
+
+      if (m_relativeIndex != UINT32_MAX) {
+        if (code != nullptr) {
+          uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(D3D10_SB_OPERAND_TYPE_TEMP) |
+            ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(D3D10_SB_OPERAND_INDEX_1D) |
+            ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(D3D10_SB_OPERAND_4_COMPONENT) |
+            ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32) |
+            noSwizzle;
+
+          code->push_back(header);
+        }
+
+        if (instructionSize != nullptr)
+          (*instructionSize)++;
+
+        if (code != nullptr)
+          code->push_back(m_relativeIndex);
 
         if (instructionSize != nullptr)
           (*instructionSize)++;

@@ -123,6 +123,7 @@ namespace dxup {
       uint32_t m_data[4] = { 0 };
       uint32_t m_dataCount = 0;
       uint32_t m_dummy = 0;
+      uint32_t m_relativeIndex = UINT32_MAX;
       bool m_hasExtension = false;
     };
 
