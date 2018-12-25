@@ -3,9 +3,9 @@
 
 namespace dxup {
 
-  Direct3DTexture9::Direct3DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
+  Direct3DTexture9::Direct3DTexture9(bool singletonSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
     : Direct3DTexture9Base(device, texture, srv, pool, usage)
-    , m_fakeSurface{ fakeSurface }
+    , m_singletonSurface{ singletonSurface }
     , m_mappedSubresources{ 0 }
     , m_unmappedSubresources{ 0 }{
 
@@ -23,9 +23,9 @@ namespace dxup {
 
     m_surfaces.reserve(desc.MipLevels);
     for (UINT i = 0; i < desc.MipLevels; i++) {
-      Direct3DSurface9* surface = new Direct3DSurface9(false, i, device, this, texture, pool, usage, discard, format);
+      Direct3DSurface9* surface = new Direct3DSurface9(singletonSurface, i, device, this, texture, pool, usage, discard, format);
 
-      if (!fakeSurface)
+      if (!singletonSurface)
         surface->AddRefPrivate();
 
       m_surfaces.push_back(surface);
@@ -33,7 +33,7 @@ namespace dxup {
   }
 
   Direct3DTexture9::~Direct3DTexture9() {
-    if (!m_fakeSurface) {
+    if (!m_singletonSurface) {
       for (IDirect3DSurface9* surface : m_surfaces) {
         Direct3DSurface9* internalSurface = reinterpret_cast<Direct3DSurface9*>(surface);
         internalSurface->ReleasePrivate();

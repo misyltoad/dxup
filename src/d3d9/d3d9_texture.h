@@ -93,13 +93,13 @@ namespace dxup {
     }
 
     inline bool IsFakeSurface() {
-      return m_fakeSurface;
+      return m_singletonSurface;
     }
 
   private:
     uint64_t m_mappedSubresources;
     uint64_t m_unmappedSubresources;
-    bool m_fakeSurface;
+    bool m_singletonSurface;
     std::vector<IDirect3DSurface9*> m_surfaces;
   };
 

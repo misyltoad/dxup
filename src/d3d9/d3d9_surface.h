@@ -12,7 +12,8 @@ namespace dxup {
     
   public:
 
-    Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format);
+    Direct3DSurface9(bool fakeSurface, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format);
+    ~Direct3DSurface9();
 
     HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppv) override;
     HRESULT WINAPI GetContainer(REFIID riid, void** ppContainer) override;
@@ -50,6 +51,7 @@ namespace dxup {
     Com<ID3D11DepthStencilView> m_dsView;
 
     bool m_useRect;
+    bool m_singletonSurface;
     RECT m_stagingRect;
 
     UINT m_subresource;

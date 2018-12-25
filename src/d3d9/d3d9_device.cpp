@@ -521,7 +521,7 @@ namespace dxup {
   }
 
   HRESULT Direct3DDevice9Ex::CreateTextureInternal(
-    bool FakeSurface,
+    bool singletonSurface,
     UINT Width, 
     UINT Height,
     UINT Levels,
@@ -584,7 +584,7 @@ namespace dxup {
     if (!isDepthStencil)
       m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(FakeSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
+    *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
 
     return D3D_OK;
   }

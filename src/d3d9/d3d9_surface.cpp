@@ -5,7 +5,7 @@
 
 namespace dxup {
 
-  Direct3DSurface9::Direct3DSurface9(bool depthStencil, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
+  Direct3DSurface9::Direct3DSurface9(bool singletonSurface, UINT subresource, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
     : Direct3DSurface9Base(device, pool, usage)
     , m_container(container)
     , m_d3d11texture(texture)
@@ -13,9 +13,10 @@ namespace dxup {
     , m_rtView(nullptr)
     , m_discard(discard)
     , m_format(format)
+    , m_singletonSurface(singletonSurface)
   {
-    if (m_container != nullptr)
-      m_container->AddRef();
+    if (singletonSurface && m_container != nullptr)
+        m_container->AddRef();
 
     if (m_subresource == 0 && usage & D3DUSAGE_DEPTHSTENCIL) {
       if (texture != nullptr) {
@@ -54,6 +55,11 @@ namespace dxup {
     }
     else
       log::warn("Unknown surface type and therefore format.");
+  }
+
+  Direct3DSurface9::~Direct3DSurface9() {
+    if (m_singletonSurface && m_container != nullptr)
+      m_container->Release();
   }
 
   HRESULT Direct3DSurface9::GetContainer(REFIID riid, void** ppContainer) {
