@@ -69,7 +69,7 @@ namespace dxup {
         {"ret",     D3DSIO_RET, 1, {}, {}},
         {"rsq",     D3DSIO_RSQ, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_RSQ, 0}},
         {"setp",    D3DSIO_SETP, 1, { Dst, Src0, Src1 }, {}},
-        {"sge",     D3DSIO_SGE, 1, { Dst, Src0, Src1 }, {}},
+        {"sge",     D3DSIO_SGE, 1, { Dst, Src0, Src1 }, {}, &ShaderCodeTranslator::handleSge},
         {"sgn",     D3DSIO_SGN, 1, { Dst, Src0, Src1, Src2 }, {}},
         {"sincos",  D3DSIO_SINCOS, 1, { Dst, Src0, Src1, Src2 }, {}},
         {"slt",     D3DSIO_SLT, 1, { Dst, Src0, Src1 }, {}, &ShaderCodeTranslator::handleSlt},

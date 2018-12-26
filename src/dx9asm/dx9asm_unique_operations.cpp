@@ -129,7 +129,7 @@ namespace dxup {
       return true;
     }
 
-    bool ShaderCodeTranslator::handleSlt(DX9Operation& operation) {
+    bool ShaderCodeTranslator::handleScomp(bool lt, DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
       const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
@@ -143,7 +143,7 @@ namespace dxup {
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
       tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
 
-      DXBCOperation{ D3D10_SB_OPCODE_LT, false }
+      DXBCOperation{ lt ? D3D10_SB_OPCODE_LT : D3D10_SB_OPCODE_GE, false }
         .appendOperand(tempOpDst)
         .appendOperand(src0Op)
         .appendOperand(src1Op)
@@ -158,6 +158,13 @@ namespace dxup {
         .push(*this);
 
       return true;
+    }
+
+    bool ShaderCodeTranslator::handleSlt(DX9Operation& operation) {
+      return handleScomp(true, operation);
+    }
+    bool ShaderCodeTranslator::handleSge(DX9Operation& operation) {
+      return handleScomp(false, operation);
     }
 
     bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {
