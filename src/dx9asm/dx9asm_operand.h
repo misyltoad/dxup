@@ -47,7 +47,7 @@ namespace dxup {
 
       inline bool isConstant() const {
         using namespace optype;
-        return type == Vec4;
+        return type == Vec4 || type == Bool || type == Integer;
       }
 
       inline bool isSrc() const {
