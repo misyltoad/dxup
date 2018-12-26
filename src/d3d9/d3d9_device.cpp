@@ -1400,8 +1400,6 @@ namespace dxup {
       return D3D_OK; // Lies!
     }
 
-    log::warn("DrawIndexedPrimitive, partial support.");
-
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
 
