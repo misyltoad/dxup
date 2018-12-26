@@ -336,6 +336,7 @@ namespace dxup {
         auto& obj = bytecode.getBytecodeVector();
 
         // Global Flags
+        if (config::getBool(config::RefactoringAllowed))
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_GLOBAL_FLAGS, false, 1, 0, UINT32_MAX, D3D10_SB_GLOBAL_FLAG_REFACTORING_ALLOWED }.push(obj);
         }

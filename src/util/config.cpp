@@ -32,6 +32,7 @@ namespace dxup {
           initVar(var::ShaderDump, "DXUP_SHADERDUMP", "0");
           initVar(var::UnimplementedFatal, "DXUP_UNIMPLEMENTEDFATAL", "0");
           initVar(var::InitialHideCursor, "DXUP_INITIALHIDECURSOR", "0");
+          initVar(var::RefactoringAllowed, "DXUP_REFACTORINGALLOWED", "1");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {

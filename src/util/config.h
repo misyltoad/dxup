@@ -13,6 +13,7 @@ namespace dxup {
       RandomClearColour,
       UnimplementedFatal,
       InitialHideCursor,
+      RefactoringAllowed,
       Count,
     };
 
