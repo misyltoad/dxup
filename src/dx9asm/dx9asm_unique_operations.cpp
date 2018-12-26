@@ -172,9 +172,8 @@ namespace dxup {
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
       DXBCOperand tempOpDst = getRegisterMap().getNextInternalTemp();
-      tempOpDst.setSwizzleOrWritemask(writeAll);
-
       DXBCOperand tempOpSrc = tempOpDst;
+      tempOpDst.setSwizzleOrWritemask(writeAll);
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
 
       DXBCOperand srcOp = { *this, operation, *src0, 0 };

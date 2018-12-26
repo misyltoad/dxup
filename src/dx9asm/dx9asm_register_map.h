@@ -104,7 +104,7 @@ namespace dxup {
       }
 
       inline DXBCOperand getNextInternalTemp() {
-        m_highestInternalTemp = getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP) + 1;
+        m_highestInternalTemp = getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
 
         DXBCOperand op{ D3D10_SB_OPERAND_TYPE_TEMP, false };
         op.setDimension(D3D10_SB_OPERAND_INDEX_1D);
