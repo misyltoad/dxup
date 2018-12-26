@@ -106,6 +106,7 @@ namespace dxup {
       bool handleSlt(DX9Operation& operation);
       bool handleSge(DX9Operation& operation);
       bool handleNrm(DX9Operation& operation);
+      bool handlePow(DX9Operation& operation);
       bool handleDef(DX9Operation& operation);
 
       bool handleScomp(bool lt, DX9Operation& operation);

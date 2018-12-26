@@ -201,6 +201,39 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handlePow(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+      DXBCOperand src1Op = { *this, operation, *src1, 0 };
+
+      DXBCOperand tempOpDst = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpSrc = tempOpDst;
+      tempOpDst.setSwizzleOrWritemask(writeAll);
+      tempOpSrc.setSwizzleOrWritemask(noSwizzle);
+
+      DXBCOperation{ D3D10_SB_OPCODE_LOG, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(src0Op)
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(tempOpSrc)
+        .appendOperand(src1Op)
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_EXP, false }
+        .appendOperand(dstOp)
+        .appendOperand(tempOpSrc)
+        .push(*this);
+
+      return true;
+    }
+
     // Varadic Operand
     bool ShaderCodeTranslator::handleTex(DX9Operation& operation) {
       DX9Operand dst{ lookupOperandInfo(optype::Dst), nextToken() };

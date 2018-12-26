@@ -63,7 +63,7 @@ namespace dxup {
         {"nop",     D3DSIO_NOP, 1, { }, {D3D10_SB_OPCODE_NOP, 0}},
         {"nrm",     D3DSIO_NRM, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleNrm},
         {"phase",   D3DSIO_PHASE, 1, {}, {}},
-        {"pow",     D3DSIO_POW, 1, { Dst, Src0, Src1 }, {}},
+        {"pow",     D3DSIO_POW, 1, { Dst, Src0, Src1 }, {}, &ShaderCodeTranslator::handlePow},
         {"rcp",     D3DSIO_RCP, 1, { Dst, Src0 }, {D3D11_SB_OPCODE_RCP, 0}},
         {"rep",     D3DSIO_REP, 1, { Src0 }, {}},
         {"ret",     D3DSIO_RET, 1, {}, {}},
