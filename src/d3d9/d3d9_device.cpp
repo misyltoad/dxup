@@ -1406,7 +1406,7 @@ namespace dxup {
     UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
 
     m_context->IASetPrimitiveTopology(topology);
-    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex + MinVertexIndex);
+    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex);
 
     FinishDraw();
 
