@@ -143,7 +143,7 @@ namespace dxup {
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
       tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
 
-      DXBCOperation{ lt ? D3D10_SB_OPCODE_LT : D3D10_SB_OPCODE_GE, false }
+      DXBCOperation{ (uint32_t)(lt ? D3D10_SB_OPCODE_LT : D3D10_SB_OPCODE_GE), false }
         .appendOperand(tempOpDst)
         .appendOperand(src0Op)
         .appendOperand(src1Op)
