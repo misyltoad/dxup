@@ -14,6 +14,14 @@
 
 namespace dxup {
 
+  float dwordToFloat(DWORD val) {
+    return *((float*)(&val));
+  }
+
+  DWORD floatToDword(float val) {
+    return *((DWORD*)(&val));
+  }
+
   namespace dirtyFlags {
     const uint32_t vertexShader = 1 << 0;
     const uint32_t vertexDecl = 1 << 1;
@@ -201,10 +209,6 @@ namespace dxup {
     *outDevice = ref(d3d9Device);
 
     return D3D_OK;
-  }
-
-  DWORD floatToDword(float val) {
-    return *((DWORD*)(&val));
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
@@ -1033,15 +1037,15 @@ namespace dxup {
     D3D11_RASTERIZER_DESC1 desc;
     desc.AntialiasedLineEnable = false;
     desc.CullMode = convert::cullMode(m_state->renderState[D3DRS_CULLMODE]);
-    desc.DepthBias = 0;
-    desc.DepthBiasClamp = 0.0f;
+    desc.DepthBias = dwordToFloat(m_state->renderState[D3DRS_DEPTHBIAS]);
+    desc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
     desc.DepthClipEnable = true;
     desc.FillMode = convert::fillMode(m_state->renderState[D3DRS_FILLMODE]);
     desc.ForcedSampleCount = 0;
     desc.FrontCounterClockwise = false;
     desc.MultisampleEnable = false;
-    desc.ScissorEnable = false;
-    desc.SlopeScaledDepthBias = 0;
+    desc.ScissorEnable = m_state->renderState[D3DRS_SCISSORTESTENABLE] == TRUE ? TRUE : FALSE;
+    desc.SlopeScaledDepthBias = dwordToFloat(m_state->renderState[D3DRS_SLOPESCALEDEPTHBIAS]);
 
     ID3D11RasterizerState1* state = m_state->caches.rasterizer.lookupObject(desc);
 
@@ -1258,7 +1262,11 @@ namespace dxup {
 
     m_state->renderState[State] = Value;
 
-    if (State == D3DRS_CULLMODE || State == D3DRS_FILLMODE)
+    if (State == D3DRS_CULLMODE ||
+        State == D3DRS_DEPTHBIAS ||
+        State == D3DRS_FILLMODE ||
+        State == D3DRS_SCISSORTESTENABLE ||
+        State == D3DRS_SLOPESCALEDEPTHBIAS )
       m_state->dirtyFlags |= dirtyFlags::rasterizer;
     else if ( State == D3DRS_CCW_STENCILZFAIL ||
               State == D3DRS_CCW_STENCILFAIL ||
