@@ -19,7 +19,7 @@ namespace dxup {
     const uint32_t vertexDecl = 1 << 1;
     const uint32_t pixelShader = 1 << 2;
     const uint32_t renderTargets = 1 << 3;
-    const uint32_t depthStencilView = 1 << 4;
+    const uint32_t depthStencilState = 1 << 4;
     const uint32_t rasterizer = 1 << 5;
   }
 
@@ -50,6 +50,7 @@ namespace dxup {
 
     struct {
       StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
+      StateCache<D3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState> depthStencil;
     } caches;
   };
 
@@ -958,6 +959,74 @@ namespace dxup {
       case D3DFILL_SOLID: return D3D11_FILL_SOLID;
       }
     }
+
+    D3D11_STENCIL_OP stencilOp(DWORD op) {
+      switch (op) {
+      default:
+      case D3DSTENCILOP_KEEP: return D3D11_STENCIL_OP_KEEP;
+      case D3DSTENCILOP_ZERO: return D3D11_STENCIL_OP_ZERO;
+      case D3DSTENCILOP_REPLACE: return D3D11_STENCIL_OP_REPLACE;
+      case D3DSTENCILOP_INCRSAT: return D3D11_STENCIL_OP_INCR_SAT;
+      case D3DSTENCILOP_DECRSAT: return D3D11_STENCIL_OP_DECR_SAT;
+      case D3DSTENCILOP_INVERT: return D3D11_STENCIL_OP_INVERT;
+      case D3DSTENCILOP_INCR: return D3D11_STENCIL_OP_INCR;
+      case D3DSTENCILOP_DECR: return D3D11_STENCIL_OP_DECR;
+      }
+    }
+
+    D3D11_COMPARISON_FUNC func(DWORD op) {
+      switch (op) {
+      case D3DCMP_NEVER: return D3D11_COMPARISON_NEVER;
+      case D3DCMP_LESS: return D3D11_COMPARISON_LESS;
+      case D3DCMP_EQUAL: return D3D11_COMPARISON_EQUAL;
+      case D3DCMP_LESSEQUAL: return D3D11_COMPARISON_LESS_EQUAL;
+      case D3DCMP_GREATER: return D3D11_COMPARISON_GREATER;
+      case D3DCMP_NOTEQUAL: return D3D11_COMPARISON_NOT_EQUAL;
+      case D3DCMP_GREATEREQUAL: return D3D11_COMPARISON_GREATER_EQUAL;
+      default:
+      case D3DCMP_ALWAYS: return D3D11_COMPARISON_ALWAYS;
+      }
+    }
+  }
+
+  void Direct3DDevice9Ex::UpdateDepthStencilState() {
+    D3D11_DEPTH_STENCIL_DESC desc;
+    desc.BackFace.StencilDepthFailOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILZFAIL]);
+    desc.BackFace.StencilFailOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILFAIL]);
+    desc.BackFace.StencilPassOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILPASS]);
+    desc.BackFace.StencilFunc = convert::func(m_state->renderState[D3DRS_CCW_STENCILFUNC]);
+
+    desc.DepthEnable = (m_state->renderState[D3DRS_ZENABLE] == D3DZB_FALSE) ? FALSE : TRUE;
+    desc.DepthFunc = convert::func(m_state->renderState[D3DRS_ZFUNC]);
+    desc.DepthWriteMask = m_state->renderState[D3DRS_ZWRITEENABLE] == TRUE ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+
+    desc.FrontFace.StencilDepthFailOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILZFAIL]);
+    desc.FrontFace.StencilFailOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILFAIL]);
+    desc.FrontFace.StencilPassOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILPASS]);
+    desc.FrontFace.StencilFunc = convert::func(m_state->renderState[D3DRS_STENCILFUNC]);
+   
+    desc.StencilEnable = m_state->renderState[D3DRS_STENCILENABLE] == TRUE ? TRUE : FALSE;
+    desc.StencilReadMask = (UINT8)(m_state->renderState[D3DRS_STENCILMASK] & 0x000000FF); // I think we can do this.
+    desc.StencilWriteMask = (UINT8)(m_state->renderState[D3DRS_STENCILWRITEMASK] & 0x000000FF);
+
+    ID3D11DepthStencilState* state = m_state->caches.depthStencil.lookupObject(desc);
+
+    if (state == nullptr) {
+      Com<ID3D11DepthStencilState> comState;
+
+      HRESULT result = m_device->CreateDepthStencilState(&desc, &comState);
+      if (FAILED(result)) {
+        log::fail("Failed to create depth stencil state.");
+        return;
+      }
+
+      m_state->caches.depthStencil.pushState(desc, comState.ptr());
+      state = comState.ptr();
+    }
+
+    m_context->OMSetDepthStencilState(state, m_state->renderState[D3DRS_STENCILREF]);
+
+    m_state->dirtyFlags &= ~dirtyFlags::depthStencilState;
   }
 
   void Direct3DDevice9Ex::UpdateRasterizer() {
@@ -1015,7 +1084,6 @@ namespace dxup {
     m_context->OMSetRenderTargets(4, &rtvs[0], dsv);
 
     m_state->dirtyFlags &= ~dirtyFlags::renderTargets;
-    m_state->dirtyFlags &= ~dirtyFlags::depthStencilView;
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
@@ -1047,7 +1115,7 @@ namespace dxup {
     DoDepthDiscardCheck();
 
     m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
-    m_state->dirtyFlags |= dirtyFlags::depthStencilView;
+    m_state->dirtyFlags |= dirtyFlags::renderTargets;
 
     return D3D_OK;
   }
@@ -1192,6 +1260,26 @@ namespace dxup {
 
     if (State == D3DRS_CULLMODE || State == D3DRS_FILLMODE)
       m_state->dirtyFlags |= dirtyFlags::rasterizer;
+    else if ( State == D3DRS_CCW_STENCILZFAIL ||
+              State == D3DRS_CCW_STENCILFAIL ||
+              State == D3DRS_CCW_STENCILPASS ||
+              State == D3DRS_CCW_STENCILFUNC ||
+
+              State == D3DRS_ZENABLE ||
+              State == D3DRS_ZFUNC ||
+              State == D3DRS_ZWRITEENABLE ||
+
+              State == D3DRS_STENCILZFAIL ||
+              State == D3DRS_STENCILFAIL ||
+              State == D3DRS_STENCILPASS ||
+              State == D3DRS_STENCILFUNC ||
+
+              State == D3DRS_STENCILENABLE ||
+              State == D3DRS_STENCILMASK ||
+              State == D3DRS_STENCILWRITEMASK ||
+
+              State == D3DRS_STENCILREF)
+      m_state->dirtyFlags |= dirtyFlags::depthStencilState;
     else
       log::warn("Unhandled render state: %lu", State);
 
@@ -1490,11 +1578,14 @@ namespace dxup {
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
 
-    if (m_state->dirtyFlags & dirtyFlags::renderTargets || m_state->dirtyFlags & dirtyFlags::depthStencilView)
+    if (m_state->dirtyFlags & dirtyFlags::renderTargets)
       UpdateRenderTargets();
 
     if (m_state->dirtyFlags & dirtyFlags::rasterizer)
       UpdateRasterizer();
+
+    if (m_state->dirtyFlags & dirtyFlags::depthStencilState)
+      UpdateDepthStencilState();
 
     if (m_state->dirtyFlags & dirtyFlags::pixelShader)
       UpdatePixelShader();
