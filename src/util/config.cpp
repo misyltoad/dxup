@@ -33,6 +33,7 @@ namespace dxup {
           initVar(var::UnimplementedFatal, "DXUP_UNIMPLEMENTEDFATAL", "0");
           initVar(var::InitialHideCursor, "DXUP_INITIALHIDECURSOR", "0");
           initVar(var::RefactoringAllowed, "DXUP_REFACTORINGALLOWED", "1");
+          initVar(var::GDICompatible, "DXUP_GDI_COMPATIBLE", "0");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {

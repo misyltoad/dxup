@@ -14,6 +14,7 @@ namespace dxup {
       UnimplementedFatal,
       InitialHideCursor,
       RefactoringAllowed,
+      GDICompatible,
       Count,
     };
 

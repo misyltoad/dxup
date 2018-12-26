@@ -2,6 +2,7 @@
 #include "d3d9_format.h"
 #include "d3d9_texture.h"
 #include "d3d9_format.h"
+#include "../util/config.h"
 
 namespace dxup {
 
@@ -40,8 +41,10 @@ namespace dxup {
           log::warn("No D3D11 Texture for Render Target");
     }
 
-    if (texture != nullptr)
-      texture->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
+    if (config::getBool(config::GDICompatible)) {
+      if (texture != nullptr)
+        texture->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
+    }
 
     if (GetD3D11Texture2D()) {
       D3D11_TEXTURE2D_DESC desc;
@@ -92,7 +95,20 @@ namespace dxup {
     if (!pDesc)
       return D3DERR_INVALIDCALL;
 
-    if (m_surface != nullptr) {
+    if (GetD3D11Texture2D() != nullptr) {
+      D3D11_TEXTURE2D_DESC desc;
+      GetD3D11Texture2D()->GetDesc(&desc);
+
+      pDesc->Format = m_format;
+      pDesc->Height = desc.Height;
+      pDesc->Width = desc.Width;
+      pDesc->Pool = m_pool;
+      pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
+      pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
+      pDesc->Type = D3DRTYPE_SURFACE;
+      pDesc->Usage = m_usage;
+    }
+    else if (m_surface != nullptr) {
       DXGI_SURFACE_DESC dxgiDesc;
       HRESULT Result = m_surface->GetDesc(&dxgiDesc);
 
@@ -105,19 +121,6 @@ namespace dxup {
       pDesc->Pool = m_pool;
       pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)dxgiDesc.SampleDesc.Count;
       pDesc->MultiSampleQuality = dxgiDesc.SampleDesc.Quality;
-      pDesc->Type = D3DRTYPE_SURFACE;
-      pDesc->Usage = m_usage;
-    }
-    else if (GetD3D11Texture2D() != nullptr) {
-      D3D11_TEXTURE2D_DESC desc;
-      GetD3D11Texture2D()->GetDesc(&desc);
-      
-      pDesc->Format = m_format;
-      pDesc->Height = desc.Height;
-      pDesc->Width = desc.Width;
-      pDesc->Pool = m_pool;
-      pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
-      pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
       pDesc->Type = D3DRTYPE_SURFACE;
       pDesc->Usage = m_usage;
     }
