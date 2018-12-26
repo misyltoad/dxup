@@ -168,8 +168,8 @@ namespace dxup {
     }
 
     bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {
-      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
-      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
       DXBCOperand tempOpDst = getRegisterMap().getNextInternalTemp();
       DXBCOperand tempOpSrc = tempOpDst;
@@ -180,7 +180,8 @@ namespace dxup {
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
 
       // DP with self to get length squared.
-      DXBCOperation{ D3D10_SB_OPCODE_DP4, false }
+      // This is DP3 because nrm only applies for 3D vectors...
+      DXBCOperation{ D3D10_SB_OPCODE_DP3, false }
         .appendOperand(tempOpDst)
         .appendOperand(srcOp)
         .appendOperand(srcOp)
