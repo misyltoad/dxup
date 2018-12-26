@@ -62,7 +62,11 @@ namespace dxup {
       static std::vector<TransientRegisterMapping>& getTransientMappings();
 
       inline uint32_t getDXBCTypeCount(uint32_t type) const {
-        return getHighestIdForDXBCType(type) + 1;
+        uint32_t highestId = getHighestIdForDXBCType(type);
+        if (highestId == UINT32_MAX)
+          return 0;
+
+        return highestId + 1;
       }
 
       RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput = false);

@@ -32,14 +32,14 @@ namespace dxup {
 
     template <typename T>
     void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
-      uint32_t i = 0;
-      for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-        if (mapping.dxbcOperand.getRegisterType() != D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
-          continue;
+      uint32_t num = 0;
+      if (shdrCode.isIndirectMarked())
+        num = 256; // Do all 256 if we use indirect addressing.
+      else
+        num = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
-        func(mapping, i);
-        i++;
-      }
+      for (uint32_t i = 0; i < num; i++)
+        func(i);
     }
 
     constexpr bool isInput(uint32_t ChunkType) {
@@ -102,7 +102,7 @@ namespace dxup {
         ChunkHeader{ fourcc("RDEF") }.push(obj); // [PUSH] Chunk Header
 
         uint32_t cbufferVariableCount = 0;
-        forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+        forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
           cbufferVariableCount++;
         });
         uint32_t constantBufferCount = cbufferVariableCount == 0 ? 0 : 1;
@@ -212,9 +212,9 @@ namespace dxup {
           cbufVariableOffset = getChunkSize(bytecode);
 
           VariableInfo* variables = (VariableInfo*)nextPtr(obj);
-          forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+          forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
             VariableInfo info;
-            info.startOffset = mapping.dx9Id * 4 * sizeof(float);
+            info.startOffset = i * 4 * sizeof(float);
             pushObject(obj, info);
           });
 
@@ -250,13 +250,13 @@ namespace dxup {
           constantBinding->nameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_constant_buffer");
 
-          forEachVariable(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
+          forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
             VariableInfo& info = variables[i];
             info.defaultValueOffset = defaultValueOffset;
             info.typeOffset = variableTypeOffset;
 
             char name[6];
-            snprintf(name, 6, "c%d", mapping.dx9Id);
+            snprintf(name, 6, "c%d", i);
             info.nameOffset = getChunkSize(bytecode);
             pushAlignedString(obj, name, strlen(name));
           });
@@ -395,10 +395,10 @@ namespace dxup {
           const uint32_t constantBuffer = 0;
           uint32_t cbufferCount = 0;
 
-          for (auto& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-            if (mapping.dx9Type == D3DSPR_CONST)
-              cbufferCount = max(cbufferCount, mapping.dx9Id);
-          }
+          if (shdrCode.isIndirectMarked())
+            cbufferCount = 256;
+          else
+            cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
           if (cbufferCount != 0) {
             uint32_t data[2] = { constantBuffer , cbufferCount };
