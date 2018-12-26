@@ -134,6 +134,15 @@ namespace dxup {
         return nullptr;
       }
 
+      inline DX9Operand* getOperandByType(OperandType type) {
+        for (size_t i = 0; i < m_operands.size(); i++) {
+          DX9Operand& operand = m_operands[i];
+          if (operand.getType() == type)
+            return &operand;
+        }
+        return nullptr;
+      }
+
     private:
 
       void readOperands(ShaderCodeTranslator& translator);
