@@ -1028,7 +1028,7 @@ namespace dxup {
       state = comState.ptr();
     }
 
-    m_context->OMSetDepthStencilState(state, m_state->renderState[D3DRS_STENCILREF]);
+    m_context->OMSetDepthStencilState(state, (UINT)m_state->renderState[D3DRS_STENCILREF]);
 
     m_state->dirtyFlags &= ~dirtyFlags::depthStencilState;
   }
