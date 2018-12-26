@@ -1289,10 +1289,7 @@ namespace dxup {
       }
     }
 
-    if (srv != nullptr)
-      m_context->PSSetShaderResources(Stage, 1, &srv);
-    else
-      log::fail("Failed to bind texture, null SRV.");
+    m_context->PSSetShaderResources(Stage, 1, &srv);
 
     return D3D_OK;
   }
