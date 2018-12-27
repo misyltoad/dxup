@@ -1036,7 +1036,7 @@ namespace dxup {
     D3D11_RASTERIZER_DESC1 desc;
     desc.AntialiasedLineEnable = false;
     desc.CullMode = convert::cullMode(m_state->renderState[D3DRS_CULLMODE]);
-    desc.DepthBias = dwordToFloat(m_state->renderState[D3DRS_DEPTHBIAS]);
+    desc.DepthBias = (INT)dwordToFloat(m_state->renderState[D3DRS_DEPTHBIAS]);
     desc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
     desc.DepthClipEnable = true;
     desc.FillMode = convert::fillMode(m_state->renderState[D3DRS_FILLMODE]);
@@ -1077,8 +1077,8 @@ namespace dxup {
     desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
     desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // TODO! Use the proper filtering here...
     desc.MaxAnisotropy = (UINT)samplerState[D3DSAMP_MAXANISOTROPY];
-    desc.MipLODBias = (UINT)samplerState[D3DSAMP_MIPMAPLODBIAS];
-    desc.MaxLOD = samplerState[D3DSAMP_MAXMIPLEVEL];
+    desc.MipLODBias = (FLOAT)samplerState[D3DSAMP_MIPMAPLODBIAS];
+    desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
     desc.MinLOD = -FLT_MAX;
 
     ID3D11SamplerState* state = m_state->caches.sampler.lookupObject(desc);
