@@ -1099,7 +1099,7 @@ namespace dxup {
     // TODO! Handle vertex texture sampling.
     m_context->PSSetSamplers(sampler, 1, &state);
 
-    m_state->dirtySamplers &= ~sampler;
+    m_state->dirtySamplers &= ~(1ull << sampler);
   }
   void Direct3DDevice9Ex::UpdateSamplers() {
     for (uint32_t i = 0; i < 20; i++) {
