@@ -218,11 +218,11 @@ namespace dxup {
             pushObject(obj, info);
           });
 
-          struct {
-            float values[4] = { 0 };
-          } defaultValues;
-          uint32_t defaultValueOffset = getChunkSize(bytecode);
-          pushObject(obj, defaultValues); // [PUSH] Default Value for our Constants
+          //struct {
+          //  float values[4] = { 0 };
+          //} defaultValues;
+          //uint32_t defaultValueOffset = getChunkSize(bytecode);
+          //pushObject(obj, defaultValues); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
 #pragma pack(1)
@@ -252,7 +252,8 @@ namespace dxup {
 
           forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
             VariableInfo& info = variables[i];
-            info.defaultValueOffset = defaultValueOffset;
+            //info.defaultValueOffset = defaultValueOffset;
+            info.defaultValueOffset = 0;
             info.typeOffset = variableTypeOffset;
 
             char name[6];
