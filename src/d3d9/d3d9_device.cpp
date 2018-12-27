@@ -1825,13 +1825,14 @@ namespace dxup {
     return CreateShader<true, IDirect3DVertexShader9, Direct3DVertexShader9, ID3D11VertexShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
+    m_state->dirtyFlags |= dirtyFlags::vertexShader;
+
     if (pShader == nullptr) {
       m_state->vertexShader = nullptr;
-      return D3DERR_INVALIDCALL;
+      return D3D_OK;
     }
 
     m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
-    m_state->dirtyFlags |= dirtyFlags::vertexShader;
 
     return D3D_OK;
   }
