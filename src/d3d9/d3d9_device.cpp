@@ -1096,8 +1096,12 @@ namespace dxup {
       state = comState.ptr();
     }
 
-    // TODO! Handle vertex texture sampling.
-    m_context->PSSetSamplers(sampler, 1, &state);
+    if (sampler < 16)
+      m_context->PSSetSamplers(sampler, 1, &state);
+    else {
+      sampler -= 16;
+      m_context->VSSetSamplers(sampler, 1, &state);
+    }
 
     m_state->dirtySamplers &= ~(1ull << sampler);
   }
