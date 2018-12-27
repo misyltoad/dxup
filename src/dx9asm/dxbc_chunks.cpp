@@ -296,7 +296,7 @@ namespace dxup {
       void writeIODcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
         forEachValidElement<Input>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          uint32_t siv = convert::sysValue(Input, mapping.dclInfo.target, mapping.dclInfo.usage);
+          uint32_t siv = convert::sysValue(Input && shdrCode.getShaderType() == ShaderType::Vertex, mapping.dclInfo.target, mapping.dclInfo.usage);
           const bool hasSiv = siv != D3D_NAME_UNDEFINED;
 
           uint32_t opcode = 0;
