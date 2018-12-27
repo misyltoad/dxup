@@ -209,7 +209,7 @@ namespace dxup {
       if (GetD3D9Texture()) {
         if (GetD3D9Texture()->CanPushStaging()) {
           uint64_t delta = GetD3D9Texture()->GetChangedSubresources();
-          for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
+          for (uint64_t i = 0; i < sizeof(uint64_t) * 8; i++) {
             if (delta & (1ull << i))
               GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), i, box.left, box.top, 0, GetStaging(), i, m_useRect ? &box : nullptr);
           }
