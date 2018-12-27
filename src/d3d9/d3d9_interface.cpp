@@ -176,6 +176,7 @@ namespace dxup {
     pCaps->PS20Caps.DynamicFlowControlDepth = 24;
     pCaps->PS20Caps.StaticFlowControlDepth = 4;
     pCaps->PS20Caps.NumTemps = 32;
+    pCaps->PS20Caps.NumInstructionSlots = 256;
     pCaps->VertexTextureFilterCaps = pCaps->TextureFilterCaps;
     pCaps->MaxVertexShader30InstructionSlots = 32768;
     pCaps->MaxPixelShader30InstructionSlots = 32768;
