@@ -332,7 +332,7 @@ namespace dxup {
             .push(obj);
 
           if (hasSiv)
-            obj.push_back(siv);
+            obj.push_back(ENCODE_D3D10_SB_NAME(siv));
         });
       }
 
@@ -361,6 +361,7 @@ namespace dxup {
 
               DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
               samplerOp.setComponents(0);
+              samplerOp.setSwizzleOrWritemask(noSwizzle);
               samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
               samplerOp.setData(&i, 1);
 
@@ -370,6 +371,7 @@ namespace dxup {
 
               DXBCOperand textureOp{ D3D10_SB_OPERAND_TYPE_RESOURCE, 1 };
               textureOp.setData(&i, 1);
+              textureOp.setSwizzleOrWritemask(noSwizzle);
               textureOp.setComponents(0);
               textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
 
@@ -408,7 +410,7 @@ namespace dxup {
           if (cbufferCount != 0) {
             uint32_t data[2] = { constantBuffer , cbufferCount };
             DXBCOperation{ D3D10_SB_OPCODE_DCL_CONSTANT_BUFFER, false }
-              .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setData(data, 2))
+              .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setSwizzleOrWritemask(noSwizzle).setData(data, 2))
               .setExtra(ENCODE_D3D10_SB_D3D10_SB_CONSTANT_BUFFER_ACCESS_PATTERN(shdrCode.isIndirectMarked() ? D3D10_SB_CONSTANT_BUFFER_DYNAMIC_INDEXED : D3D10_SB_CONSTANT_BUFFER_IMMEDIATE_INDEXED))
               .push(obj);
           }
