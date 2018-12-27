@@ -31,9 +31,6 @@ namespace dxup {
       log::stub("Direct3DBaseTexture9::GetAutoGenFilterType");
       return D3DTEXF_ANISOTROPIC;
     }
-    void STDMETHODCALLTYPE GenerateMipSubLevels() override {
-      log::stub("Direct3DBaseTexture9::GenerateMipSubLevels");
-    }
 
     D3D11ResourceType* GetResource() {
       return m_resource.ptr();
@@ -74,6 +71,7 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE LockRect(UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) override;
     HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level) override;
     HRESULT STDMETHODCALLTYPE AddDirtyRect(const RECT* pDirtyRect) override;
+    void STDMETHODCALLTYPE GenerateMipSubLevels() override;
 
     inline void SetSubresourceMapped(UINT subresource) {
       m_mappedSubresources |= 1 << subresource;

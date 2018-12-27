@@ -93,5 +93,11 @@ namespace dxup {
     log::stub("Direct3DTexture9::AddDirtyRect");
     return D3D_OK;
   }
+  void STDMETHODCALLTYPE Direct3DTexture9::GenerateMipSubLevels() {
+    if (GetSRV() != nullptr)
+      m_device->GetContext()->GenerateMips(GetSRV());
+    else
+      log::warn("GenerateMipSubLevels called on a texture with no SRV.");
+  }
 
 }
