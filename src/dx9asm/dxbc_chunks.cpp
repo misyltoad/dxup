@@ -38,8 +38,15 @@ namespace dxup {
       else
         num = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
-      for (uint32_t i = 0; i < num; i++)
-        func(i);
+      for (uint32_t i = 0; i < num; i++) {
+        bool used = false;
+        for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
+          if (mapping.dxbcOperand.getRegisterType() == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER && mapping.dxbcOperand.getRegNumber() == i)
+            used = true;
+        }
+
+        func(i, used);
+      }
     }
 
     constexpr bool isInput(uint32_t ChunkType) {
@@ -102,7 +109,7 @@ namespace dxup {
         ChunkHeader{ fourcc("RDEF") }.push(obj); // [PUSH] Chunk Header
 
         uint32_t cbufferVariableCount = 0;
-        forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
+        forEachVariable(bytecode, shdrCode, [&](uint32_t i, bool used) {
           cbufferVariableCount++;
         });
         uint32_t constantBufferCount = cbufferVariableCount == 0 ? 0 : 1;
@@ -212,8 +219,9 @@ namespace dxup {
           cbufVariableOffset = getChunkSize(bytecode);
 
           VariableInfo* variables = (VariableInfo*)nextPtr(obj);
-          forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
+          forEachVariable(bytecode, shdrCode, [&](uint32_t i, bool used) {
             VariableInfo info;
+            info.flags = used ? D3D_SVF_USED : 0;
             info.startOffset = i * 4 * sizeof(float);
             pushObject(obj, info);
           });
@@ -250,7 +258,7 @@ namespace dxup {
           constantBinding->nameOffset = getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_constant_buffer");
 
-          forEachVariable(bytecode, shdrCode, [&](uint32_t i) {
+          forEachVariable(bytecode, shdrCode, [&](uint32_t i, bool used) {
             VariableInfo& info = variables[i];
             //info.defaultValueOffset = defaultValueOffset;
             info.defaultValueOffset = 0;
