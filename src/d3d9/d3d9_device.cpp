@@ -1648,6 +1648,9 @@ namespace dxup {
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
 
+    if (m_state->dirtySamplers != 0)
+      UpdateSamplers();
+
     if (m_state->dirtyFlags & dirtyFlags::renderTargets)
       UpdateRenderTargets();
 
