@@ -20,9 +20,10 @@ namespace dxup {
 
   public:
 
-    D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType type, BufferType bufferType);
+    D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType shaderType, BufferType bufferType);
 
     void prepareDraw();
+    void bind();
 
     HRESULT set(uint32_t index, const void* values, uint32_t count);
 
@@ -39,6 +40,9 @@ namespace dxup {
     std::shared_ptr<uint8_t> m_elements;
     uint32_t m_elementSize;
     uint32_t m_elementCount;
+
+    ShaderType m_shaderType;
+    BufferType m_bufferType;
 
     Com<ID3D11Buffer> m_buffer;
 

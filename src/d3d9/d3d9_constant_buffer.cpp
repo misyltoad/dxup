@@ -15,11 +15,13 @@ namespace dxup {
 
   //
 
-  D3D9ConstantBuffer::D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType type, BufferType bufferType)
+  D3D9ConstantBuffer::D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType shaderType, BufferType bufferType)
     : m_device{ device }
     , m_context{ context }
     , m_elementSize{ bufferInfo[bufferType].elementSize }
-    , m_elementCount{ bufferInfo[bufferType].elementCount } {
+    , m_elementCount{ bufferInfo[bufferType].elementCount }
+    , m_shaderType{ shaderType }
+    , m_bufferType{ bufferType } {
     m_elements.reset(new uint8_t[m_elementSize * m_elementCount]);
     std::memset(m_elements.get(), 0, m_elementSize * m_elementCount);
 
@@ -30,21 +32,30 @@ namespace dxup {
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     cbDesc.MiscFlags = 0;
     cbDesc.StructureByteStride = 0;
-    HRESULT result = m_device->CreateBuffer(&cbDesc, nullptr, &m_buffer);
+
+    D3D11_SUBRESOURCE_DATA data;
+    data.pSysMem = (void*) m_elements.get();
+    data.SysMemPitch = m_elementSize * m_elementCount;
+    data.SysMemSlicePitch = 0;
+
+    HRESULT result = m_device->CreateBuffer(&cbDesc, &data, &m_buffer);
     if (FAILED(result))
       log::fail("Couldn't create constant buffer.");
 
-    ID3D11Buffer* buffer = m_buffer.ptr();
-    if (type == ShaderType::Vertex)
-      m_context->VSSetConstantBuffers(bufferType, 1, &buffer);
-    else
-      m_context->PSSetConstantBuffers(bufferType, 1, &buffer);
+    prepareDraw();
+  }
 
-    pushData();
+  void D3D9ConstantBuffer::bind() {
+    ID3D11Buffer* buffer = m_buffer.ptr();
+    if (m_shaderType == ShaderType::Vertex)
+      m_context->VSSetConstantBuffers(m_bufferType, 1, &buffer);
+    else
+      m_context->PSSetConstantBuffers(m_bufferType, 1, &buffer);
   }
 
   void D3D9ConstantBuffer::prepareDraw() {
     pushData();
+    bind();
   }
 
   HRESULT D3D9ConstantBuffer::set(uint32_t index, const void* values, uint32_t count) {
