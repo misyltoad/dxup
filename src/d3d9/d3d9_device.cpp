@@ -48,17 +48,21 @@ namespace dxup {
     ComPrivate<Direct3DSurface9> depthStencil;
     std::array<ComPrivate<Direct3DSurface9>, 4> renderTargets;
     uint32_t dirtyFlags = 0;
+    uint32_t dirtySamplers = 0;
 
     std::array<ComPrivate<Direct3DVertexBuffer9>, 16> vertexBuffers;
     std::array<UINT, 16> vertexOffsets;
     std::array<UINT, 16> vertexStrides;
     std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
 
+    std::array<std::array<DWORD, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStates;
+
     Com<Direct3DIndexBuffer9> indexBuffer;
 
     struct {
       StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
       StateCache<D3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState> depthStencil;
+      StateCache<D3D11_SAMPLER_DESC, ID3D11SamplerState> sampler;
     } caches;
   };
 
@@ -261,22 +265,6 @@ namespace dxup {
     implicitViewport.MinZ = 0.0f;
     implicitViewport.MaxZ = 1.0f;
     SetViewport(&implicitViewport);
-
-    for (uint32_t i = 0; i < 4; i++) {
-      ID3D11SamplerState* state;
-      D3D11_SAMPLER_DESC sampDesc;
-      ZeroMemory(&sampDesc, sizeof(sampDesc));
-      sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-      sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-      sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-      sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-      sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-      sampDesc.MinLOD = 0;
-      sampDesc.MaxLOD = 0;
-
-      m_device->CreateSamplerState(&sampDesc, &state);
-      m_context->PSSetSamplers(i, 1, &state);
-    }
 
     // Defaults from SwiftShader.
     SetRenderState(D3DRS_ZENABLE, pPresentationParameters->EnableAutoDepthStencil != FALSE ? D3DZB_TRUE : D3DZB_FALSE);
@@ -991,6 +979,17 @@ namespace dxup {
       case D3DCMP_ALWAYS: return D3D11_COMPARISON_ALWAYS;
       }
     }
+
+    D3D11_TEXTURE_ADDRESS_MODE textureAddressMode(DWORD mode) {
+      switch (mode) {
+      default:
+      case D3DTADDRESS_WRAP: return D3D11_TEXTURE_ADDRESS_WRAP;
+      case D3DTADDRESS_MIRROR: return D3D11_TEXTURE_ADDRESS_MIRROR;
+      case D3DTADDRESS_CLAMP: return D3D11_TEXTURE_ADDRESS_CLAMP;
+      case D3DTADDRESS_BORDER: return D3D11_TEXTURE_ADDRESS_BORDER;
+      case D3DTADDRESS_MIRRORONCE: return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
+      }
+    }
   }
 
   void Direct3DDevice9Ex::UpdateDepthStencilState() {
@@ -1065,6 +1064,48 @@ namespace dxup {
     m_context->RSSetState(state);
 
     m_state->dirtyFlags &= ~dirtyFlags::rasterizer;
+  }
+
+  void Direct3DDevice9Ex::UpdateSampler(uint32_t sampler) {
+    auto& samplerState = m_state->samplerStates[sampler];
+
+    D3D11_SAMPLER_DESC desc;
+    desc.AddressU = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSU]);
+    desc.AddressV = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSV]);
+    desc.AddressW = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSW]);
+    convert::color(samplerState[D3DSAMP_BORDERCOLOR], desc.BorderColor);
+    desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // TODO! Use the proper filtering here...
+    desc.MaxAnisotropy = (UINT)samplerState[D3DSAMP_MAXANISOTROPY];
+    desc.MipLODBias = (UINT)samplerState[D3DSAMP_MIPMAPLODBIAS];
+    desc.MaxLOD = samplerState[D3DSAMP_MAXMIPLEVEL];
+    desc.MinLOD = -FLT_MAX;
+
+    ID3D11SamplerState* state = m_state->caches.sampler.lookupObject(desc);
+
+    if (state == nullptr) {
+      Com<ID3D11SamplerState> comState;
+
+      HRESULT result = m_device->CreateSamplerState(&desc, &comState);
+      if (FAILED(result)) {
+        log::fail("Failed to create rasterizer state.");
+        return;
+      }
+
+      m_state->caches.sampler.pushState(desc, comState.ptr());
+      state = comState.ptr();
+    }
+
+    // TODO! Handle vertex texture sampling.
+    m_context->PSSetSamplers(sampler, 1, &state);
+
+    m_state->dirtySamplers &= ~sampler;
+  }
+  void Direct3DDevice9Ex::UpdateSamplers() {
+    for (uint32_t i = 0; i < 20; i++) {
+      if (m_state->dirtySamplers & (1ull << i))
+        UpdateSampler(i);
+    }
   }
 
   void Direct3DDevice9Ex::UpdateRenderTargets() {
@@ -1398,11 +1439,32 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) {
-    log::stub("Direct3DDevice9Ex::GetSamplerState");
+    if (pValue == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (FAILED(MapStageToSampler(Sampler, &Sampler)))
+      return D3DERR_INVALIDCALL;
+
+    if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
+      return D3D_OK;
+
+    *pValue = m_state->samplerStates[Sampler][Type];
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) {
-    log::stub("Direct3DDevice9Ex::SetSamplerState");
+    if (FAILED(MapStageToSampler(Sampler, &Sampler)))
+      return D3DERR_INVALIDCALL;
+
+    if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
+      return D3D_OK;
+
+    if (m_state->samplerStates[Sampler][Type] == Value)
+      return D3D_OK;
+
+    m_state->samplerStates[Sampler][Type] = Value;
+    m_state->dirtySamplers |= 1 << Sampler;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ValidateDevice(DWORD* pNumPasses) {
