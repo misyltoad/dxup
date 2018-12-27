@@ -84,9 +84,9 @@ namespace dxup {
         uint32_t defaultValueOffset;
 
         // DX11
-        uint32_t startTexture = 0;
+        uint32_t startTexture = 0xFFFFFFFFu;
         uint32_t textureSize = 0;
-        uint32_t startSampler = 0;
+        uint32_t startSampler = 0xFFFFFFFFu;
         uint32_t samplerSize = 0;
       };
 
