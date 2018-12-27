@@ -99,17 +99,17 @@ namespace dxup {
       }
 
       inline uint32_t getTotalTempCount() {
-        uint32_t mappedCount = getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_TEMP);
-        if (mappedCount == UINT32_MAX && m_highestInternalTemp == UINT32_MAX)
+        uint32_t highestRealTempId = getHighestIdForDXBCType(D3D10_SB_OPERAND_TYPE_TEMP);
+        if (highestRealTempId == UINT32_MAX && m_highestInternalTemp == UINT32_MAX)
           return 0;
 
-        if (mappedCount == UINT32_MAX)
+        if (highestRealTempId == UINT32_MAX)
           return m_highestInternalTemp + 1;
 
         if (m_highestInternalTemp == UINT32_MAX)
-          return mappedCount + 1;
+          return highestRealTempId + 1;
 
-        return max(mappedCount, m_highestInternalTemp) + 1;
+        return max(highestRealTempId, m_highestInternalTemp) + 1;
       }
 
       inline DXBCOperand getNextInternalTemp() {
