@@ -20,6 +20,11 @@ namespace dxup {
 
     class RegisterMap {
     public:
+      inline void reset() {
+        m_registerMap.clear();
+        m_highestInternalTemp = UINT32_MAX;
+      }
+
       inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
         return getRegisterMapping(operand);
       }

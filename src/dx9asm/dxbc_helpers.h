@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <vector>
+#include "../util/fixed_buffer.h"
 #include "dx9asm_operations.h"
 
 namespace dxup {
@@ -148,9 +149,6 @@ namespace dxup {
         , m_lengthOffset{ lengthOffset }
         , m_interpolationMode{ interpolationMode }
         , m_flags{ flags } {
-
-        if (m_lengthOverride == UINT32_MAX)
-          m_operands.reserve(4);
       }
 
       DXBCOperation(const DX9Operation& operation)
@@ -192,7 +190,7 @@ namespace dxup {
       bool m_saturate = false;
       bool m_sampler = false;
       uint32_t m_extra = 0;
-      std::vector<DXBCOperand> m_operands;
+      FixedBuffer<8, DXBCOperand> m_operands;
     };
 
   }

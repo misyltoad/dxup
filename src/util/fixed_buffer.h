@@ -7,7 +7,7 @@ namespace dxup {
 
   public:
 
-    void push(T token) {
+    void push_back(const T& token) {
       m_tokens[m_size++] = token;
     }
 
@@ -21,7 +21,7 @@ namespace dxup {
 
   private:
 
-    T m_tokens[Capacity] = { 0 };
+    T m_tokens[Capacity] = { };
     size_t m_size = 0;
   };
 

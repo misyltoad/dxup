@@ -73,7 +73,9 @@ namespace dxup {
         return;
       }
 
-      ShaderCodeTranslator translator{dx9asm};
+      static ShaderCodeTranslator translator;
+      translator.reset(dx9asm);
+
       if (!translator.translate()) {
         log::fail("Failed to translate shader fatally!");
         return;

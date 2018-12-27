@@ -11,7 +11,7 @@ namespace dxup {
 
     ShaderBytecode::ShaderBytecode(ShaderCodeTranslator& shdrCode) {
       // Should be enough to avoid any extra allocations.
-      m_bytecode.reserve(4096 + shdrCode.getCode().size());
+      m_bytecode.reserve(8192 + shdrCode.getCode().size());
 
       pushObject(m_bytecode, DXBCHeader());
 

@@ -160,12 +160,12 @@ namespace dxup {
 
       // Pass 1 - Size
       for (size_t i = 0; i < m_operands.size(); i++)
-        m_operands[i].addInstructionSize(instructionSize);
+        m_operands.get(i).addInstructionSize(instructionSize);
 
       // Pass 2 - Push
       pushOpTokens(code, instructionSize);
       for (size_t i = 0; i < m_operands.size(); i++)
-        m_operands[i].push(code);
+        m_operands.get(i).push(code);
     }
 
     void DXBCOperation::push(ShaderCodeTranslator& translator) {

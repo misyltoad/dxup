@@ -139,8 +139,8 @@ namespace dxup {
 
         ResourceBinding* constantBinding = nullptr;
         uint32_t bindingCount = 0;
-        std::vector<ResourceBinding*> samplerBindings;
-        std::vector<ResourceBinding*> textureBindings;
+        FixedBuffer<16, ResourceBinding*> samplerBindings;
+        FixedBuffer<16, ResourceBinding*> textureBindings;
 
         if (constantBufferCount != 0 || shdrCode.isAnySamplerUsed()) {
           resourceBindingDescOffset = getChunkSize(bytecode);
@@ -265,14 +265,18 @@ namespace dxup {
           pushAlignedString(obj, "dx9_mapped_constants");
         }
 
-        for (ResourceBinding* binding : samplerBindings) {
+        for (size_t i = 0; i < samplerBindings.size(); i++) {
+          ResourceBinding* binding = samplerBindings.get(i);
+
           binding->nameOffset = getChunkSize(bytecode);
           char name[64] = "";
           snprintf(name, 64, "sampler%d", binding->bindPoint);
           pushAlignedString(obj, name);
         }
 
-        for (ResourceBinding* binding : textureBindings) {
+        for (size_t i = 0; i < textureBindings.size(); i++) {
+          ResourceBinding* binding = textureBindings.get(i);
+
           binding->nameOffset = getChunkSize(bytecode);
           char name[64] = "";
           snprintf(name, 64, "texture%d", binding->bindPoint);

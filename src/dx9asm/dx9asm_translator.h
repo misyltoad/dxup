@@ -26,9 +26,16 @@ namespace dxup {
 
     public:
 
-      ShaderCodeTranslator(const uint32_t* code)
-        : m_base{code} 
-        , m_head{ code } {}
+      inline void reset(const uint32_t* code) {
+        m_dxbcCode.clear();
+        m_samplers.clear();
+        m_map.reset();
+        m_indirectConstantUsed = false;
+
+        m_ctab = nullptr;
+        m_base = code;
+        m_head = code;
+      }
 
       inline uint32_t getHeaderToken() const {
         return *m_base;
