@@ -4,10 +4,9 @@ d3d9_main_src = [
   'd3d9_main.cpp',
   'd3d9_surface.cpp',
   'd3d9_swapchain.cpp',
-  'd3d9_texture.cpp',
   'd3d9_util.cpp',
   'd3d9_format.cpp',
-  'd3d9_constant_buffer.cpp'
+  'd3d9_constant_buffer.cpp',
 ]
 
 d3d9_deps = [ lib_d3d11, lib_dxgi, util_dep, dx9asm_dep ]

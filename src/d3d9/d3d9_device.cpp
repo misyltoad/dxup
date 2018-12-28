@@ -665,10 +665,11 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
-    return CreateTextureInternal(false, Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, ppTexture, pSharedHandle);
+    return CreateTextureInternal(D3DRTYPE_TEXTURE, false, Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, (void**)ppTexture, pSharedHandle);
   }
 
   HRESULT Direct3DDevice9Ex::CreateTextureInternal(
+    D3DRESOURCETYPE Type,
     bool singletonSurface,
     UINT Width, 
     UINT Height,
@@ -679,7 +680,7 @@ namespace dxup {
     D3DMULTISAMPLE_TYPE MultiSample,
     DWORD MultisampleQuality,
     BOOL Discard,
-    IDirect3DTexture9** ppTexture,
+    void** ppTexture,
     HANDLE* pSharedHandle) {
     InitReturnPtr(ppTexture);
     InitReturnPtr(pSharedHandle);
@@ -696,7 +697,7 @@ namespace dxup {
     desc.Usage = d3d11Usage;
     desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
-    desc.ArraySize = 1;
+    desc.ArraySize = Type == D3DRTYPE_CUBETEXTURE ? 6 : 1;
 
     UINT sampleCount = max(1, (UINT)MultiSample);
 
@@ -707,7 +708,7 @@ namespace dxup {
     desc.SampleDesc.Count = 1;//sampleCount;
     desc.SampleDesc.Quality = 0;//equateMultisampleQuality ? sampleCount : 0;
     desc.BindFlags = 0;
-    desc.MiscFlags = 0;
+    desc.MiscFlags = Type == D3DRTYPE_CUBETEXTURE ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
 
     if (!isDepthStencil)
       desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
@@ -732,7 +733,10 @@ namespace dxup {
     if (!isDepthStencil)
       m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
 
-    *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
+    if (Type == D3DRTYPE_CUBETEXTURE)
+      *ppTexture = ref(new Direct3DCubeTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
+    else
+      *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
 
     return D3D_OK;
   }
@@ -741,8 +745,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateCubeTexture(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateCubeTexture");
-    return D3D_OK;
+    return CreateTextureInternal(D3DRTYPE_CUBETEXTURE, false, EdgeLength, EdgeLength, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, (void**)ppCubeTexture, pSharedHandle);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexBuffer(UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle) {
     InitReturnPtr(ppVertexBuffer);

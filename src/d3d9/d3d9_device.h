@@ -157,6 +157,7 @@ namespace dxup {
     void DoDepthDiscardCheck();
 
     HRESULT CreateTextureInternal(
+      D3DRESOURCETYPE Type,
       bool FakeSurface,
       UINT Width,
       UINT Height,
@@ -167,7 +168,7 @@ namespace dxup {
       D3DMULTISAMPLE_TYPE MultiSample,
       DWORD MultisampleQuality,
       BOOL Discard,
-      IDirect3DTexture9** ppTexture,
+      void** ppTexture,
       HANDLE* pSharedHandle);
 
     void GetParent(Direct3D9Ex** parent);
