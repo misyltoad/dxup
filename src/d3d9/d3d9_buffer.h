@@ -35,8 +35,8 @@ namespace dxup {
       D3DLOCKED_RECT lockedRect;
 
       RECT rectToLock;
-      rectToLock.bottom = 0;
       rectToLock.top = 0;
+      rectToLock.bottom = 1;
       rectToLock.left = OffsetToLock;
       rectToLock.right = SizeToLock;
       bool degenerate = isRectDegenerate(rectToLock);
