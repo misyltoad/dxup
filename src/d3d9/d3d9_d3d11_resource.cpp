@@ -23,9 +23,11 @@ namespace dxup {
     }
 
     Com<ID3D11ShaderResourceView> srv;
-    device->GetD3D11Device()->CreateShaderResourceView(texture, nullptr, &srv);
 
-    return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u));
+    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
+      device->GetD3D11Device()->CreateShaderResourceView(texture, nullptr, &srv);
+
+    return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage) {
@@ -39,7 +41,7 @@ namespace dxup {
       device->GetD3D11Device()->CreateBuffer(&desc, nullptr, &stagingBuffer);
     }
 
-    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, DXGI_FORMAT_UNKNOWN, 1, 1);
+    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, DXGI_FORMAT_UNKNOWN, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage) {
@@ -111,14 +113,15 @@ namespace dxup {
     }
   }
 
-  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips)
+  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
     : m_device{ device }
     , m_resource{ resource }
     , m_staging{ staging }
     , m_srv{ srv }
     , m_slices{ slices }
     , m_mips{ mips }
-    , m_dxgiFormat{ dxgiFormat } {
+    , m_dxgiFormat{ dxgiFormat }
+    , m_dynamic{ dynamic } {
     ResetMipMapTracking();
   }
 }

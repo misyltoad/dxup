@@ -82,7 +82,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT Direct3DSurface9::LockRect(D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
-    return m_resource->D3D9LockRect(m_slice, m_mip, pLockedRect, pRect, Flags);
+    return m_resource->D3D9LockRect(m_slice, m_mip, pLockedRect, pRect, Flags, m_d3d9Desc.Usage);
   }
   HRESULT Direct3DSurface9::UnlockRect() {
     return m_resource->D3D9UnlockRect(m_slice, m_mip);

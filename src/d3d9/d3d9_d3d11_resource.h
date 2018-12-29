@@ -52,10 +52,14 @@ namespace dxup {
 
     DXGI_FORMAT GetDXGIFormat();
 
-    HRESULT D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags);
+    HRESULT D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage);
     HRESULT D3D9UnlockRect(UINT slice, UINT mip);
 
   private:
+
+    UINT CalcMapFlags(UINT d3d9LockFlags);
+
+    D3D11_MAP CalcMapType(UINT d3d9LockFlags, DWORD d3d9Usage);
 
     void PushStaging();
 
@@ -65,7 +69,7 @@ namespace dxup {
     static DXUPResource* CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage);
     static DXUPResource* CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage);
 
-    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips);
+    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic);
 
     UINT m_slices;
     UINT m_mips;
@@ -79,6 +83,8 @@ namespace dxup {
 
     bool IsStagingRectDegenerate();
     RECT m_stagingRect;
+
+    bool m_dynamic;
 
     Com<ID3D11ShaderResourceView> m_srv;
   };

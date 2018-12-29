@@ -7,7 +7,29 @@ namespace dxup {
     return isRectDegenerate(m_stagingRect);
   }
 
-  HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
+  UINT DXUPResource::CalcMapFlags(UINT d3d9LockFlags) {
+    return d3d9LockFlags & D3DLOCK_DONOTWAIT ? D3D11_MAP_FLAG_DO_NOT_WAIT : 0;
+  }
+
+  D3D11_MAP DXUPResource::CalcMapType(UINT d3d9LockFlags, DWORD d3d9Usage) {
+    if (m_dynamic) {
+      if (d3d9LockFlags & D3DLOCK_NOOVERWRITE)
+        return D3D11_MAP_WRITE_NO_OVERWRITE;
+
+      if (d3d9LockFlags & D3DLOCK_DISCARD)
+        return D3D11_MAP_WRITE_DISCARD;
+    }
+
+    if (d3d9LockFlags & D3DLOCK_READONLY)
+      return D3D11_MAP_READ;
+
+    if (d3d9Usage & D3DUSAGE_WRITEONLY)
+      return D3D11_MAP_WRITE;
+
+    return D3D11_MAP_READ_WRITE;
+  }
+
+  HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage) {
     if (!pLockedRect)
       return D3DERR_INVALIDCALL;
 
@@ -20,7 +42,7 @@ namespace dxup {
       m_stagingRect = *pRect;
 
     D3D11_MAPPED_SUBRESOURCE res;
-    HRESULT result = m_device->GetContext()->Map(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips), calcMapType(Flags), calcMapFlags(Flags), &res);
+    HRESULT result = m_device->GetContext()->Map(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips), CalcMapType(Flags, Usage), CalcMapFlags(Flags), &res);
 
     if (result == DXGI_ERROR_WAS_STILL_DRAWING)
       return D3DERR_WASSTILLDRAWING;

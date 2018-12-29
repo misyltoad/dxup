@@ -564,7 +564,7 @@ namespace dxup {
     SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
     SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
     SwapChainDesc.OutputWindow = m_window;
     SwapChainDesc.Windowed = true;
     //SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
