@@ -100,7 +100,8 @@ namespace dxup {
           m_device->GetContext()->CopySubresourceRegion(GetResource(), subresourceToCopy, box.left, box.top, 0, GetStaging(), subresourceToCopy, IsStagingRectDegenerate() ? nullptr : &box);
       }
     }
-
+    
+    ResetMipMapTracking();
   }
 
 }
