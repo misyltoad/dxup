@@ -3,75 +3,74 @@
 #include "d3d9_base.h"
 #include "d3d9_format.h"
 #include "d3d9_device_unknown.h"
+#include "d3d9_d3d11_resource.h"
 #include "../util/private_data_d3d.h"
 
 #include <vector>
 
 namespace dxup {
 
-  template <typename... Base>
+  struct D3D9ResourceDesc {
+    D3DPOOL Pool = D3DPOOL_DEFAULT;
+    DWORD Usage = 0;
+    BOOL Discard = false;
+    D3DFORMAT Format = D3DFMT_UNKNOWN;
+    DWORD Priority = 0;
+    DWORD FVF = 0;
+  };
+
+  template <D3DRESOURCETYPE ResourceType, typename... Base>
   class Direct3DResource9 : public D3D9DeviceUnknown<Base...> {
 
   public:
 
-    Direct3DResource9(Direct3DDevice9Ex* pDevice, D3DPOOL pool, DWORD usage)
-      : D3D9DeviceUnknown<Base...>(pDevice)
-      , m_pool(pool)
-      , m_priority(0)
-      , m_usage(usage) {}
+    Direct3DResource9(Direct3DDevice9Ex* pDevice, DXUPResource* resource, const D3D9ResourceDesc& d3d9Desc)
+      : D3D9DeviceUnknown<Base...>{ pDevice }
+      , m_resource{ resource }
+      , m_d3d9Desc{ d3d9Desc } {}
 
-    HRESULT WINAPI SetPrivateData(REFGUID refguid, const void* pData, DWORD SizeOfData, DWORD Flags) override {
+    ~Direct3DResource9() {
+      delete m_resource;
+    }
+
+    HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID refguid, const void* pData, DWORD SizeOfData, DWORD Flags) override {
       return m_map.SetPrivateData(refguid, pData, SizeOfData, Flags);
     }
-    HRESULT WINAPI GetPrivateData(REFGUID refguid, void* pData, DWORD* pSizeOfData) override {
+    HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID refguid, void* pData, DWORD* pSizeOfData) override {
       return m_map.GetPrivateData(refguid, pData, pSizeOfData);
     }
-    HRESULT WINAPI FreePrivateData(REFGUID refguid) override {
+    HRESULT STDMETHODCALLTYPE FreePrivateData(REFGUID refguid) override {
       return m_map.FreePrivateData(refguid);
     }
-    DWORD WINAPI SetPriority(DWORD PriorityNew) override {
-      DWORD oldPriority = m_priority;
-      m_priority = PriorityNew;
+    DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) override {
+      DWORD oldPriority = m_d3d9Desc.Priority;
+      m_d3d9Desc.Priority = PriorityNew;
       return oldPriority;
     }
-    DWORD WINAPI GetPriority() override {
-      return m_priority;
+    DWORD STDMETHODCALLTYPE GetPriority() override {
+      return m_d3d9Desc.Priority;
     }
-    void WINAPI PreLoad() override {
+    void STDMETHODCALLTYPE PreLoad() override {
       log::stub("Direct3DResource9::PreLoad");
     }
-    D3DRESOURCETYPE WINAPI GetType() override {
+    D3DRESOURCETYPE STDMETHODCALLTYPE GetType() override {
       return ResourceType;
     }
 
-    UINT CalcMapFlags(UINT d3d9LockFlags) {
-      return d3d9LockFlags & D3DLOCK_DONOTWAIT ? D3D11_MAP_FLAG_DO_NOT_WAIT : 0;
+    const D3D9ResourceDesc& GetD3D9Desc() {
+      return m_d3d9Desc;
     }
 
-    D3D11_MAP CalcMapType(UINT d3d9LockFlags) {
-      if (m_usage & D3DUSAGE_DYNAMIC) {
-        if (d3d9LockFlags & D3DLOCK_NOOVERWRITE)
-          return D3D11_MAP_WRITE_NO_OVERWRITE;
-
-        if (d3d9LockFlags & D3DLOCK_DISCARD)
-          return D3D11_MAP_WRITE_DISCARD;
-      }
-
-      if (d3d9LockFlags & D3DLOCK_READONLY)
-        return D3D11_MAP_READ;
-
-      if (m_usage & D3DUSAGE_WRITEONLY)
-        return D3D11_MAP_WRITE;
-
-      return D3D11_MAP_READ_WRITE;
+    DXUPResource* GetDXUPResource() {
+      return m_resource;
     }
 
   protected:
 
-    DWORD m_priority;
-    D3DPOOL m_pool;
+    DXUPResource* m_resource;
+
+    D3D9ResourceDesc m_d3d9Desc;
     PrivateDataD3D m_map;
-    UINT m_usage;
   };
 
 }

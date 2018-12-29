@@ -1,41 +1,27 @@
 #pragma once
 
-#include "d3d9_basetexture.h"
+#include "d3d9_d3d11_resource.h"
+#include "d3d9_resource.h"
 #include <vector>
 
 namespace dxup {
 
   const D3DCUBEMAP_FACES Face0 = (D3DCUBEMAP_FACES)0;
 
-  template <D3DRESOURCETYPE resourceType, uint32_t slices, typename ID3D9BaseType>
-  class Direct3DGeneric2DTexture9 : public Direct3DBaseTexture9<resourceType, ID3D11Texture2D, ID3D9BaseType> {
+  template <D3DRESOURCETYPE ResourceType, uint32_t slices, typename ID3D9BaseType>
+  class Direct3DGeneric2DTexture9 : public Direct3DResource9<ResourceType, ID3D9BaseType> {
 
   public:
 
-    Direct3DGeneric2DTexture9(bool fakeSurface, Direct3DDevice9Ex* device, ID3D11Texture2D* texture, ID3D11ShaderResourceView* srv, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
-      : Direct3DBaseTexture9<ID3D11Texture2D, ID3D9BaseType>(slices, device, texture, srv, pool, usage)
+    Direct3DGeneric2DTexture9(bool singletonSurface, Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc)
+      : Direct3DResource9<ResourceType, ID3D9BaseType>(device, resource, desc)
       , m_singletonSurface{ singletonSurface } {
-
-      D3D11_TEXTURE2D_DESC desc;
-      texture->GetDesc(&desc);
-
-      m_mips = desc.MipLevels;
-
-      if (desc.Usage == D3D11_USAGE_DEFAULT || !(m_usage & D3DUSAGE_WRITEONLY)) {
-        // See comment in d3d9_vertexbuffer.cpp
-        makeStaging(desc, m_usage);
-
-        Com<ID3D11Texture2D> stagingTex;
-        GetD3D11Device()->CreateTexture2D(&desc, nullptr, &stagingTex);
-        SetStaging(stagingTex.ptr());
-      }
-
-      m_surfaces.reserve(desc.MipLevels * slices);
+      m_surfaces.reserve(resource->GetSubresources());
 
       // This should allow us to match D3D11CalcSubresource.
-      for (UINT slice = 0; slice < slices; slice++) {
-        for (UINT mip = 0; mip < desc.MipLevels; mip++) {
-          Direct3DSurface9* surface = new Direct3DSurface9(singletonSurface, slice, mip, device, this, texture, pool, usage, discard, format);
+      for (UINT slice = 0; slice < resource->GetSlices(); slice++) {
+        for (UINT mip = 0; mip < resource->GetMips(); mip++) {
+          Direct3DSurface9* surface = new Direct3DSurface9(singletonSurface, slice, mip, device, this, resource, desc);
 
           if (!singletonSurface)
             surface->AddRefPrivate();
@@ -69,7 +55,7 @@ namespace dxup {
     }
 
     DWORD STDMETHODCALLTYPE GetLevelCount() {
-      return (DWORD)m_mips;
+      return (DWORD)GetDXUPResource()->GetMips();
     }
 
     HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
@@ -80,13 +66,13 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE GetCubeMapSurface(D3DCUBEMAP_FACES FaceType, UINT Level, IDirect3DSurface9** ppCubeMapSurface) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, m_mips);
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
-      InitReturnPtr(ppSurfaceLevel);
-      if (subresource >= m_surfaces.size() || ppSurfaceLevel == nullptr)
+      InitReturnPtr(ppCubeMapSurface);
+      if (subresource >= m_surfaces.size() || ppCubeMapSurface == nullptr)
         return D3DERR_INVALIDCALL;
 
-      *ppSurfaceLevel = ref(m_surfaces[subresource]);
+      *ppCubeMapSurface = ref(m_surfaces[subresource]);
 
       return D3D_OK;
     }
@@ -96,7 +82,7 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE LockRect(D3DCUBEMAP_FACES FaceType, UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, m_mips);
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
         return D3DERR_INVALIDCALL;
@@ -109,7 +95,7 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE UnlockRect(D3DCUBEMAP_FACES FaceType, UINT Level) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, m_mips);
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
         return D3DERR_INVALIDCALL;
@@ -131,23 +117,36 @@ namespace dxup {
     }
 
     void STDMETHODCALLTYPE GenerateMipSubLevels() {
-      if (GetSRV() != nullptr)
-        m_device->GetContext()->GenerateMips(GetSRV());
+      if (GetDXUPResource()->GetSRV() != nullptr)
+        m_device->GetContext()->GenerateMips(GetDXUPResource()->GetSRV());
       else
         log::warn("GenerateMipSubLevels called on a texture with no SRV.");
-    }
-
-    D3DRESOURCETYPE STDMETHODCALLTYPE GetType() {
-      return resourceType;
     }
 
     inline bool IsFakeSurface() {
       return m_singletonSurface;
     }
 
+    DWORD STDMETHODCALLTYPE SetLOD(DWORD LODNew) override {
+      log::stub("Direct3DBaseTexture9::SetLOD");
+      return 0;
+    }
+    DWORD STDMETHODCALLTYPE GetLOD() override {
+      log::stub("Direct3DBaseTexture9::GetLOD");
+      return 0;
+    }
+
+    HRESULT STDMETHODCALLTYPE SetAutoGenFilterType(D3DTEXTUREFILTERTYPE FilterType) override {
+      log::stub("Direct3DBaseTexture9::SetAutoGenFilterType");
+      return D3D_OK;
+    }
+    D3DTEXTUREFILTERTYPE STDMETHODCALLTYPE GetAutoGenFilterType() override {
+      log::stub("Direct3DBaseTexture9::GetAutoGenFilterType");
+      return D3DTEXF_ANISOTROPIC;
+    }
+
   private:
     bool m_singletonSurface;
-    UINT m_mips;
     std::vector<IDirect3DSurface9*> m_surfaces;
   };
 

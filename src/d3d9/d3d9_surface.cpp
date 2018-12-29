@@ -2,66 +2,34 @@
 #include "d3d9_format.h"
 #include "d3d9_texture.h"
 #include "d3d9_format.h"
-#include "../dx9asm/dx9asm_util.h"
 #include "../util/config.h"
 
 namespace dxup {
 
-  Direct3DSurface9::Direct3DSurface9(bool singletonSurface, UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, ID3D11Texture2D* texture, D3DPOOL pool, DWORD usage, BOOL discard, D3DFORMAT format)
-    : Direct3DSurface9Base(device, pool, usage)
+  Direct3DSurface9::Direct3DSurface9(bool singletonSurface, UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc)
+    : Direct3DSurface9Base(device, resource, desc)
+	, m_resource(resource)
     , m_container(container)
-    , m_d3d11texture(texture)
     , m_slice(slice)
     , m_mip(mip)
     , m_rtView(nullptr)
-    , m_discard(discard)
-    , m_format(format)
     , m_singletonSurface(singletonSurface)
   {
     if (singletonSurface && m_container != nullptr)
         m_container->AddRef();
 
-    if (GetD3D11Texture2D()) {
-      D3D11_TEXTURE2D_DESC desc;
-      GetD3D11Texture2D()->GetDesc(&desc);
-      m_totalMips = max(desc.MipLevels, 1);
-      m_dxgiFormat = desc.Format;
-    }
-    else if (m_surface != nullptr) {
-      DXGI_SURFACE_DESC desc;
-      m_surface->GetDesc(&desc);
-      m_totalMips = 1;
-      m_dxgiFormat = desc.Format;
-    }
-    else
-      log::warn("Unknown surface type and therefore format.");
-
-    if (GetSubresource() == 0 && usage & D3DUSAGE_DEPTHSTENCIL) {
-      if (texture != nullptr) {
-        HRESULT result = GetD3D11Device()->CreateDepthStencilView(texture, nullptr, &m_dsView);
-
-        if (FAILED(result))
-          log::warn("Failed to create depth stencil for surface!");
-      }
-      else
-        log::warn("No D3D11 Texture for Depth Stencil");
+    if (GetSubresource() == 0 && desc.Usage & D3DUSAGE_DEPTHSTENCIL) {
+      if (FAILED(GetD3D11Device()->CreateDepthStencilView(resource->GetResource(), nullptr, &m_dsView)))
+        log::warn("Failed to create depth stencil for surface!");
     }
 
-    if (GetSubresource() == 0 && usage & D3DUSAGE_RENDERTARGET) {
-      if (texture != nullptr) {
-        HRESULT result = GetD3D11Device()->CreateRenderTargetView(texture, nullptr, &m_rtView);
-
-        if (FAILED(result))
-          log::warn("Failed to create render target for surface!");
-      }
-      else
-          log::warn("No D3D11 Texture for Render Target");
+    if (GetSubresource() == 0 && desc.Usage & D3DUSAGE_RENDERTARGET) {
+      if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), nullptr, &m_rtView)))
+        log::warn("Failed to create render target for surface!");
     }
 
-    if (config::getBool(config::GDICompatible)) {
-      if (texture != nullptr)
-        texture->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
-    }
+    if (config::getBool(config::GDICompatible))
+        resource->GetResource()->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
   }
 
   Direct3DSurface9::~Direct3DSurface9() {
@@ -99,138 +67,25 @@ namespace dxup {
     if (!pDesc)
       return D3DERR_INVALIDCALL;
 
-    if (GetD3D11Texture2D() != nullptr) {
-      D3D11_TEXTURE2D_DESC desc;
-      GetD3D11Texture2D()->GetDesc(&desc);
+    D3D11_TEXTURE2D_DESC desc;
+    m_resource->GetResourceAs<ID3D11Texture2D>()->GetDesc(&desc);
 
-      pDesc->Format = m_format;
-      pDesc->Height = desc.Height;
-      pDesc->Width = desc.Width;
-      pDesc->Pool = m_pool;
-      pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
-      pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
-      pDesc->Type = D3DRTYPE_SURFACE;
-      pDesc->Usage = m_usage;
-    }
-    else if (m_surface != nullptr) {
-      DXGI_SURFACE_DESC dxgiDesc;
-      HRESULT Result = m_surface->GetDesc(&dxgiDesc);
-
-      if (FAILED(Result))
-        return Result;
-
-      pDesc->Format = m_format;
-      pDesc->Height = dxgiDesc.Height;
-      pDesc->Width = dxgiDesc.Width;
-      pDesc->Pool = m_pool;
-      pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)dxgiDesc.SampleDesc.Count;
-      pDesc->MultiSampleQuality = dxgiDesc.SampleDesc.Quality;
-      pDesc->Type = D3DRTYPE_SURFACE;
-      pDesc->Usage = m_usage;
-    }
-    else {
-      log::warn("Failed to get surface desc, no container and no surface!");
-      return D3DERR_INVALIDCALL;
-    }
+    pDesc->Format = m_d3d9Desc.Format;
+    pDesc->Height = desc.Height;
+    pDesc->Width = desc.Width;
+    pDesc->Pool = m_d3d9Desc.Pool;
+    pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
+    pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
+    pDesc->Type = D3DRTYPE_SURFACE;
+    pDesc->Usage = m_d3d9Desc.Usage;
 
     return D3D_OK;
   }
   HRESULT Direct3DSurface9::LockRect(D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
-    if (!pLockedRect)
-      return D3DERR_INVALIDCALL;
-
-    pLockedRect->pBits = nullptr;
-    pLockedRect->Pitch = 0;
-
-    if (GetMapping() != nullptr) {
-
-      if (pRect != nullptr)
-       m_stagingRect = *pRect;
-
-      m_useRect = pRect != nullptr;
-
-      D3D11_MAPPED_SUBRESOURCE resource;
-      HRESULT result = GetContext()->Map(GetMapping(), GetSubresource(), CalcMapType(Flags), CalcMapFlags(Flags), &resource);
-
-      if (result == DXGI_ERROR_WAS_STILL_DRAWING)
-        return D3DERR_WASSTILLDRAWING;
-
-      if (FAILED(result))
-        return D3DERR_INVALIDCALL;
-
-      if (GetD3D9TextureBase())
-        GetD3D9TextureBase()->SetMipMapped(GetSlice(), GetMip());
-
-      size_t offset = 0;
-
-      if (m_useRect) {
-        D3D11_TEXTURE2D_DESC desc;
-        GetMapping()->GetDesc(&desc);
-        auto& sizeInfo = getDXGIFormatSizeInfo(desc.Format);
-
-        offset = ((pRect->top * resource.RowPitch) + pRect->left) * sizeInfo.pixelBytes / 8;
-      }
-
-      uint8_t* data = (uint8_t*)resource.pData;
-      pLockedRect->pBits = &data[offset];
-      pLockedRect->Pitch = resource.RowPitch;
-
-      return D3D_OK;
-    }
-    else if (m_surface != nullptr) {
-      m_surface->Map((DXGI_MAPPED_RECT*)pLockedRect, CalcMapFlags(Flags));
-    }
-    else
-      log::fail("Surface with no real parent to map to.");
-
-    return D3D_OK;
+    return m_resource->D3D9LockRect(m_slice, m_mip, pLockedRect, pRect, Flags);
   }
   HRESULT Direct3DSurface9::UnlockRect() {
-    if (GetMapping() != nullptr) {
-      GetContext()->Unmap(GetMapping(), GetSubresource());
-
-      if (GetD3D9TextureBase())
-        GetD3D9TextureBase()->SetMipUnmapped(GetSlice(), GetMip());
-    }
-    else if (m_surface != nullptr)
-      m_surface->Unmap();
-
-    if (HasStaging()) {
-      D3D11_BOX box = { 0 };
-
-      if (m_useRect) {
-        box.left = alignWidthForFormat(true, m_dxgiFormat, m_stagingRect.left);
-        box.top = alignHeightForFormat(true, m_dxgiFormat, m_stagingRect.top);
-        box.right = alignWidthForFormat(false, m_dxgiFormat, m_stagingRect.right);
-        box.bottom = alignHeightForFormat(false, m_dxgiFormat, m_stagingRect.bottom);
-        
-        box.front = 0;
-        box.back = 1;
-      }
-
-      if (GetD3D9TextureBase()) {
-        if (GetD3D9TextureBase()->CanPushStaging()) {
-
-          for (uint32_t slice = 0; slice < GetD3D9TextureBase()->GetSlices(); slice++) {
-            uint64_t delta = GetD3D9TextureBase()->GetChangedMips(slice);
-
-            for (uint64_t mip = 0; mip < sizeof(uint64_t) * 8; mip++) {
-              if (delta & (1ull << mip)) {
-                UINT subresourceToCopy = D3D11CalcSubresource(mip, slice, m_totalMips);
-                GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), subresourceToCopy, box.left, box.top, 0, GetStaging(), subresourceToCopy, m_useRect ? &box : nullptr);
-              }
-            }
-          }
-
-          GetD3D9TextureBase()->ResetMipMapTracking();
-
-        }
-      }
-      else
-        GetContext()->CopySubresourceRegion(GetD3D11Texture2D(), GetSubresource(), box.left, box.top, 0, GetStaging(), GetSubresource(), m_useRect ? &box : nullptr);
-    }
-
-    return D3D_OK;
+    return m_resource->D3D9UnlockRect(m_slice, m_mip);
   }
 
   D3DRESOURCETYPE STDMETHODCALLTYPE Direct3DSurface9::GetType() {
@@ -265,23 +120,8 @@ namespace dxup {
     return Direct3DSurface9Base::Release();
   }
 
-  ID3D11Texture2D* Direct3DSurface9::GetMapping() {
-    if (HasStaging())
-      return GetStaging();
-
-    return GetD3D11Texture2D();
-  }
-  ID3D11Texture2D* Direct3DSurface9::GetStaging() {
-    return GetD3D9TextureBase() ? GetD3D9TextureBase()->GetStaging() : nullptr;
-  }
-  ID3D11Texture2D* Direct3DSurface9::GetD3D11Texture2D() {
-    return m_d3d11texture.ptr();
-  }
   IDXGISurface1* Direct3DSurface9::GetDXGISurface() {
     return m_surface.ptr();
-  }
-  Direct3DTexture9Base* Direct3DSurface9::GetD3D9TextureBase() {
-    return dynamic_cast<Direct3DTexture9Base*>(m_container);
   }
   ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget() {
     return m_rtView.ptr();
@@ -300,8 +140,8 @@ namespace dxup {
     return D3D11CalcSubresource(m_mip, m_slice, m_totalMips);
   }
 
-  BOOL Direct3DSurface9::GetDiscard() {
-    return m_discard;
+  DXUPResource* Direct3DSurface9::GetDXUPResource() {
+    return m_resource;
   }
 
 }

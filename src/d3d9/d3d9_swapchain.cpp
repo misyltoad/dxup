@@ -29,10 +29,23 @@ namespace dxup {
         return;
       }
 
-      D3D11_TEXTURE2D_DESC desc;
-      texture->GetDesc(&desc);
+      DXUPResource* resource = DXUPResource::Create(device, texture.ptr(), D3DUSAGE_RENDERTARGET);
+      if (resource == nullptr) {
+        log::warn("Failed to create DXUPResource for backbuffer.");
+        return;
+      }
       
-      m_buffers[i] = new Direct3DSurface9(false, 0, m_device, this, texture.ptr(), D3DPOOL_DEFAULT, D3DUSAGE_RENDERTARGET, false, convert::format(desc.Format));
+      D3D9ResourceDesc d3d9Desc;
+      {
+        D3D11_TEXTURE2D_DESC desc;
+        texture->GetDesc(&desc);
+
+        d3d9Desc.Discard = false;
+        d3d9Desc.Format = convert::format(desc.Format);
+        d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
+      }
+      
+      m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
     }
 
     Com<IDXGIOutput> output;

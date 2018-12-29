@@ -9,8 +9,10 @@
 #include "../dx9asm/dx9asm_util.h"
 #include "../util/config.h"
 #include "../util/d3dcompiler_helpers.h"
+#include "d3d9_resource.h"
 #include "d3d9_vertexdeclaration.h"
 #include "d3d9_state_cache.h"
+#include "d3d9_d3d11_resource.h"
 
 namespace dxup {
 
@@ -729,14 +731,22 @@ namespace dxup {
       return D3DERR_INVALIDCALL;
     }
 
-    Com<ID3D11ShaderResourceView> srv;
-    if (!isDepthStencil)
-      m_device->CreateShaderResourceView(texture.ptr(), nullptr, &srv);
+    DXUPResource* resource = DXUPResource::Create(this, texture.ptr(), Usage);
+    if (resource == nullptr) {
+      log::fail("Failed to create DXUP resource.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Discard = Discard;
+    d3d9Desc.Format = Format;
+    d3d9Desc.Pool = Pool;
+    d3d9Desc.Usage = Usage;
 
     if (Type == D3DRTYPE_CUBETEXTURE)
-      *ppTexture = ref(new Direct3DCubeTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
+      *ppTexture = ref(new Direct3DCubeTexture9(singletonSurface, this, resource, d3d9Desc));
     else
-      *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, texture.ptr(), srv.ptr(), Pool, Usage, Discard, Format));
+      *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, resource, d3d9Desc));
 
     return D3D_OK;
   }
@@ -767,7 +777,18 @@ namespace dxup {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, buffer.ptr(), Pool, FVF, Usage));
+    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage);
+    if (resource == nullptr) {
+      log::fail("Failed to create DXUP resource.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Pool = Pool;
+    d3d9Desc.FVF = FVF;
+    d3d9Desc.Usage = Usage;
+
+    *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, resource, d3d9Desc));
 
     return D3D_OK;
   }
@@ -791,7 +812,18 @@ namespace dxup {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    *ppIndexBuffer = ref(new Direct3DIndexBuffer9(this, buffer.ptr(), Pool, Format, Usage));
+    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage);
+    if (resource == nullptr) {
+      log::fail("Failed to create DXUP resource.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Pool = Pool;
+    d3d9Desc.Format = Format;
+    d3d9Desc.Usage = Usage;
+
+    *ppIndexBuffer = ref(new Direct3DIndexBuffer9(this, resource, d3d9Desc));
 
     return D3D_OK;
   }
@@ -803,7 +835,7 @@ namespace dxup {
     Com<IDirect3DTexture9> d3d9Texture;
 
     // NOTE(Josh): May need to handle Lockable in future.
-    HRESULT result = CreateTextureInternal(true, Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, &d3d9Texture, pSharedHandle);
+    HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, (void**) &d3d9Texture, pSharedHandle);
 
     if (FAILED(result)) {
       log::fail("Failed to create render target.");
@@ -818,7 +850,7 @@ namespace dxup {
       return D3DERR_INVALIDCALL;
 
     Com<IDirect3DTexture9> d3d9Texture;
-    HRESULT result = CreateTextureInternal(true, Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, &d3d9Texture, pSharedHandle);
+    HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, (void**) &d3d9Texture, pSharedHandle);
 
     if (FAILED(result)) {
       log::fail("Failed to create depth stencil.");
@@ -883,11 +915,6 @@ namespace dxup {
     Direct3DSurface9* src = reinterpret_cast<Direct3DSurface9*>(pSourceSurface);
     Direct3DSurface9* dst = reinterpret_cast<Direct3DSurface9*>(pDestSurface);
 
-    if (dst->GetD3D11Texture2D() == nullptr || src->GetD3D11Texture2D() == nullptr) {
-      log::fail("Can't StretchRect of non-d3d11 based surface.");
-      return D3DERR_INVALIDCALL;
-    }
-
     if (pSourceRect != nullptr && pDestRect != nullptr) {
       UINT x = pDestRect->left;
       UINT y = pDestRect->top;
@@ -900,12 +927,12 @@ namespace dxup {
       box.bottom = pSourceRect->bottom;
       box.top = 0;
       box.back = 0;
-      m_context->CopySubresourceRegion(dst->GetD3D11Texture2D(), dst->GetSubresource(), x, y, 0, src->GetD3D11Texture2D(), src->GetSubresource(), &box);
+      m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), x, y, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), &box);
 
       return D3D_OK;
     }
 
-    m_context->CopySubresourceRegion(dst->GetD3D11Texture2D(), dst->GetSubresource(), 0, 0, 0, src->GetD3D11Texture2D(), src->GetSubresource(), nullptr);
+    m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), 0, 0, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), nullptr);
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ColorFill(IDirect3DSurface9* pSurface, CONST RECT* pRect, D3DCOLOR color) {
@@ -1425,7 +1452,7 @@ namespace dxup {
       Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
       if (texture2D != nullptr) {
         texture2D->AddRefPrivate();
-        srv = texture2D->GetSRV();
+        srv = texture2D->GetDXUPResource()->GetSRV();
       }
       else {
         m_state->textures[Stage] = nullptr;
@@ -1879,7 +1906,7 @@ namespace dxup {
     ID3D11Buffer* buffer = nullptr;
 
     if (vertexBuffer != nullptr)
-      buffer = vertexBuffer->GetD3D11Buffer();
+      buffer = vertexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
 
     m_state->vertexBuffers[StreamNumber] = vertexBuffer;
     m_state->vertexOffsets[StreamNumber] = OffsetInBytes;
@@ -1926,14 +1953,14 @@ namespace dxup {
 
     ID3D11Buffer* buffer = nullptr;
     if (indexBuffer != nullptr) {
-      if (indexBuffer->GetFormat() == D3DFMT_INDEX32)
+      if (indexBuffer->GetD3D9Desc().Format == D3DFMT_INDEX32)
         format = DXGI_FORMAT_R32_UINT;
 
-      buffer = indexBuffer->GetD3D11Buffer();
+      buffer = indexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
     }
 
     m_state->indexBuffer = indexBuffer;
-    m_context->IASetIndexBuffer(indexBuffer->GetD3D11Buffer(), format, 0);
+    m_context->IASetIndexBuffer(buffer, format, 0);
 
     return D3D_OK;
   }
@@ -2079,7 +2106,7 @@ namespace dxup {
   }
 
   void Direct3DDevice9Ex::DoDepthDiscardCheck() {
-    if (m_state->depthStencil != nullptr && m_state->depthStencil->GetDiscard()) {
+    if (m_state->depthStencil != nullptr && m_state->depthStencil->GetD3D9Desc().Discard) {
       ID3D11DepthStencilView* dsv = m_state->depthStencil->GetD3D11DepthStencil();
       if (dsv)
         m_context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 0.0f, 0);

@@ -7,6 +7,8 @@ d3d9_main_src = [
   'd3d9_util.cpp',
   'd3d9_format.cpp',
   'd3d9_constant_buffer.cpp',
+  'd3d9_d3d11_resource.cpp',
+  'd3d9_d3d11_resource_mapping.cpp'
 ]
 
 d3d9_deps = [ lib_d3d11, lib_dxgi, util_dep, dx9asm_dep ]

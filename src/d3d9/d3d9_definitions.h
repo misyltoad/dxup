@@ -6,6 +6,5 @@ namespace dxup {
   class Direct3D9Ex;
   class Direct3DDevice9Ex;
   class Direct3DSwapChain9Ex;
-  class Direct3DTexture9;
   class Direct3DSurface9;
 }
