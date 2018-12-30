@@ -1,6 +1,7 @@
 #include "d3d9_interface.h"
 #include "d3d9_device.h"
 #include "../util/config.h"
+#include <algorithm>
 #include <vector>
 
 namespace dxup {
@@ -334,6 +335,8 @@ namespace dxup {
     Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, m_displayModes.data());
     if (FAILED(Result))
       return D3DERR_INVALIDCALL;
+
+    std::reverse(m_displayModes.begin(), m_displayModes.end());
 
     return D3D_OK;
   }
