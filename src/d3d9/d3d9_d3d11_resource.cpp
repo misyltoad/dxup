@@ -112,6 +112,13 @@ namespace dxup {
     }
   }
 
+  HRESULT STDMETHODCALLTYPE DXUPResource::QueryInterface(REFIID riid, void** ppvObj) {
+    InitReturnPtr(ppvObj);
+    log::warn("QueryInterface called on DXUPResource.");
+
+    return E_NOINTERFACE;
+  }
+
   DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
     : m_device{ device }
     , m_resource{ resource }

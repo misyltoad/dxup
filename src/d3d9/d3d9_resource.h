@@ -29,10 +29,6 @@ namespace dxup {
       , m_resource{ resource }
       , m_d3d9Desc{ d3d9Desc } {}
 
-    ~Direct3DResource9() {
-      delete m_resource;
-    }
-
     HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID refguid, const void* pData, DWORD SizeOfData, DWORD Flags) override {
       return m_map.SetPrivateData(refguid, pData, SizeOfData, Flags);
     }
@@ -62,12 +58,12 @@ namespace dxup {
     }
 
     DXUPResource* GetDXUPResource() {
-      return m_resource;
+      return m_resource.ptr();
     }
 
   protected:
 
-    DXUPResource* m_resource;
+    Com<DXUPResource> m_resource;
 
     D3D9ResourceDesc m_d3d9Desc;
     PrivateDataD3D m_map;

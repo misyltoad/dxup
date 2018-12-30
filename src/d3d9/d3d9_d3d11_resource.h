@@ -5,7 +5,7 @@
 
 namespace dxup {
 
-  class DXUPResource {
+  class DXUPResource : public Unknown<IUnknown> {
 
   public:
 
@@ -50,7 +50,7 @@ namespace dxup {
 
     void ResetMipMapTracking();
 
-    DXGI_FORMAT GetDXGIFormat();
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj) override;
 
     HRESULT D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage);
     HRESULT D3D9UnlockRect(UINT slice, UINT mip);
