@@ -121,7 +121,7 @@ namespace dxup {
         .push(*this);
 
       // dst = int(dst)
-      DXBCOperation{ D3D10_SB_OPCODE_FTOI, false }
+      DXBCOperation{ D3D10_SB_OPCODE_FTOI, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(dstOpAsSrc)
         .push(*this);
@@ -151,7 +151,7 @@ namespace dxup {
 
       // Bithacking for uint32_t 0xFFFFFFFF -> float 1.0f. uint32_t 0x00000000 -> float 0.0f.
       const uint32_t andFixup = 0x3f800000;
-      DXBCOperation{ D3D10_SB_OPCODE_AND, false }
+      DXBCOperation{ D3D10_SB_OPCODE_AND, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(tempOpSrc)
         .appendOperand(DXBCOperand{ andFixup, andFixup, andFixup, andFixup })
@@ -192,7 +192,7 @@ namespace dxup {
         .appendOperand(tempOpSrc)
         .push(*this);
 
-      DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
+      DXBCOperation{ D3D10_SB_OPCODE_MUL, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(srcOp)
         .appendOperand(tempOpSrc)
@@ -226,7 +226,7 @@ namespace dxup {
         .appendOperand(src1Op)
         .push(*this);
 
-      DXBCOperation{ D3D10_SB_OPCODE_EXP, false }
+      DXBCOperation{ D3D10_SB_OPCODE_EXP, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(tempOpSrc)
         .push(*this);
@@ -307,7 +307,7 @@ namespace dxup {
       samplerOp.setComponents(0);
       samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
 
-      DXBCOperation{D3D10_SB_OPCODE_SAMPLE, false}
+      DXBCOperation{D3D10_SB_OPCODE_SAMPLE, operation.saturate()}
         .setSampler(true)
         .appendOperand(dstOp)
         .appendOperand(texCoordOp)
@@ -344,7 +344,7 @@ namespace dxup {
         .push(*this);
 
       // src2 + src0 * (src1 - src2)
-      DXBCOperation{ D3D10_SB_OPCODE_MAD, false }
+      DXBCOperation{ D3D10_SB_OPCODE_MAD, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(src0Op)
         .appendOperand(tempOpSrc)
