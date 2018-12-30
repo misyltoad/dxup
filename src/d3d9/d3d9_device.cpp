@@ -1453,22 +1453,26 @@ namespace dxup {
     if (pTexture != nullptr) {
       switch (pTexture->GetType()) {
 
-      case D3DRTYPE_TEXTURE:
+      case D3DRTYPE_TEXTURE: {
         Direct3DTexture9* tex = reinterpret_cast<Direct3DTexture9*>(pTexture);
         srv = tex->GetDXUPResource()->GetSRV();
         tex->AddRefPrivate();
         break;
+      }
 
-      case D3DRTYPE_CUBETEXTURE:
+      case D3DRTYPE_CUBETEXTURE: {
         Direct3DCubeTexture9* tex = reinterpret_cast<Direct3DCubeTexture9*>(pTexture);
         srv = tex->GetDXUPResource()->GetSRV();
         tex->AddRefPrivate();
         break;
+      }
 
-      default:
+      default: {
         m_state->textures[Stage] = nullptr;
         log::warn("Unable to find what new texture to bind really is.");
         break;
+      }
+
       }
     }
 
