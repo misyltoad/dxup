@@ -1437,26 +1437,27 @@ namespace dxup {
       return D3D_OK;
 
     if (m_state->textures[Stage] != nullptr) {
-      Direct3DTexture9* currentTex2D = dynamic_cast<Direct3DTexture9*>(m_state->textures[Stage]);
-      if (currentTex2D)
-        currentTex2D->ReleasePrivate();
-      else
+      switch (m_state->textures[Stage]->GetType()) {
+      case D3DRTYPE_TEXTURE: reinterpret_cast<Direct3DTexture9*>(pTexture)->ReleasePrivate(); break;
+      case D3DRTYPE_CUBETEXTURE: reinterpret_cast<Direct3DCubeTexture9*>(pTexture)->ReleasePrivate(); break;
+      default:
         log::warn("Unable to find what texture stage really is to release internally.");
+        break;
+      }
     }
 
     ID3D11ShaderResourceView* srv = nullptr;
 
     m_state->textures[Stage] = pTexture;
 
-    if (pTexture) {
-      Direct3DTexture9* texture2D = dynamic_cast<Direct3DTexture9*>(pTexture);
-      if (texture2D != nullptr) {
-        texture2D->AddRefPrivate();
-        srv = texture2D->GetDXUPResource()->GetSRV();
-      }
-      else {
+    if (pTexture != nullptr) {
+      switch (pTexture->GetType()) {
+      case D3DRTYPE_TEXTURE: srv = reinterpret_cast<Direct3DTexture9*>(pTexture)->GetDXUPResource()->GetSRV(); break;
+      case D3DRTYPE_CUBETEXTURE: srv = reinterpret_cast<Direct3DCubeTexture9*>(pTexture)->GetDXUPResource()->GetSRV(); break;
+      default:
         m_state->textures[Stage] = nullptr;
-        log::warn("Request to bind texture but I don't know what it is!");
+        log::warn("Unable to find what new texture to bind really is.");
+        break;
       }
     }
 
