@@ -59,7 +59,7 @@ namespace dxup {
     if (!IsStagingRectDegenerate(subresource)) {
       auto& sizeInfo = getDXGIFormatSizeInfo(m_dxgiFormat);
 
-      offset = ((pRect->top * res.RowPitch) + pRect->left) * sizeInfo.pixelBytes;
+      offset = (pRect->top * res.RowPitch) + (pRect->left * sizeInfo.pixelBytes);
     }
 
     uint8_t* data = (uint8_t*)res.pData;
