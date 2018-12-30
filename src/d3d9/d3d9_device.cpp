@@ -59,7 +59,7 @@ namespace dxup {
 
     std::array<std::array<DWORD, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStates;
 
-    Com<Direct3DIndexBuffer9> indexBuffer;
+    ComPrivate<Direct3DIndexBuffer9> indexBuffer;
 
     struct {
       StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
