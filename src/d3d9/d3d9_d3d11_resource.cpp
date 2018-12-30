@@ -122,6 +122,7 @@ namespace dxup {
     , m_mips{ mips }
     , m_dxgiFormat{ dxgiFormat }
     , m_dynamic{ dynamic } {
+    m_stagingRects.resize(GetSubresources());
     ResetMipMapTracking();
   }
 }

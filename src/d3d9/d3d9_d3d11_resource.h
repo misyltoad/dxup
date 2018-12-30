@@ -81,8 +81,8 @@ namespace dxup {
     Com<ID3D11Resource> m_resource;
     Com<ID3D11Resource> m_staging;
 
-    bool IsStagingRectDegenerate();
-    RECT m_stagingRect;
+    bool IsStagingRectDegenerate(UINT subresource);
+    std::vector<RECT> m_stagingRects;
 
     bool m_dynamic;
 

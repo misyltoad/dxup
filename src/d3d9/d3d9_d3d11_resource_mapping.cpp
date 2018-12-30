@@ -3,8 +3,8 @@
 
 namespace dxup {
 
-  bool DXUPResource::IsStagingRectDegenerate() {
-    return isRectDegenerate(m_stagingRect);
+  bool DXUPResource::IsStagingRectDegenerate(UINT subresource) {
+    return isRectDegenerate(m_stagingRects[subresource]);
   }
 
   UINT DXUPResource::CalcMapFlags(UINT d3d9LockFlags) {
@@ -36,13 +36,15 @@ namespace dxup {
     pLockedRect->pBits = nullptr;
     pLockedRect->Pitch = 0;
 
+    UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
+
     if (pRect == nullptr)
-      std::memset(&m_stagingRect, 0, sizeof(m_stagingRect));
+      std::memset(&m_stagingRects[subresource], 0, sizeof(RECT));
     else
-      m_stagingRect = *pRect;
+      m_stagingRects[subresource] = *pRect;
 
     D3D11_MAPPED_SUBRESOURCE res;
-    HRESULT result = m_device->GetContext()->Map(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips), CalcMapType(Flags, Usage), CalcMapFlags(Flags), &res);
+    HRESULT result = m_device->GetContext()->Map(GetMapping(), subresource, CalcMapType(Flags, Usage), CalcMapFlags(Flags), &res);
 
     if (result == DXGI_ERROR_WAS_STILL_DRAWING)
       return D3DERR_WASSTILLDRAWING;
@@ -54,7 +56,7 @@ namespace dxup {
 
     size_t offset = 0;
 
-    if (!IsStagingRectDegenerate()) {
+    if (!IsStagingRectDegenerate(subresource)) {
       auto& sizeInfo = getDXGIFormatSizeInfo(m_dxgiFormat);
 
       offset = ((pRect->top * res.RowPitch) + pRect->left) * sizeInfo.pixelBytes / 8;
@@ -78,26 +80,27 @@ namespace dxup {
   }
 
   void DXUPResource::PushStaging() {
-    D3D11_BOX box = { 0 };
-
-    if (!IsStagingRectDegenerate()) {
-      box.left = alignWidthForFormat(true, m_dxgiFormat, m_stagingRect.left);
-      box.top = alignHeightForFormat(true, m_dxgiFormat, m_stagingRect.top);
-      box.right = alignWidthForFormat(false, m_dxgiFormat, m_stagingRect.right);
-      box.bottom = alignHeightForFormat(false, m_dxgiFormat, m_stagingRect.bottom);
-
-      box.front = 0;
-      box.back = 1;
-    }
-
     for (uint32_t slice = 0; slice < m_slices; slice++) {
       uint64_t delta = GetChangedMips(slice);
 
       for (uint64_t mip = 0; mip < m_mips; mip++) {
-        UINT subresourceToCopy = D3D11CalcSubresource(mip, slice, m_mips);
+        UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
+
+        bool useRect = !IsStagingRectDegenerate(subresource);
+
+        D3D11_BOX box = { 0 };
+        if (useRect) {
+          box.left = alignWidthForFormat(true, m_dxgiFormat, m_stagingRects[subresource].left);
+          box.top = alignHeightForFormat(true, m_dxgiFormat, m_stagingRects[subresource].top);
+          box.right = alignWidthForFormat(false, m_dxgiFormat, m_stagingRects[subresource].right);
+          box.bottom = alignHeightForFormat(false, m_dxgiFormat, m_stagingRects[subresource].bottom);
+
+          box.front = 0;
+          box.back = 1;
+        }
 
         if (delta & (1ull << mip))
-          m_device->GetContext()->CopySubresourceRegion(GetResource(), subresourceToCopy, box.left, box.top, 0, GetStaging(), subresourceToCopy, IsStagingRectDegenerate() ? nullptr : &box);
+          m_device->GetContext()->CopySubresourceRegion(GetResource(), subresource, box.left, box.top, 0, GetStaging(), subresource, useRect ? &box : nullptr);
       }
     }
     
