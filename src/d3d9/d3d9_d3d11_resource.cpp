@@ -87,10 +87,10 @@ namespace dxup {
   }
 
   void DXUPResource::SetMipMapped(UINT slice, UINT mip) {
-    m_mappedSubresources[slice] |= 1 << mip;
+    m_mappedSubresources[slice] |= 1ull << mip;
   }
   void DXUPResource::SetMipUnmapped(UINT slice, UINT mip) {
-    m_unmappedSubresources[slice] |= 1 << mip;
+    m_unmappedSubresources[slice] |= 1ull << mip;
   }
 
   uint64_t DXUPResource::GetChangedMips(UINT slice) {
