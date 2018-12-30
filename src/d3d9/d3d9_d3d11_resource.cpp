@@ -40,7 +40,7 @@ namespace dxup {
       device->GetD3D11Device()->CreateBuffer(&desc, nullptr, &stagingBuffer);
     }
 
-    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, DXGI_FORMAT_UNKNOWN, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
+    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, DXGI_FORMAT_R8_UNORM, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage) {

@@ -22,8 +22,6 @@ namespace dxup {
     static const DXGIFormatSize sizeBC7{128, 4, 4};
     switch (format)
     {
-    case DXGI_FORMAT_UNKNOWN:
-      return size1;
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
     case DXGI_FORMAT_R32G32B32A32_UINT:
@@ -159,7 +157,9 @@ namespace dxup {
       return sizeUnknown;
     case DXGI_FORMAT_B4G4R4A4_UNORM:
       return size16;
+    case DXGI_FORMAT_UNKNOWN:
     default:
+      log::warn("Getting size of unknown format.");
       return sizeUnknown;
     }
   }
