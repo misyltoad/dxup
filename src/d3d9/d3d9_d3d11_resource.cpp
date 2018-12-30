@@ -15,17 +15,16 @@ namespace dxup {
     D3D11_TEXTURE2D_DESC desc;
     texture->GetDesc(&desc);
 
+    Com<ID3D11ShaderResourceView> srv;
+    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
+      device->GetD3D11Device()->CreateShaderResourceView(texture, nullptr, &srv);
+
     Com<ID3D11Texture2D> stagingTexture;
     if (NeedsStaging(desc.Usage, d3d9Usage)) {
       makeStaging(desc, d3d9Usage);
 
       device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &stagingTexture);
     }
-
-    Com<ID3D11ShaderResourceView> srv;
-
-    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
-      device->GetD3D11Device()->CreateShaderResourceView(texture, nullptr, &srv);
 
     return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
   }
