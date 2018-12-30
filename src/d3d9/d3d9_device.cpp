@@ -1107,7 +1107,7 @@ namespace dxup {
     desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
     desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // TODO! Use the proper filtering here...
     desc.MaxAnisotropy = (UINT)samplerState[D3DSAMP_MAXANISOTROPY];
-    desc.MipLODBias = (FLOAT)samplerState[D3DSAMP_MIPMAPLODBIAS];
+    desc.MipLODBias = std::clamp(dwordToFloat(samplerState[D3DSAMP_MIPMAPLODBIAS]), -16.0f, 15.99f);
     desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
     desc.MinLOD = -FLT_MAX;
 
