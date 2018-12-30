@@ -1118,7 +1118,7 @@ namespace dxup {
 
       HRESULT result = m_device->CreateSamplerState(&desc, &comState);
       if (FAILED(result)) {
-        log::fail("Failed to create rasterizer state.");
+        log::fail("Failed to create sampler state.");
         return;
       }
 
