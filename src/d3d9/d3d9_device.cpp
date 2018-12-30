@@ -373,7 +373,7 @@ namespace dxup {
     SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
     SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ZERO);
     SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
-    for (int i = 0; i < 8; i++)
+    for (uint32_t i = 0; i < 8; i++)
     {
       SetTextureStageState(i, D3DTSS_COLOROP, i == 0 ? D3DTOP_MODULATE : D3DTOP_DISABLE);
       SetTextureStageState(i, D3DTSS_COLORARG1, D3DTA_TEXTURE);
@@ -394,7 +394,7 @@ namespace dxup {
       SetTextureStageState(i, D3DTSS_RESULTARG, D3DTA_CURRENT);
       SetTextureStageState(i, D3DTSS_CONSTANT, 0x00000000);
     }
-    for (int i = 0; i <= D3DVERTEXTEXTURESAMPLER3; i = (i != 15) ? (i + 1) : D3DVERTEXTEXTURESAMPLER0)
+    for (uint32_t i = 0; i < 20; i++)
     {
       SetTexture(i, 0);
       SetSamplerState(i, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
