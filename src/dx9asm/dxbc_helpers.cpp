@@ -55,7 +55,7 @@ namespace dxup {
       if (code != nullptr) {
         uint32_t header = ENCODE_D3D10_SB_OPERAND_TYPE(m_registerType) |
           ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(m_dimension) |
-          ENCODE_D3D10_SB_OPERAND_EXTENDED(m_modifier != UINT32_MAX) |
+          ENCODE_D3D10_SB_OPERAND_EXTENDED(m_modifier != 0) |
           ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(m_components == 4 ? D3D10_SB_OPERAND_4_COMPONENT : m_components == 1 ? D3D10_SB_OPERAND_1_COMPONENT : D3D10_SB_OPERAND_0_COMPONENT) |
           m_swizzleOrWritemask;
 
@@ -68,7 +68,7 @@ namespace dxup {
       if (instructionSize != nullptr)
         (*instructionSize)++;
 
-      if (m_modifier != UINT32_MAX) {
+      if (m_modifier != 0) {
         if (code != nullptr)
           code->push_back(ENCODE_D3D10_SB_EXTENDED_OPERAND_MODIFIER(m_modifier));
 

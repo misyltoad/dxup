@@ -318,6 +318,42 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleLrp(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
+      const DX9Operand* src2 = operation.getOperandByType(optype::Src2);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+      DXBCOperand src1Op = { *this, operation, *src1, 0 };
+      DXBCOperand src2Op = { *this, operation, *src1, 0 };
+      DXBCOperand src2OpNeg = src2Op;
+      src2OpNeg.setModifier(src2OpNeg.getModifier() ^ D3D10_SB_OPERAND_MODIFIER_NEG);
+
+      DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpDst = tempOpSrc;
+      tempOpSrc.setSwizzleOrWritemask(noSwizzle);
+      tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
+
+      // (src1 - src2)
+      DXBCOperation{ D3D10_SB_OPCODE_ADD, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(src1Op)
+        .appendOperand(src2OpNeg)
+        .push(*this);
+
+      // src2 + src0 * (src1 - src2)
+      DXBCOperation{ D3D10_SB_OPCODE_MAD, false }
+        .appendOperand(dstOp)
+        .appendOperand(src0Op)
+        .appendOperand(tempOpSrc)
+        .appendOperand(src2Op)
+        .push(*this);
+
+      return true;
+    }
+
     bool ShaderCodeTranslator::handleDef(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* vec4 = operation.getOperandByType(optype::Vec4);

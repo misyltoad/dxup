@@ -69,12 +69,15 @@ namespace dxup {
       inline uint32_t getSwizzleOrWritemask() const {
         return m_swizzleOrWritemask;
       }
+      inline uint32_t getModifier() {
+        return m_modifier;
+      }
       inline DXBCOperand& setModifier(uint32_t modifier) {
         m_modifier = modifier;
         return *this;
       }
       inline DXBCOperand& stripModifier() {
-        m_modifier = UINT32_MAX;
+        m_modifier = 0;
         return *this;
       }
       inline DXBCOperand& setData(const uint32_t* data, uint32_t count) {
@@ -132,7 +135,7 @@ namespace dxup {
       uint32_t m_representations = 0;
       uint32_t m_swizzleOrWritemask = 0;
       uint32_t m_components = 4;
-      uint32_t m_modifier = UINT32_MAX;
+      uint32_t m_modifier = 0;
       uint32_t m_data[4] = { 0 };
       uint32_t m_dataCount = 0;
       uint32_t m_dummy = 0;

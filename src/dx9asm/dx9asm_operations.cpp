@@ -48,7 +48,7 @@ namespace dxup {
         {"log",     D3DSIO_LOG, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_LOG, 0}},
         {"logp",    D3DSIO_LOGP, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_LOG, 0}},
         {"loop",    D3DSIO_LOOP, 1, { LoopCounter, Src0 }, {}},
-        {"lrp",     D3DSIO_LRP, 1, { Dst, Src0, Src1, Src2 }, {}},
+        {"lrp",     D3DSIO_LRP, 1, { Dst, Src0, Src1, Src2 }, {}, &ShaderCodeTranslator::handleLrp},
         {"m3x2",    D3DSIO_M3x2, 2, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP3, 0, 3, 3}},
         {"m3x3",    D3DSIO_M3x3, 3, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP3, 0, 3, 3}},
         {"m3x4",    D3DSIO_M3x4, 4, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP3, 0, 3, 3}},
