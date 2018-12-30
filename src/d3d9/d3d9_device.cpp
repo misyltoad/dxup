@@ -1436,10 +1436,12 @@ namespace dxup {
     if (m_state->textures[Stage] == pTexture)
       return D3D_OK;
 
-    if (m_state->textures[Stage] != nullptr) {
+    IDirect3DBaseTexture9* currentBinding = m_state->textures[Stage];
+
+    if (currentBinding != nullptr) {
       switch (m_state->textures[Stage]->GetType()) {
-      case D3DRTYPE_TEXTURE: reinterpret_cast<Direct3DTexture9*>(pTexture)->ReleasePrivate(); break;
-      case D3DRTYPE_CUBETEXTURE: reinterpret_cast<Direct3DCubeTexture9*>(pTexture)->ReleasePrivate(); break;
+      case D3DRTYPE_TEXTURE: reinterpret_cast<Direct3DTexture9*>(currentBinding)->ReleasePrivate(); break;
+      case D3DRTYPE_CUBETEXTURE: reinterpret_cast<Direct3DCubeTexture9*>(currentBinding)->ReleasePrivate(); break;
       default:
         log::warn("Unable to find what texture stage really is to release internally.");
         break;
