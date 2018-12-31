@@ -171,13 +171,13 @@ namespace dxup {
       DX9Operand* dst = operation.getOperandByType(optype::Dst);
       DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
+      DXBCOperand srcOp = { *this, operation, *src0, 0 };
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+
       DXBCOperand tempOpDst = getRegisterMap().getNextInternalTemp();
       DXBCOperand tempOpSrc = tempOpDst;
       tempOpDst.setSwizzleOrWritemask(writeAll);
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
-
-      DXBCOperand srcOp = { *this, operation, *src0, 0 };
-      DXBCOperand dstOp = { *this, operation, *dst, 0 };
 
       // DP with self to get length squared.
       // This is DP3 because nrm only applies for 3D vectors...
