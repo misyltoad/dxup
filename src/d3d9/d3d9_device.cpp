@@ -1038,6 +1038,7 @@ namespace dxup {
     D3D11_BLEND blend(DWORD blend) {
       switch (blend) {
       case D3DBLEND_ZERO: return D3D11_BLEND_ZERO;
+      default:
       case D3DBLEND_ONE: return D3D11_BLEND_ONE;
       case D3DBLEND_SRCCOLOR: return D3D11_BLEND_SRC_COLOR;
       case D3DBLEND_INVSRCCOLOR: return D3D11_BLEND_INV_SRC_COLOR;
