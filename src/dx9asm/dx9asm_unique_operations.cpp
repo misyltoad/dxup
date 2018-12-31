@@ -327,14 +327,14 @@ namespace dxup {
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand src0Op = { *this, operation, *src0, 0 };
       DXBCOperand src1Op = { *this, operation, *src1, 0 };
-      DXBCOperand src2Op = { *this, operation, *src1, 0 };
+      DXBCOperand src2Op = { *this, operation, *src2, 0 };
       DXBCOperand src2OpNeg = src2Op;
       src2OpNeg.setModifier(src2OpNeg.getModifier() ^ D3D10_SB_OPERAND_MODIFIER_NEG);
 
       DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
       DXBCOperand tempOpDst = tempOpSrc;
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
-      tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
+      tempOpDst.setSwizzleOrWritemask(writeAll);
 
       // (src1 - src2)
       DXBCOperation{ D3D10_SB_OPCODE_ADD, false }
