@@ -110,6 +110,7 @@ namespace dxup {
       bool handleTex(DX9Operation& operation);
       bool handleLrp(DX9Operation& operation);
       bool handleMova(DX9Operation& operation);
+      bool handleCmp(DX9Operation& operation);
       bool handleSlt(DX9Operation& operation);
       bool handleSge(DX9Operation& operation);
       bool handleNrm(DX9Operation& operation);

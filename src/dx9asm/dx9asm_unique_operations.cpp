@@ -141,7 +141,7 @@ namespace dxup {
       DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
       DXBCOperand tempOpDst = tempOpSrc;
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
-      tempOpDst.setSwizzleOrWritemask(dstOp.getSwizzleOrWritemask());
+      tempOpDst.setSwizzleOrWritemask(writeAll);
 
       DXBCOperation{ (uint32_t)(lt ? D3D10_SB_OPCODE_LT : D3D10_SB_OPCODE_GE), false }
         .appendOperand(tempOpDst)
@@ -165,6 +165,38 @@ namespace dxup {
     }
     bool ShaderCodeTranslator::handleSge(DX9Operation& operation) {
       return handleScomp(false, operation);
+    }
+
+    bool ShaderCodeTranslator::handleCmp(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
+      const DX9Operand* src2 = operation.getOperandByType(optype::Src2);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+      DXBCOperand src1Op = { *this, operation, *src1, 0 };
+      DXBCOperand src2Op = { *this, operation, *src2, 0 };
+
+      DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpDst = tempOpSrc;
+      tempOpSrc.setSwizzleOrWritemask(noSwizzle);
+      tempOpDst.setSwizzleOrWritemask(writeAll);
+
+      DXBCOperation{ D3D10_SB_OPCODE_GE, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(src0Op)
+        .appendOperand({ 0, 0, 0, 0 })
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_MOVC, operation.saturate() }
+        .appendOperand(dstOp)
+        .appendOperand(tempOpSrc)
+        .appendOperand(src1Op)
+        .appendOperand(src2Op)
+        .push(*this);
+
+      return true;
     }
 
     bool ShaderCodeTranslator::handleNrm(DX9Operation& operation) {

@@ -19,7 +19,7 @@ namespace dxup {
         {"breakp",  D3DSIO_BREAKP, 1, {}, {}},
         {"call",    D3DSIO_CALL, 1, {Label}, {}},
         {"callnz",  D3DSIO_CALLNZ, 1, {Label, Src0}, {}},
-        {"cmp",     D3DSIO_CMP, 1, {Dst, Src0, Src1, Src2}, {} },
+        {"cmp",     D3DSIO_CMP, 1, {Dst, Src0, Src1, Src2}, {}, &ShaderCodeTranslator::handleCmp},
         {"cnd",     D3DSIO_CND, 1, {Dst, Src0, Src1, Src2}, {} },
         {"crs",     D3DSIO_CRS, 1, {Dst, Src0, Src1}, {}},
         {"comment", D3DSIO_COMMENT, 1, {VaradicOperandCount}, {}, &ShaderCodeTranslator::handleComment},
