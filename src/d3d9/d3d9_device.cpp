@@ -1149,7 +1149,7 @@ namespace dxup {
       desc.RenderTarget[i].BlendOpAlpha = convert::blendOp(separateAlpha ? m_state->renderState[D3DRS_BLENDOPALPHA] : m_state->renderState[D3DRS_BLENDOP]);
 
       desc.RenderTarget[i].DestBlend = convert::blend(m_state->renderState[D3DRS_DESTBLEND]);
-      desc.RenderTarget[i].DestBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_DESTBLENDALPHA] : m_state->renderState[D3DRS_DESTBLENDALPHA]);
+      desc.RenderTarget[i].DestBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_DESTBLENDALPHA] : m_state->renderState[D3DRS_DESTBLEND]);
 
       desc.RenderTarget[i].LogicOp = D3D11_LOGIC_OP_NOOP;
       desc.RenderTarget[i].LogicOpEnable = false;
