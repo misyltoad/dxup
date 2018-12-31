@@ -1185,7 +1185,7 @@ namespace dxup {
 
     float blendFactor[4];
     convert::color((D3DCOLOR)m_state->renderState[D3DRS_BLENDFACTOR], blendFactor);
-    m_context->OMSetBlendState(state, blendFactor, (UINT)m_state->renderState[D3DRS_ALPHAREF]);
+    m_context->OMSetBlendState(state, blendFactor, 0xFFFFFFFF);
   }
 
   void Direct3DDevice9Ex::UpdateSampler(uint32_t sampler) {
@@ -1464,7 +1464,6 @@ namespace dxup {
               State == D3DRS_SEPARATEALPHABLENDENABLE ||
               State == D3DRS_ALPHABLENDENABLE ||
               State == D3DRS_BLENDFACTOR ||
-              State == D3DRS_ALPHAREF ||
               State == D3DRS_COLORWRITEENABLE ||
               State == D3DRS_COLORWRITEENABLE1 || 
               State == D3DRS_COLORWRITEENABLE2 || 
