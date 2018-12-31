@@ -158,7 +158,7 @@ namespace dxup {
     }
   }
 
-  UINT bpe(DXGI_FORMAT fmt) {
+  UINT alignment(DXGI_FORMAT fmt) {
     switch (fmt) {
     case DXGI_FORMAT_BC1_TYPELESS:
     case DXGI_FORMAT_BC1_UNORM:
@@ -166,8 +166,6 @@ namespace dxup {
     case DXGI_FORMAT_BC4_TYPELESS:
     case DXGI_FORMAT_BC4_UNORM:
     case DXGI_FORMAT_BC4_SNORM:
-      return 8;
-
     case DXGI_FORMAT_BC2_TYPELESS:
     case DXGI_FORMAT_BC2_UNORM:
     case DXGI_FORMAT_BC2_UNORM_SRGB:
@@ -183,30 +181,7 @@ namespace dxup {
     case DXGI_FORMAT_BC7_TYPELESS:
     case DXGI_FORMAT_BC7_UNORM:
     case DXGI_FORMAT_BC7_UNORM_SRGB:
-      return 16;
-
-    case DXGI_FORMAT_R8G8_B8G8_UNORM:
-    case DXGI_FORMAT_G8R8_G8B8_UNORM:
-    case DXGI_FORMAT_YUY2:
       return 4;
-
-    case DXGI_FORMAT_Y210:
-    case DXGI_FORMAT_Y216:
-      return 8;
-
-    case DXGI_FORMAT_NV12:
-    case DXGI_FORMAT_420_OPAQUE:
-    case DXGI_FORMAT_P208:
-      return 2;
-
-    case DXGI_FORMAT_P010:
-    case DXGI_FORMAT_P016:
-      return 4;
-
-    //case DXGI_FORMAT_D16_UNORM_S8_UINT:
-    //case DXGI_FORMAT_R16_UNORM_X8_TYPELESS:
-    //case DXGI_FORMAT_X16_TYPELESS_G8_UINT:
-      //return 4;
 
     default:
       return 1;
@@ -214,7 +189,7 @@ namespace dxup {
   }
 
   uint32_t alignRectForFormat(bool down, DXGI_FORMAT format, uint32_t measure) {
-    UINT block = bpe(format);
+    UINT block = alignment(format);
 
     if (down)
       return alignDown(measure, block);
