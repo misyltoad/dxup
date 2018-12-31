@@ -31,6 +31,7 @@ namespace dxup {
     const uint32_t renderTargets = 1 << 3;
     const uint32_t depthStencilState = 1 << 4;
     const uint32_t rasterizer = 1 << 5;
+    const uint32_t blendState = 1 << 6;
   }
 
   struct InternalRenderState{
@@ -64,6 +65,7 @@ namespace dxup {
 
     struct {
       StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
+      StateCache<D3D11_BLEND_DESC1, ID3D11BlendState1> blendState;
       StateCache<D3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState> depthStencil;
       StateCache<D3D11_SAMPLER_DESC, ID3D11SamplerState> sampler;
     } caches;
@@ -1021,6 +1023,42 @@ namespace dxup {
       case D3DTADDRESS_MIRRORONCE: return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
       }
     }
+
+    D3D11_BLEND_OP blendOp(DWORD op) {
+      switch (op) {
+      default:
+      case D3DBLENDOP_ADD: return D3D11_BLEND_OP_ADD;
+      case D3DBLENDOP_SUBTRACT: return D3D11_BLEND_OP_SUBTRACT;
+      case D3DBLENDOP_REVSUBTRACT: return D3D11_BLEND_OP_REV_SUBTRACT;
+      case D3DBLENDOP_MIN: return D3D11_BLEND_OP_MIN;
+      case D3DBLENDOP_MAX: return D3D11_BLEND_OP_MAX;
+      }
+    }
+
+    D3D11_BLEND blend(DWORD blend) {
+      switch (blend) {
+      case D3DBLEND_ZERO: return D3D11_BLEND_ZERO;
+      case D3DBLEND_ONE: return D3D11_BLEND_ONE;
+      case D3DBLEND_SRCCOLOR: return D3D11_BLEND_SRC_COLOR;
+      case D3DBLEND_INVSRCCOLOR: return D3D11_BLEND_INV_SRC_COLOR;
+      case D3DBLEND_SRCALPHA: return D3D11_BLEND_SRC_ALPHA;
+      case D3DBLEND_INVSRCALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
+      case D3DBLEND_DESTALPHA: return D3D11_BLEND_DEST_ALPHA;
+      case D3DBLEND_INVDESTALPHA: return D3D11_BLEND_INV_DEST_ALPHA;
+      case D3DBLEND_DESTCOLOR: return D3D11_BLEND_DEST_COLOR;
+      case D3DBLEND_INVDESTCOLOR: return D3D11_BLEND_INV_DEST_COLOR;
+      case D3DBLEND_SRCALPHASAT: return D3D11_BLEND_SRC_ALPHA_SAT;
+        // TODO(Josh): Look into the both variants.
+      case D3DBLEND_BOTHSRCALPHA: return D3D11_BLEND_SRC_ALPHA;
+      case D3DBLEND_BOTHINVSRCALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
+
+      case D3DBLEND_BLENDFACTOR: return D3D11_BLEND_BLEND_FACTOR;
+      case D3DBLEND_INVBLENDFACTOR: return D3D11_BLEND_INV_BLEND_FACTOR;
+
+      case D3DBLEND_SRCCOLOR2: return D3D11_BLEND_SRC1_COLOR;
+      case D3DBLEND_INVSRCCOLOR2: return D3D11_BLEND_INV_SRC1_COLOR;
+      }
+    }
   }
 
   void Direct3DDevice9Ex::UpdateDepthStencilState() {
@@ -1095,6 +1133,59 @@ namespace dxup {
     m_context->RSSetState(state);
 
     m_state->dirtyFlags &= ~dirtyFlags::rasterizer;
+  }
+
+  void Direct3DDevice9Ex::UpdateBlendState() {
+    D3D11_BLEND_DESC1 desc;
+    desc.AlphaToCoverageEnable = false;
+    desc.IndependentBlendEnable = false;
+
+    bool separateAlpha = m_state->renderState[D3DRS_SEPARATEALPHABLENDENABLE] == TRUE;
+    for (uint32_t i = 0; i < 4; i++) {
+      desc.RenderTarget[i].BlendEnable = m_state->renderState[D3DRS_ALPHABLENDENABLE] == TRUE;
+
+      desc.RenderTarget[i].BlendOp = convert::blendOp(m_state->renderState[D3DRS_BLENDOP]);
+      desc.RenderTarget[i].BlendOpAlpha = convert::blendOp(separateAlpha ? m_state->renderState[D3DRS_BLENDOPALPHA] : m_state->renderState[D3DRS_BLENDOP]);
+
+      desc.RenderTarget[i].DestBlend = convert::blend(m_state->renderState[D3DRS_DESTBLEND]);
+      desc.RenderTarget[i].DestBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_DESTBLENDALPHA] : m_state->renderState[D3DRS_DESTBLENDALPHA]);
+
+      desc.RenderTarget[i].LogicOp = D3D11_LOGIC_OP_NOOP;
+      desc.RenderTarget[i].LogicOpEnable = false;
+
+      uint32_t writeIndex;
+      switch (i) {
+      default:
+      case 0: writeIndex = D3DRS_COLORWRITEENABLE; break;
+      case 1: writeIndex = D3DRS_COLORWRITEENABLE1; break;
+      case 2: writeIndex = D3DRS_COLORWRITEENABLE2; break;
+      case 3: writeIndex = D3DRS_COLORWRITEENABLE3; break;
+      }
+
+      desc.RenderTarget[i].RenderTargetWriteMask = m_state->renderState[writeIndex];
+
+      desc.RenderTarget[i].SrcBlend = convert::blend(m_state->renderState[D3DRS_SRCBLEND]);
+      desc.RenderTarget[i].SrcBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_SRCBLENDALPHA] : m_state->renderState[D3DRS_SRCBLEND]);
+    }
+
+    ID3D11BlendState1* state = m_state->caches.blendState.lookupObject(desc);
+
+    if (state == nullptr) {
+      Com<ID3D11BlendState1> comState;
+
+      HRESULT result = m_device->CreateBlendState1(&desc, &comState);
+      if (FAILED(result)) {
+        log::fail("Failed to create blend state.");
+        return;
+      }
+
+      m_state->caches.blendState.pushState(desc, comState.ptr());
+      state = comState.ptr();
+    }
+
+    float blendFactor[4];
+    convert::color((D3DCOLOR)m_state->renderState[D3DRS_BLENDFACTOR], blendFactor);
+    m_context->OMSetBlendState(state, blendFactor, (UINT)m_state->renderState[D3DRS_ALPHAREF]);
   }
 
   void Direct3DDevice9Ex::UpdateSampler(uint32_t sampler) {
@@ -1362,8 +1453,23 @@ namespace dxup {
               State == D3DRS_STENCILMASK ||
               State == D3DRS_STENCILWRITEMASK ||
 
-              State == D3DRS_STENCILREF)
+              State == D3DRS_STENCILREF )
       m_state->dirtyFlags |= dirtyFlags::depthStencilState;
+    else if ( State == D3DRS_BLENDOP ||
+              State == D3DRS_BLENDOPALPHA || 
+              State == D3DRS_DESTBLEND ||
+              State == D3DRS_DESTBLENDALPHA ||
+              State == D3DRS_SRCBLEND ||
+              State == D3DRS_SRCBLENDALPHA ||
+              State == D3DRS_SEPARATEALPHABLENDENABLE ||
+              State == D3DRS_ALPHABLENDENABLE ||
+              State == D3DRS_BLENDFACTOR ||
+              State == D3DRS_ALPHAREF ||
+              State == D3DRS_COLORWRITEENABLE ||
+              State == D3DRS_COLORWRITEENABLE1 || 
+              State == D3DRS_COLORWRITEENABLE2 || 
+              State == D3DRS_COLORWRITEENABLE3 )
+      m_state->dirtyFlags |= dirtyFlags::blendState;
     else
       log::warn("Unhandled render state: %lu", State);
 
@@ -1730,6 +1836,9 @@ namespace dxup {
 
     if (m_state->dirtyFlags & dirtyFlags::rasterizer)
       UpdateRasterizer();
+
+    if (m_state->dirtyFlags & dirtyFlags::blendState)
+      UpdateBlendState();
 
     if (m_state->dirtyFlags & dirtyFlags::depthStencilState)
       UpdateDepthStencilState();

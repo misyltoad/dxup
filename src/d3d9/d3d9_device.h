@@ -178,6 +178,7 @@ namespace dxup {
     void UpdateVertexShaderAndInputLayout();
     void UpdateDepthStencilState();
     void UpdateRasterizer();
+    void UpdateBlendState();
     void UpdateSampler(uint32_t sampler);
     void UpdateSamplers();
     void UpdateRenderTargets();
