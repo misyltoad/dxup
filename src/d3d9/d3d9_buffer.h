@@ -38,7 +38,7 @@ namespace dxup {
       rectToLock.top = 0;
       rectToLock.bottom = 1;
       rectToLock.left = OffsetToLock;
-      rectToLock.right = SizeToLock;
+      rectToLock.right = OffsetToLock + SizeToLock;
       bool degenerate = isRectDegenerate(rectToLock);
 
       HRESULT result = m_resource->D3D9LockRect(0, 0, &lockedRect, degenerate ? nullptr : &rectToLock, Flags, m_d3d9Desc.Usage);

@@ -29,17 +29,6 @@ namespace dxup {
     return D3D11_MAP_READ_WRITE;
   }
 
-  inline void FixRect(RECT& rect) {
-    RECT newRect;
-    newRect.left = std::min(rect.left, rect.right);
-    newRect.right = std::max(rect.left, rect.right);
-
-    newRect.top = std::min(rect.top, rect.bottom);
-    newRect.bottom = std::max(rect.top, rect.bottom);
-
-    rect = newRect;
-  }
-
   HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage) {
     if (!pLockedRect)
       return D3DERR_INVALIDCALL;
@@ -53,8 +42,6 @@ namespace dxup {
       std::memset(&m_stagingRects[subresource], 0, sizeof(RECT));
     else
       m_stagingRects[subresource] = *pRect;
-
-    FixRect(m_stagingRects[subresource]);
 
     D3D11_MAPPED_SUBRESOURCE res;
     HRESULT result = m_device->GetContext()->Map(GetMapping(), subresource, CalcMapType(Flags, Usage), CalcMapFlags(Flags), &res);
@@ -70,7 +57,7 @@ namespace dxup {
     size_t offset = 0;
 
     if (!IsStagingRectDegenerate(subresource))
-      offset = (pRect->top * res.RowPitch) + (pRect->left * bitsPerPixel(m_dxgiFormat) / 8);
+      offset = (m_stagingRects[subresource].top * res.RowPitch) + (m_stagingRects[subresource].left * bitsPerPixel(m_dxgiFormat) / 8);
 
     uint8_t* data = (uint8_t*)res.pData;
     pLockedRect->pBits = &data[offset];
