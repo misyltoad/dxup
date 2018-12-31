@@ -4,15 +4,9 @@
 
 namespace dxup {
 
-  struct DXGIFormatSize {
-    UINT pixelBytes;
-    UINT blockWidth;
-    UINT blockHeight;
-  };
+  UINT bitsPerPixel(DXGI_FORMAT fmt);
+  UINT bpe(DXGI_FORMAT fmt);
 
-  const DXGIFormatSize &getDXGIFormatSizeInfo(DXGI_FORMAT format);
-
-  uint32_t alignWidthForFormat(bool down, DXGI_FORMAT format, uint32_t width);
-  uint32_t alignHeightForFormat(bool down, DXGI_FORMAT format, uint32_t height);
+  uint32_t alignRectForFormat(bool down, DXGI_FORMAT format, uint32_t measure);
 
 }

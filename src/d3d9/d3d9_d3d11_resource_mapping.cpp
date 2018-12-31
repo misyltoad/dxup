@@ -56,11 +56,8 @@ namespace dxup {
 
     size_t offset = 0;
 
-    if (!IsStagingRectDegenerate(subresource)) {
-      auto& sizeInfo = getDXGIFormatSizeInfo(m_dxgiFormat);
-
-      offset = (pRect->top * res.RowPitch) + (pRect->left * sizeInfo.pixelBytes);
-    }
+    if (!IsStagingRectDegenerate(subresource))
+      offset = (pRect->top * res.RowPitch) + (pRect->left * bitsPerPixel(m_dxgiFormat) / 8);
 
     uint8_t* data = (uint8_t*)res.pData;
     pLockedRect->pBits = &data[offset];
@@ -90,10 +87,10 @@ namespace dxup {
 
         D3D11_BOX box = { 0 };
         if (useRect) {
-          box.left = alignWidthForFormat(true, m_dxgiFormat, m_stagingRects[subresource].left);
-          box.top = alignHeightForFormat(true, m_dxgiFormat, m_stagingRects[subresource].top);
-          box.right = alignWidthForFormat(false, m_dxgiFormat, m_stagingRects[subresource].right);
-          box.bottom = alignHeightForFormat(false, m_dxgiFormat, m_stagingRects[subresource].bottom);
+          box.left = alignRectForFormat(true, m_dxgiFormat, m_stagingRects[subresource].left);
+          box.top = alignRectForFormat(true, m_dxgiFormat, m_stagingRects[subresource].top);
+          box.right = alignRectForFormat(false, m_dxgiFormat, m_stagingRects[subresource].right);
+          box.bottom = alignRectForFormat(false, m_dxgiFormat, m_stagingRects[subresource].bottom);
 
           box.front = 0;
           box.back = 1;
