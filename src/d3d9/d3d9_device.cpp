@@ -55,9 +55,10 @@ namespace dxup {
     std::array<ComPrivate<Direct3DVertexBuffer9>, 16> vertexBuffers;
     std::array<UINT, 16> vertexOffsets;
     std::array<UINT, 16> vertexStrides;
-    std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
 
+    std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
     std::array<std::array<DWORD, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStates;
+    std::array<std::array<DWORD, D3DTSS_CONSTANT + 1>, 8> textureStageStates;
 
     ComPrivate<Direct3DIndexBuffer9> indexBuffer;
 
@@ -1483,11 +1484,32 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) {
-    log::stub("Direct3DDevice9Ex::GetTextureStageState");
+    if (pValue == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
+      return D3D_OK;
+
+    if (Stage > 7)
+      return D3D_OK;
+
+    *pValue = m_state->textureStageStates[Stage][Type];
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) {
-    log::stub("Direct3DDevice9Ex::SetTextureStageState");
+    if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
+      return D3D_OK;
+
+    if (Stage > 7)
+      return D3D_OK;
+
+    if (m_state->textureStageStates[Stage][Type] == Value)
+      return D3D_OK;
+
+    m_state->textureStageStates[Stage][Type] = Value;
+    //m_state->dirtyTextureStage |= 1 << Stage;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) {
