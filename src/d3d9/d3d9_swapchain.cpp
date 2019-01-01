@@ -29,7 +29,7 @@ namespace dxup {
         return;
       }
 
-      DXUPResource* resource = DXUPResource::Create(device, texture.ptr(), D3DUSAGE_RENDERTARGET);
+      DXUPResource* resource = DXUPResource::Create(device, texture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
       if (resource == nullptr) {
         log::warn("Failed to create DXUPResource for backbuffer.");
         return;

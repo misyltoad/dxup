@@ -7,11 +7,11 @@ namespace dxup {
   // If we are not a dynamic resource or we need read access on our dynamic, we have a staging buffer.
   // We then map this and CopySubresourceRegion on unmapping.
   // If we don't need the staging res. will be nullptr, some logic relies on this.
-  bool DXUPResource::NeedsStaging(D3D11_USAGE d3d11Usage, DWORD d3d9Usage) {
-    return d3d11Usage == D3D11_USAGE_DEFAULT || !(d3d9Usage & D3DUSAGE_WRITEONLY);
+  bool DXUPResource::NeedsStaging(D3D11_USAGE d3d11Usage, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
+    return d3d9Format == D3DFMT_R8G8B8 || d3d11Usage == D3D11_USAGE_DEFAULT || !(d3d9Usage & D3DUSAGE_WRITEONLY);
   }
 
-  DXUPResource* DXUPResource::CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage) {
+  DXUPResource* DXUPResource::CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
     D3D11_TEXTURE2D_DESC desc;
     texture->GetDesc(&desc);
 
@@ -41,13 +41,17 @@ namespace dxup {
     }
 
     Com<ID3D11Texture2D> stagingTexture;
-    if (NeedsStaging(desc.Usage, d3d9Usage)) {
-      makeStaging(desc, d3d9Usage);
+    Com<ID3D11Texture2D> fixup8888;
+    if (NeedsStaging(desc.Usage, d3d9Usage, d3d9Format)) {
+      makeStagingDesc(desc, d3d9Usage, d3d9Format);
 
       device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &stagingTexture);
+
+      if (d3d9Format == D3DFMT_R8G8B8)
+        device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &fixup8888);
     }
 
-    return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), srvSRGB.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
+    return new DXUPResource(device, texture, stagingTexture.ptr(), fixup8888.ptr(), srv.ptr(), srvSRGB.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage) {
@@ -55,21 +59,21 @@ namespace dxup {
     buffer->GetDesc(&desc);
 
     Com<ID3D11Buffer> stagingBuffer;
-    if (NeedsStaging(desc.Usage, d3d9Usage)) {
-      makeStaging(desc, d3d9Usage);
+    if (NeedsStaging(desc.Usage, d3d9Usage, D3DFMT_UNKNOWN)) {
+      makeStagingDesc(desc, d3d9Usage, D3DFMT_UNKNOWN);
 
       device->GetD3D11Device()->CreateBuffer(&desc, nullptr, &stagingBuffer);
     }
 
-    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, nullptr, DXGI_FORMAT_R8_TYPELESS, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
+    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, nullptr, nullptr, DXGI_FORMAT_R8_TYPELESS, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
-  DXUPResource* DXUPResource::Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage) {
+  DXUPResource* DXUPResource::Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
     D3D11_RESOURCE_DIMENSION dimension;
     resource->GetType(&dimension);
 
     if (dimension == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
-      return CreateTexture2D(device, useAs<ID3D11Texture2D>(resource), d3d9Usage);
+      return CreateTexture2D(device, useAs<ID3D11Texture2D>(resource), d3d9Usage, d3d9Format);
     else if (dimension == D3D11_RESOURCE_DIMENSION_BUFFER)
       return CreateBuffer(device, useAs<ID3D11Buffer>(resource), d3d9Usage);
 
@@ -147,10 +151,11 @@ namespace dxup {
     return m_dxgiFormat;
   }
 
-  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
+  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11Resource* fixup8888, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
     : m_device{ device }
     , m_resource{ resource }
     , m_staging{ staging }
+    , m_fixup8888{ fixup8888 }
     , m_srv{ srv }
     , m_srvSRGB{ srvSRGB }
     , m_slices{ slices }

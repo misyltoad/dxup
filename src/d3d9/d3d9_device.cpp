@@ -736,7 +736,7 @@ namespace dxup {
       return D3DERR_INVALIDCALL;
     }
 
-    DXUPResource* resource = DXUPResource::Create(this, texture.ptr(), Usage);
+    DXUPResource* resource = DXUPResource::Create(this, texture.ptr(), Usage, Format);
     if (resource == nullptr) {
       log::fail("Failed to create DXUP resource.");
       return D3DERR_INVALIDCALL;
@@ -782,7 +782,7 @@ namespace dxup {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage);
+    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage, D3DFMT_VERTEXDATA);
     if (resource == nullptr) {
       log::fail("Failed to create DXUP resource.");
       return D3DERR_INVALIDCALL;
@@ -817,7 +817,7 @@ namespace dxup {
     if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
-    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage);
+    DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage, Format);
     if (resource == nullptr) {
       log::fail("Failed to create DXUP resource.");
       return D3DERR_INVALIDCALL;

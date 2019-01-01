@@ -9,7 +9,7 @@ namespace dxup {
 
   public:
 
-    static DXUPResource* Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage);
+    static DXUPResource* Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage, D3DFORMAT d3d9Format);
 
     bool HasStaging();
 
@@ -67,11 +67,11 @@ namespace dxup {
 
     Direct3DDevice9Ex* m_device;
 
-    static bool NeedsStaging(D3D11_USAGE d3d11Usage, DWORD d3d9Usage);
-    static DXUPResource* CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage);
+    static bool NeedsStaging(D3D11_USAGE d3d11Usage, DWORD d3d9Usage, D3DFORMAT d3d9Format);
+    static DXUPResource* CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage, D3DFORMAT d3d9Format);
     static DXUPResource* CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage);
 
-    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic);
+    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11Resource* fixup8888, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic);
 
     UINT m_slices;
     UINT m_mips;
@@ -82,6 +82,7 @@ namespace dxup {
 
     Com<ID3D11Resource> m_resource;
     Com<ID3D11Resource> m_staging;
+    Com<ID3D11Resource> m_fixup8888;
 
     bool IsStagingRectDegenerate(UINT subresource);
     std::vector<RECT> m_stagingRects;

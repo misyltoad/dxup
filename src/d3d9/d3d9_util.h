@@ -26,8 +26,10 @@ namespace dxup {
   }
 
   template <typename T>
-  void makeStaging(T& desc, UINT d3d9Usage) {
+  void makeStagingDesc(T& desc, UINT d3d9Usage, D3DFORMAT format) {
     desc.CPUAccessFlags = d3d9Usage & D3DUSAGE_WRITEONLY ? D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+    if (format == D3DFMT_R8G8B8)
+      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
     desc.Usage = D3D11_USAGE_STAGING;
     desc.BindFlags = 0;
     desc.MiscFlags = 0;

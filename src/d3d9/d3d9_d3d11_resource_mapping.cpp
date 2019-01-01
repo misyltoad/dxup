@@ -67,8 +67,37 @@ namespace dxup {
   }
 
   HRESULT DXUPResource::D3D9UnlockRect(UINT slice, UINT mip) {
+    UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
+
     m_device->GetContext()->Unmap(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips));
     SetMipUnmapped(slice, mip);
+
+    // We need to make this format an 8888. DXGI has no 888 type.
+    if (m_fixup8888 != nullptr) {
+      D3D11_MAPPED_SUBRESOURCE d3d9Res;
+      D3D11_MAPPED_SUBRESOURCE fixupRes;
+      m_device->GetContext()->Map(GetStaging(), subresource, D3D11_MAP_READ, 0, &d3d9Res);
+      m_device->GetContext()->Map(m_fixup8888.ptr(), subresource, D3D11_MAP_WRITE_DISCARD, 0, &fixupRes);
+
+      D3D11_TEXTURE2D_DESC desc;
+      ID3D11Texture2D* texture = reinterpret_cast<ID3D11Texture2D*>(m_staging.ptr());
+      texture->GetDesc(&desc);
+
+      uint8_t* read = (uint8_t*)d3d9Res.pData;
+      uint8_t* write = (uint8_t*)fixupRes.pData;
+
+      for (uint32_t y = 0; y < desc.Height; y++) {
+        for (uint32_t x = 0; x < desc.Width; x++) {
+          for (uint32_t c = 0; c < 3; c++) {
+            write[y * fixupRes.RowPitch + x * 4 + c] = read[y * fixupRes.RowPitch + x * 3 + c];
+          }
+          write[y * fixupRes.RowPitch + x * 4 + 3] = 255;
+        }
+      }
+
+      m_device->GetContext()->Unmap(m_fixup8888.ptr(), subresource);
+      m_device->GetContext()->Unmap(GetStaging(), subresource);
+    }
 
     if (HasStaging() && CanPushStaging())
       PushStaging();
@@ -97,7 +126,7 @@ namespace dxup {
         }
 
         if (delta & (1ull << mip))
-          m_device->GetContext()->CopySubresourceRegion(GetResource(), subresource, box.left, box.top, 0, GetStaging(), subresource, useRect ? &box : nullptr);
+          m_device->GetContext()->CopySubresourceRegion(GetResource(), subresource, box.left, box.top, 0, m_fixup8888 == nullptr ? GetStaging() : m_fixup8888.ptr(), subresource, useRect ? &box : nullptr);
       }
     }
     
