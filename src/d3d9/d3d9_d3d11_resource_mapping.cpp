@@ -77,7 +77,7 @@ namespace dxup {
       D3D11_MAPPED_SUBRESOURCE d3d9Res;
       D3D11_MAPPED_SUBRESOURCE fixupRes;
       m_device->GetContext()->Map(GetStaging(), subresource, D3D11_MAP_READ, 0, &d3d9Res);
-      m_device->GetContext()->Map(m_fixup8888.ptr(), subresource, D3D11_MAP_WRITE_DISCARD, 0, &fixupRes);
+      m_device->GetContext()->Map(m_fixup8888.ptr(), subresource, D3D11_MAP_WRITE, 0, &fixupRes);
 
       D3D11_TEXTURE2D_DESC desc;
       ID3D11Texture2D* texture = reinterpret_cast<ID3D11Texture2D*>(m_staging.ptr());
