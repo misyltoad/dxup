@@ -117,8 +117,8 @@ namespace dxup {
     }
 
     void STDMETHODCALLTYPE GenerateMipSubLevels() {
-      if (GetDXUPResource()->GetSRV() != nullptr)
-        m_device->GetContext()->GenerateMips(GetDXUPResource()->GetSRV());
+      if (GetDXUPResource()->GetSRV(false) != nullptr)
+        m_device->GetContext()->GenerateMips(GetDXUPResource()->GetSRV(false));
       else
         log::warn("GenerateMipSubLevels called on a texture with no SRV.");
     }

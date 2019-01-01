@@ -16,6 +16,7 @@ namespace dxup {
     texture->GetDesc(&desc);
 
     Com<ID3D11ShaderResourceView> srv;
+    Com<ID3D11ShaderResourceView> srvSRGB;
     if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
 
       D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
@@ -31,9 +32,12 @@ namespace dxup {
         srvDesc.Texture2DArray.FirstArraySlice = 0;
         srvDesc.Texture2DArray.ArraySize = -1;
       }
-      srvDesc.Format = desc.Format;
 
+      srvDesc.Format = convert::makeUntypeless(desc.Format, false);
       device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srv);
+
+      srvDesc.Format = convert::makeUntypeless(desc.Format, true);
+      device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srvSRGB);
     }
 
     Com<ID3D11Texture2D> stagingTexture;
@@ -43,7 +47,7 @@ namespace dxup {
       device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &stagingTexture);
     }
 
-    return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
+    return new DXUPResource(device, texture, stagingTexture.ptr(), srv.ptr(), srvSRGB.ptr(), desc.Format, desc.ArraySize, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage) {
@@ -57,7 +61,7 @@ namespace dxup {
       device->GetD3D11Device()->CreateBuffer(&desc, nullptr, &stagingBuffer);
     }
 
-    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, DXGI_FORMAT_R8_UNORM, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
+    return new DXUPResource(device, buffer, stagingBuffer.ptr(), nullptr, nullptr, DXGI_FORMAT_R8_TYPELESS, 1, 1, desc.Usage == D3D11_USAGE_DYNAMIC);
   }
 
   DXUPResource* DXUPResource::Create(Direct3DDevice9Ex* device, ID3D11Resource* resource, DWORD d3d9Usage) {
@@ -89,7 +93,10 @@ namespace dxup {
     return GetMappingAs<ID3D11Resource>();
   }
 
-  ID3D11ShaderResourceView* DXUPResource::GetSRV() {
+  ID3D11ShaderResourceView* DXUPResource::GetSRV(bool srgb) {
+    if (srgb && m_srvSRGB != nullptr)
+      return m_srvSRGB.ptr();
+
     return m_srv.ptr();
   }
 
@@ -136,11 +143,12 @@ namespace dxup {
     return E_NOINTERFACE;
   }
 
-  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
+  DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
     : m_device{ device }
     , m_resource{ resource }
     , m_staging{ staging }
     , m_srv{ srv }
+    , m_srvSRGB{ srvSRGB }
     , m_slices{ slices }
     , m_mips{ mips }
     , m_dxgiFormat{ dxgiFormat }

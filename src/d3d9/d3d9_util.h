@@ -10,6 +10,8 @@ namespace dxup {
     DXGI_FORMAT format(D3DFORMAT Format);
     D3DFORMAT format(DXGI_FORMAT Format);
 
+    DXGI_FORMAT makeUntypeless(DXGI_FORMAT format, bool srgb);
+
     DXGI_MODE_SCANLINE_ORDER scanlineOrdering(D3DSCANLINEORDERING ScanlineOrdering);
     D3DSCANLINEORDERING scanlineOrdering(DXGI_MODE_SCANLINE_ORDER ScanlineOrdering);
 

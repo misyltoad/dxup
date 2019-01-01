@@ -35,7 +35,7 @@ namespace dxup {
     ID3D11Resource* GetStaging();
     ID3D11Resource* GetMapping();
 
-    ID3D11ShaderResourceView* GetSRV();
+    ID3D11ShaderResourceView* GetSRV(bool srgb);
 
     UINT GetSlices();
     UINT GetMips();
@@ -69,7 +69,7 @@ namespace dxup {
     static DXUPResource* CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage);
     static DXUPResource* CreateBuffer(Direct3DDevice9Ex* device, ID3D11Buffer* buffer, DWORD d3d9Usage);
 
-    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic);
+    DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic);
 
     UINT m_slices;
     UINT m_mips;
@@ -87,6 +87,7 @@ namespace dxup {
     bool m_dynamic;
 
     Com<ID3D11ShaderResourceView> m_srv;
+    Com<ID3D11ShaderResourceView> m_srvSRGB;
   };
 
 }

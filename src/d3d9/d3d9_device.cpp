@@ -32,6 +32,7 @@ namespace dxup {
     const uint32_t depthStencilState = 1 << 4;
     const uint32_t rasterizer = 1 << 5;
     const uint32_t blendState = 1 << 6;
+    const uint32_t textures = 1 << 7;
   }
 
   struct InternalRenderState{
@@ -1556,23 +1557,17 @@ namespace dxup {
       }
     }
 
-    ID3D11ShaderResourceView* srv = nullptr;
-
-    m_state->textures[Stage] = pTexture;
-
     if (pTexture != nullptr) {
       switch (pTexture->GetType()) {
 
       case D3DRTYPE_TEXTURE: {
         Direct3DTexture9* tex = reinterpret_cast<Direct3DTexture9*>(pTexture);
-        srv = tex->GetDXUPResource()->GetSRV();
         tex->AddRefPrivate();
         break;
       }
 
       case D3DRTYPE_CUBETEXTURE: {
         Direct3DCubeTexture9* tex = reinterpret_cast<Direct3DCubeTexture9*>(pTexture);
-        srv = tex->GetDXUPResource()->GetSRV();
         tex->AddRefPrivate();
         break;
       }
@@ -1586,7 +1581,8 @@ namespace dxup {
       }
     }
 
-    m_context->PSSetShaderResources(Stage, 1, &srv);
+    m_state->textures[Stage] = pTexture;
+    m_state->dirtyFlags |= dirtyFlags::textures;
 
     return D3D_OK;
   }
@@ -1825,12 +1821,47 @@ namespace dxup {
     m_state->dirtyFlags &= ~dirtyFlags::pixelShader;
   }
 
+  void Direct3DDevice9Ex::UpdateTextures() {
+    std::array<ID3D11ShaderResourceView*, 20> srvs;
+
+    for (uint32_t i = 0; i < 20; i++) {
+      IDirect3DBaseTexture9* pTexture = m_state->textures[i];
+      bool srgb = m_state->samplerStates[i][D3DSAMP_SRGBTEXTURE] == TRUE;
+
+      if (pTexture != nullptr) {
+        switch (pTexture->GetType()) {
+
+        case D3DRTYPE_TEXTURE: {
+          Direct3DTexture9* tex = reinterpret_cast<Direct3DTexture9*>(pTexture);
+          srvs[i] = tex->GetDXUPResource()->GetSRV(srgb);
+          break;
+        }
+
+        case D3DRTYPE_CUBETEXTURE: {
+          Direct3DCubeTexture9* tex = reinterpret_cast<Direct3DCubeTexture9*>(pTexture);
+          srvs[i] = tex->GetDXUPResource()->GetSRV(srgb);
+          break;
+        }
+
+        }
+      }
+      else
+        srvs[i] = nullptr;
+    }
+
+    m_context->PSSetShaderResources(0, 16, &srvs[0]);
+    m_context->VSSetShaderResources(0, 4, &srvs[16]);
+  }
+
   bool Direct3DDevice9Ex::PrepareDraw() {
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
 
     if (m_state->dirtySamplers != 0)
       UpdateSamplers();
+
+    if (m_state->dirtyFlags & dirtyFlags::textures)
+      UpdateTextures();
 
     if (m_state->dirtyFlags & dirtyFlags::renderTargets)
       UpdateRenderTargets();

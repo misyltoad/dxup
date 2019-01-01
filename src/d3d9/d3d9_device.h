@@ -181,6 +181,7 @@ namespace dxup {
     void UpdateBlendState();
     void UpdateSampler(uint32_t sampler);
     void UpdateSamplers();
+    void UpdateTextures();
     void UpdateRenderTargets();
     void UpdatePixelShader();
 
