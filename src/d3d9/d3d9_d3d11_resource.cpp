@@ -16,8 +16,25 @@ namespace dxup {
     texture->GetDesc(&desc);
 
     Com<ID3D11ShaderResourceView> srv;
-    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
-      device->GetD3D11Device()->CreateShaderResourceView(texture, nullptr, &srv);
+    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+
+      D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+      if (desc.ArraySize == 1) {
+        srvDesc.ViewDimension = D3D10_1_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 0xFFFFFFFF;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+      }
+      else {
+        srvDesc.ViewDimension = D3D10_1_SRV_DIMENSION_TEXTURE2DARRAY;
+        srvDesc.Texture2DArray.MipLevels = 0xFFFFFFFF;
+        srvDesc.Texture2DArray.MostDetailedMip = 0;
+        srvDesc.Texture2DArray.FirstArraySlice = 0;
+        srvDesc.Texture2DArray.ArraySize = -1;
+      }
+      srvDesc.Format = desc.Format;
+
+      device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srv);
+    }
 
     Com<ID3D11Texture2D> stagingTexture;
     if (NeedsStaging(desc.Usage, d3d9Usage)) {
