@@ -62,6 +62,8 @@ namespace dxup {
   }
 
   HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
+    m_presentationParameters = *parameters;
+
     UINT BackBufferCount = parameters->BackBufferCount;
     if (BackBufferCount == 0)
       BackBufferCount = 1;
