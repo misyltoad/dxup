@@ -327,7 +327,7 @@ namespace dxup {
 
     // This is disgusting, what the fuck MS?! ~ Josh
     UINT ModeCount = 0;
-    DXGI_FORMAT dxgiFormat = convert::format(Format);
+    DXGI_FORMAT dxgiFormat = convert::makeUntypeless(convert::format(Format), false);
     Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
     m_displayModes.resize(ModeCount);
