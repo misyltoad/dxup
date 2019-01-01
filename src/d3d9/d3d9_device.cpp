@@ -1242,7 +1242,7 @@ namespace dxup {
     for (uint32_t i = 0; i < 4; i++)
     {
       if (m_state->renderTargets[i] != nullptr) {
-        rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget();
+        rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget(m_state->renderState[D3DRS_SRGBWRITEENABLE] == TRUE);
         if (rtvs[i] == nullptr)
           log::warn("No render target view for bound render target surface.");
       }
@@ -1328,7 +1328,7 @@ namespace dxup {
         if (m_state->renderTargets[i] == nullptr)
           continue;
 
-        ID3D11RenderTargetView* rtv = m_state->renderTargets[i]->GetD3D11RenderTarget();
+        ID3D11RenderTargetView* rtv = m_state->renderTargets[i]->GetD3D11RenderTarget(m_state->renderState[D3DRS_SRGBWRITEENABLE] == TRUE);
         if (rtv)
           m_context->ClearRenderTargetView(rtv, color);
       }
@@ -1472,6 +1472,8 @@ namespace dxup {
               State == D3DRS_COLORWRITEENABLE2 || 
               State == D3DRS_COLORWRITEENABLE3 )
       m_state->dirtyFlags |= dirtyFlags::blendState;
+    else if ( State == D3DRS_SRGBWRITEENABLE )
+      m_state->dirtyFlags |= dirtyFlags::renderTargets;
     else
       log::warn("Unhandled render state: %lu", State);
 

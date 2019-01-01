@@ -55,6 +55,8 @@ namespace dxup {
     HRESULT D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage);
     HRESULT D3D9UnlockRect(UINT slice, UINT mip);
 
+    DXGI_FORMAT GetDXGIFormat();
+
   private:
 
     UINT CalcMapFlags(UINT d3d9LockFlags);

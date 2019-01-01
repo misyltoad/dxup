@@ -13,6 +13,7 @@ namespace dxup {
     , m_slice(slice)
     , m_mip(mip)
     , m_rtView(nullptr)
+    , m_rtViewSRGB(nullptr)
     , m_singletonSurface(singletonSurface)
   {
     if (singletonSurface && m_container != nullptr)
@@ -24,8 +25,17 @@ namespace dxup {
     }
 
     if (GetSubresource() == 0 && desc.Usage & D3DUSAGE_RENDERTARGET) {
-      if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), nullptr, &m_rtView)))
-        log::warn("Failed to create render target for surface!");
+      D3D11_RENDER_TARGET_VIEW_DESC desc;
+      desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+      desc.Format = convert::makeUntypeless(resource->GetDXGIFormat(), false);
+      desc.Texture2D.MipSlice = 0;
+
+      if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), &desc, &m_rtView)))
+        log::warn("Failed to create non-SRGB render target for surface!");
+
+      desc.Format = convert::makeUntypeless(resource->GetDXGIFormat(), true);
+      if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), &desc, &m_rtViewSRGB)))
+        log::warn("Failed to create SRGB render target for surface!");
     }
 
     if (config::getBool(config::GDICompatible))
@@ -123,7 +133,10 @@ namespace dxup {
   IDXGISurface1* Direct3DSurface9::GetDXGISurface() {
     return m_surface.ptr();
   }
-  ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget() {
+  ID3D11RenderTargetView* Direct3DSurface9::GetD3D11RenderTarget(bool srgb) {
+    if (srgb && m_rtViewSRGB != nullptr)
+      return m_rtViewSRGB.ptr();
+
     return m_rtView.ptr();
   }
   ID3D11DepthStencilView* Direct3DSurface9::GetD3D11DepthStencil() {

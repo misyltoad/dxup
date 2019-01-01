@@ -143,6 +143,10 @@ namespace dxup {
     return E_NOINTERFACE;
   }
 
+  DXGI_FORMAT DXUPResource::GetDXGIFormat() {
+    return m_dxgiFormat;
+  }
+
   DXUPResource::DXUPResource(Direct3DDevice9Ex* device, ID3D11Resource* resource, ID3D11Resource* staging, ID3D11ShaderResourceView* srv, ID3D11ShaderResourceView* srvSRGB, DXGI_FORMAT dxgiFormat, UINT slices, UINT mips, bool dynamic)
     : m_device{ device }
     , m_resource{ resource }

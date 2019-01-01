@@ -33,7 +33,7 @@ namespace dxup {
     ULONG STDMETHODCALLTYPE Release() override;
 
     IDXGISurface1* GetDXGISurface();
-    ID3D11RenderTargetView* GetD3D11RenderTarget();
+    ID3D11RenderTargetView* GetD3D11RenderTarget(bool srgb);
     ID3D11DepthStencilView* GetD3D11DepthStencil();
 
     DXUPResource* GetDXUPResource();
@@ -45,6 +45,7 @@ namespace dxup {
 
     Com<IDXGISurface1> m_surface;
     Com<ID3D11RenderTargetView> m_rtView;
+    Com<ID3D11RenderTargetView> m_rtViewSRGB;
     Com<ID3D11DepthStencilView> m_dsView;
 
     bool m_useRect;
