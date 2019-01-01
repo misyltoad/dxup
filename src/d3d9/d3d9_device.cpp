@@ -13,6 +13,7 @@
 #include "d3d9_vertexdeclaration.h"
 #include "d3d9_state_cache.h"
 #include "d3d9_d3d11_resource.h"
+#include "../util/hash.h"
 
 namespace dxup {
 
@@ -1084,7 +1085,9 @@ namespace dxup {
     desc.StencilReadMask = (UINT8)(m_state->renderState[D3DRS_STENCILMASK] & 0x000000FF); // I think we can do this.
     desc.StencilWriteMask = (UINT8)(m_state->renderState[D3DRS_STENCILWRITEMASK] & 0x000000FF);
 
-    ID3D11DepthStencilState* state = m_state->caches.depthStencil.lookupObject(desc);
+    uint32_t key = hash(desc);
+
+    ID3D11DepthStencilState* state = m_state->caches.depthStencil.lookupObject(key);
 
     if (state == nullptr) {
       Com<ID3D11DepthStencilState> comState;
@@ -1095,7 +1098,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.depthStencil.pushState(desc, comState.ptr());
+      m_state->caches.depthStencil.pushState(key, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1118,7 +1121,9 @@ namespace dxup {
     desc.ScissorEnable = m_state->renderState[D3DRS_SCISSORTESTENABLE] == TRUE ? TRUE : FALSE;
     desc.SlopeScaledDepthBias = dwordToFloat(m_state->renderState[D3DRS_SLOPESCALEDEPTHBIAS]);
 
-    ID3D11RasterizerState1* state = m_state->caches.rasterizer.lookupObject(desc);
+    uint32_t key = hash(desc);
+
+    ID3D11RasterizerState1* state = m_state->caches.rasterizer.lookupObject(key);
 
     if (state == nullptr) {
       Com<ID3D11RasterizerState1> comState;
@@ -1129,7 +1134,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.rasterizer.pushState(desc, comState.ptr());
+      m_state->caches.rasterizer.pushState(key, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1171,7 +1176,9 @@ namespace dxup {
       desc.RenderTarget[i].SrcBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_SRCBLENDALPHA] : m_state->renderState[D3DRS_SRCBLEND]);
     }
 
-    ID3D11BlendState1* state = m_state->caches.blendState.lookupObject(desc);
+    uint32_t key = hash(desc);
+
+    ID3D11BlendState1* state = m_state->caches.blendState.lookupObject(key);
 
     if (state == nullptr) {
       Com<ID3D11BlendState1> comState;
@@ -1182,7 +1189,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.blendState.pushState(desc, comState.ptr());
+      m_state->caches.blendState.pushState(key, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1206,7 +1213,9 @@ namespace dxup {
     desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
     desc.MinLOD = -FLT_MAX;
 
-    ID3D11SamplerState* state = m_state->caches.sampler.lookupObject(desc);
+    uint32_t key = hash(desc);
+
+    ID3D11SamplerState* state = m_state->caches.sampler.lookupObject(key);
 
     if (state == nullptr) {
       Com<ID3D11SamplerState> comState;
@@ -1217,7 +1226,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.sampler.pushState(desc, comState.ptr());
+      m_state->caches.sampler.pushState(key, comState.ptr());
       state = comState.ptr();
     }
 

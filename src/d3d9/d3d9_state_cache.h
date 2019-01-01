@@ -8,33 +8,26 @@ namespace dxup {
   template <typename Desc, typename Object>
   class StateCache {
 
-    struct Instance {
-      Desc desc;
-      Com<Object> object;
-    };
-
-    bool descEqual(const Desc& a, const Desc& b) {
-      return std::memcmp(&a, &b, sizeof(Desc)) == 0;
-    }
-
   public:
 
-    Object* lookupObject(const Desc& desc) {
-      for (const Instance& instance : m_instances) {
-        if (descEqual(instance.desc, desc))
-          return instance.object.ptr();
+    Object* lookupObject(uint32_t key) {
+      for (uint32_t i = 0; i < m_keys.size(); i++) {
+        if (m_keys[i] == key)
+          return m_objects[i].ptr();
       }
 
       return nullptr;
     }
 
-    void pushState(const Desc& desc, Object* object) {
-      m_instances.push_back(Instance{ desc, object });
+    void pushState(uint32_t key, Object* object) {
+      m_keys.push_back(key);
+      m_objects.emplace_back(object);
     }
 
   private:
 
-    std::vector<Instance> m_instances;
+    std::vector<uint32_t> m_keys;
+    std::vector<Com<Object>> m_objects;
   };
 
 }
