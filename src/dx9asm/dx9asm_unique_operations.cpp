@@ -46,6 +46,11 @@ namespace dxup {
 
       if (dst->getRegType() == D3DSPR_INPUT) {
         mapping.dclInfo.type = UsageType::Input;
+
+        if (getMajorVersion() != 3 && getShaderType() == ShaderType::Pixel) {
+          mapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
+          mapping.dclInfo.usageIndex = mapping.dx9Id;
+        }
       }
       else if (dst->getRegType() == D3DSPR_TEXTURE) {
         mapping.dclInfo.type = UsageType::Input;

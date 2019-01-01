@@ -98,9 +98,15 @@ namespace dxup {
       case D3DSPR_TEMP:
         dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
 
-      case D3DSPR_INPUT:
-        log::fail("Undeffed input.");
-        dxbcType = D3D10_SB_OPERAND_TYPE_INPUT; break;
+      case D3DSPR_INPUT: {
+        dxbcType = D3D10_SB_OPERAND_TYPE_INPUT;
+
+        if (translator.getMajorVersion() != 3 && translator.getShaderType() == ShaderType::Pixel) {
+          newMapping.dclInfo.type = UsageType::Input;
+          newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
+          newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+        }
+      } break;
 
       case D3DSPR_CONST: {
 
