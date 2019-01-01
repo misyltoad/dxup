@@ -90,6 +90,7 @@ namespace dxup {
         //{"texldp",  D3DSIO_TEXLDP, 1, { Dst, Src0, Src1 }, {}},
         {"texm3x2depth",  D3DSIO_TEXM3x2DEPTH, 1, { Dst, Src0 }, {}},
         {"texm3x2pad",  D3DSIO_TEXM3x2PAD, 1, { Dst, Src0 }, {}},
+        {"texm3x2tex",  D3DSIO_TEXM3x2TEX, 1, { Dst, Src0 }, {}},
         {"texm3x3",  D3DSIO_TEXM3x3, 1, { Dst, Src0 }, {}},
         {"texm3x3pad",  D3DSIO_TEXM3x3PAD, 1, { Dst, Src0 }, {}},
         {"texm3x3spec",  D3DSIO_TEXM3x3SPEC, 1, { Dst, Src0, Src1 }, {}},
