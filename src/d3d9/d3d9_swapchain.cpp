@@ -129,7 +129,14 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayMode(D3DDISPLAYMODE* pMode) {
-    log::stub("Direct3DSwapChain9Ex::GetDisplayMode");
+    if (pMode == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    pMode->Width = m_presentationParameters.BackBufferWidth;
+    pMode->Height = m_presentationParameters.BackBufferHeight;
+    pMode->Format = m_presentationParameters.BackBufferFormat;
+    pMode->RefreshRate = m_presentationParameters.FullScreen_RefreshRateInHz;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentParameters(D3DPRESENT_PARAMETERS* pPresentationParameters) {

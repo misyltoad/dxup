@@ -510,9 +510,10 @@ namespace dxup {
     return m_parent->GetDeviceCaps(0, D3DDEVTYPE_HAL, pCaps);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDisplayMode(UINT iSwapChain, D3DDISPLAYMODE* pMode) {
-    log::stub("Direct3DDevice9Ex::GetDisplayMode");
+    if (GetInternalSwapchain(iSwapChain) == nullptr)
+      return D3DERR_INVALIDCALL;
 
-    return D3D_OK;
+    return GetInternalSwapchain(iSwapChain)->GetDisplayMode(pMode);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetCreationParameters(D3DDEVICE_CREATION_PARAMETERS *pParameters) {
     if (!pParameters)
@@ -962,8 +963,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateOffscreenPlainSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DPOOL Pool, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
-    log::stub("Direct3DDevice9Ex::CreateOffscreenPlainSurface");
-    return D3D_OK;
+    log::warn("CreateOffscreenPlainSurface partial support.");
+    return CreateRenderTarget(Width, Height, Format, D3DMULTISAMPLE_NONE, 0, D3DPOOL_DEFAULT, ppSurface, pSharedHandle);
   }
 
   namespace convert {
