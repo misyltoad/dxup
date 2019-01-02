@@ -1,5 +1,6 @@
 #include "d3d9_interface.h"
 #include "d3d9_device.h"
+#include "d3d9_format.h"
 #include "../util/config.h"
 #include <algorithm>
 #include <vector>
@@ -62,7 +63,7 @@ namespace dxup {
     pIdentifier->DeviceId = desc.DeviceId;
     pIdentifier->SubSysId = desc.SubSysId;
     pIdentifier->Revision = desc.Revision;
-    
+
     std::memcpy(&pIdentifier->DeviceIdentifier, &desc.AdapterLuid, sizeof(LUID));
 
     pIdentifier->WHQLLevel = 0;
@@ -76,18 +77,543 @@ namespace dxup {
     return (UINT)m_displayModes.size();
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
-    return EnumAdapterModes(Adapter, D3DFMT_A8B8G8R8, 0, pMode);
+    return EnumAdapterModes(Adapter, D3DFMT_X8R8G8B8, 0, pMode);
   }
 
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceType(UINT Adapter, D3DDEVTYPE DevType, D3DFORMAT AdapterFormat, D3DFORMAT BackBufferFormat, BOOL bWindowed) {
+    if (Adapter >= GetAdapterCount())
+      return D3DERR_INVALIDCALL;
+
+    switch (AdapterFormat) {
+    case D3DFMT_UNKNOWN:
+      if (bWindowed == FALSE)
+        return D3DERR_INVALIDCALL;
+      else
+        return D3DERR_NOTAVAILABLE;
+    case D3DFMT_A2R10G10B10:
+    case D3DFMT_A2B10G10R10:
+    case D3DFMT_X8R8G8B8:
+    case D3DFMT_R5G6B5:
+      break;
+    default:
+      return D3DERR_NOTAVAILABLE;
+    }
+
+    if (bWindowed != FALSE) {
+      switch (BackBufferFormat) {
+      case D3DFMT_A2R10G10B10:
+      case D3DFMT_A2B10G10R10:
+      case D3DFMT_A8R8G8B8:
+      case D3DFMT_UNKNOWN:
+      case D3DFMT_X8R8G8B8:
+      case D3DFMT_R5G6B5:
+      case D3DFMT_X1R5G5B5:
+      case D3DFMT_A1R5G5B5:
+        break;
+      default:
+        return D3DERR_NOTAVAILABLE;
+      }
+    }
+    else {
+      switch (BackBufferFormat) {
+      case D3DFMT_UNKNOWN:
+        return D3DERR_INVALIDCALL;
+      case D3DFMT_A2R10G10B10:
+      case D3DFMT_A2B10G10R10:
+      case D3DFMT_A8R8G8B8:
+      case D3DFMT_X8R8G8B8:
+        break;
+      default:
+        return D3DERR_NOTAVAILABLE;
+      }
+    }
+
     return D3D_OK;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceFormat(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT AdapterFormat, DWORD Usage, D3DRESOURCETYPE RType, D3DFORMAT CheckFormat) {
-    return D3D_OK;
+    if (Usage & D3DUSAGE_QUERY_SRGBREAD || Usage & D3DUSAGE_QUERY_SRGBWRITE) {
+      DXGI_FORMAT possibleTypeless = convert::format(CheckFormat);
+      DXGI_FORMAT unorm = convert::makeUntypeless(possibleTypeless, false);
+
+      if (unorm == possibleTypeless)
+        return D3DERR_NOTAVAILABLE;
+    }
+
+    if (CheckFormat == D3DFMT_INST) // weird hack every driver implements.
+      return D3DERR_NOTAVAILABLE; // TODO! Instancing.
+
+    // Table modified from SwiftShader.
+
+    switch (RType) {
+    case D3DRTYPE_SURFACE:
+      if (Usage & D3DUSAGE_RENDERTARGET) {
+        switch (CheckFormat) {
+        //case D3DFMT_NULL:			return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else if (Usage & D3DUSAGE_DEPTHSTENCIL) {
+        switch (CheckFormat) {
+        case D3DFMT_D32:			return D3D_OK;
+        case D3DFMT_D24S8:			return D3D_OK;
+        case D3DFMT_D24X8:			return D3D_OK;
+        case D3DFMT_D16:			return D3D_OK;
+        case D3DFMT_D24FS8:			return D3D_OK;
+        case D3DFMT_D32F_LOCKABLE:	return D3D_OK;
+        case D3DFMT_DF24:			return D3D_OK;
+        case D3DFMT_DF16:			return D3D_OK;
+        case D3DFMT_INTZ:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else {
+        switch (CheckFormat) {
+        case D3DFMT_A8:				return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+          // Paletted formats
+        case D3DFMT_P8:				return D3D_OK;
+        case D3DFMT_A8P8:			return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Compressed formats
+        case D3DFMT_DXT1:			return D3D_OK;
+        case D3DFMT_DXT2:			return D3D_OK;
+        case D3DFMT_DXT3:			return D3D_OK;
+        case D3DFMT_DXT4:			return D3D_OK;
+        case D3DFMT_DXT5:			return D3D_OK;
+        //case D3DFMT_ATI1:			return D3D_OK;
+        //case D3DFMT_ATI2:			return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+          // Bump map formats
+        case D3DFMT_V8U8:			return D3D_OK;
+        case D3DFMT_L6V5U5:			return D3D_OK;
+        case D3DFMT_X8L8V8U8:		return D3D_OK;
+        case D3DFMT_Q8W8V8U8:		return D3D_OK;
+        case D3DFMT_V16U16:			return D3D_OK;
+        case D3DFMT_A2W10V10U10:	return D3D_OK;
+        case D3DFMT_Q16W16V16U16:	return D3D_OK;
+          // Luminance formats
+        case D3DFMT_L8:				return D3D_OK;
+        case D3DFMT_A4L4:			return D3D_OK;
+        case D3DFMT_L16:			return D3D_OK;
+        case D3DFMT_A8L8:			return D3D_OK;
+          // Depth Bounds Test
+        //case D3DFMT_NVDB:			return D3D_OK;
+          // Transparency anti-aliasing
+        //case D3DFMT_ATOC:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+    case D3DRTYPE_VOLUME:
+      switch (CheckFormat) {
+      case D3DFMT_A8:					return D3D_OK;
+      case D3DFMT_R5G6B5:				return D3D_OK;
+      case D3DFMT_X1R5G5B5:			return D3D_OK;
+      case D3DFMT_A1R5G5B5:			return D3D_OK;
+      case D3DFMT_A4R4G4B4:			return D3D_OK;
+      case D3DFMT_R3G3B2:				return D3D_OK;
+      case D3DFMT_A8R3G3B2:			return D3D_OK;
+      case D3DFMT_X4R4G4B4:			return D3D_OK;
+      case D3DFMT_R8G8B8:				return D3D_OK;
+      case D3DFMT_X8R8G8B8:			return D3D_OK;
+      case D3DFMT_A8R8G8B8:			return D3D_OK;
+      case D3DFMT_X8B8G8R8:			return D3D_OK;
+      case D3DFMT_A8B8G8R8:			return D3D_OK;
+        // Paletted formats
+      case D3DFMT_P8:					return D3D_OK;
+      case D3DFMT_A8P8:				return D3D_OK;
+        // Integer HDR formats
+      case D3DFMT_G16R16:				return D3D_OK;
+      case D3DFMT_A2R10G10B10:		return D3D_OK;
+      case D3DFMT_A2B10G10R10:		return D3D_OK;
+      case D3DFMT_A16B16G16R16:		return D3D_OK;
+        // Compressed formats
+      case D3DFMT_DXT1:				return D3D_OK;
+      case D3DFMT_DXT2:				return D3D_OK;
+      case D3DFMT_DXT3:				return D3D_OK;
+      case D3DFMT_DXT4:				return D3D_OK;
+      case D3DFMT_DXT5:				return D3D_OK;
+      //case D3DFMT_ATI1:				return D3D_OK;
+      //case D3DFMT_ATI2:				return D3D_OK;
+        // Floating-point formats
+      case D3DFMT_R16F:				return D3D_OK;
+      case D3DFMT_G16R16F:			return D3D_OK;
+      case D3DFMT_A16B16G16R16F:		return D3D_OK;
+      case D3DFMT_R32F:				return D3D_OK;
+      case D3DFMT_G32R32F:			return D3D_OK;
+      case D3DFMT_A32B32G32R32F:		return D3D_OK;
+        // Bump map formats
+      case D3DFMT_V8U8:				return D3D_OK;
+      case D3DFMT_L6V5U5:				return D3D_OK;
+      case D3DFMT_X8L8V8U8:			return D3D_OK;
+      case D3DFMT_Q8W8V8U8:			return D3D_OK;
+      case D3DFMT_V16U16:				return D3D_OK;
+      case D3DFMT_A2W10V10U10:		return D3D_OK;
+      case D3DFMT_Q16W16V16U16:		return D3D_OK;
+        // Luminance formats
+      case D3DFMT_L8:					return D3D_OK;
+      case D3DFMT_A4L4:				return D3D_OK;
+      case D3DFMT_L16:				return D3D_OK;
+      case D3DFMT_A8L8:				return D3D_OK;
+      default:
+        return D3DERR_NOTAVAILABLE;
+      }
+    case D3DRTYPE_CUBETEXTURE:
+      if (Usage & D3DUSAGE_RENDERTARGET) {
+        switch (CheckFormat) {
+        //case D3DFMT_NULL:			return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else if (Usage & D3DUSAGE_DEPTHSTENCIL) {
+        switch (CheckFormat) {
+        case D3DFMT_D32:			return D3D_OK;
+        case D3DFMT_D24S8:			return D3D_OK;
+        case D3DFMT_D24X8:			return D3D_OK;
+        case D3DFMT_D16:			return D3D_OK;
+        case D3DFMT_D24FS8:			return D3D_OK;
+        case D3DFMT_D32F_LOCKABLE:	return D3D_OK;
+        case D3DFMT_DF24:			return D3D_OK;
+        case D3DFMT_DF16:			return D3D_OK;
+        case D3DFMT_INTZ:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else {
+        switch (CheckFormat) {
+        case D3DFMT_A8:				return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+          // Paletted formats
+        case D3DFMT_P8:				return D3D_OK;
+        case D3DFMT_A8P8:			return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Compressed formats
+        case D3DFMT_DXT1:			return D3D_OK;
+        case D3DFMT_DXT2:			return D3D_OK;
+        case D3DFMT_DXT3:			return D3D_OK;
+        case D3DFMT_DXT4:			return D3D_OK;
+        case D3DFMT_DXT5:			return D3D_OK;
+        //case D3DFMT_ATI1:			return D3D_OK;
+        //case D3DFMT_ATI2:			return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+          // Bump map formats
+        case D3DFMT_V8U8:			return D3D_OK;
+        case D3DFMT_L6V5U5:			return D3D_OK;
+        case D3DFMT_X8L8V8U8:		return D3D_OK;
+        case D3DFMT_Q8W8V8U8:		return D3D_OK;
+        case D3DFMT_V16U16:			return D3D_OK;
+        case D3DFMT_A2W10V10U10:	return D3D_OK;
+        case D3DFMT_Q16W16V16U16:	return D3D_OK;
+          // Luminance formats
+        case D3DFMT_L8:				return D3D_OK;
+        case D3DFMT_A4L4:			return D3D_OK;
+        case D3DFMT_L16:			return D3D_OK;
+        case D3DFMT_A8L8:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+    case D3DRTYPE_VOLUMETEXTURE:
+      switch (CheckFormat) {
+      case D3DFMT_A8:					return D3D_OK;
+      case D3DFMT_R5G6B5:				return D3D_OK;
+      case D3DFMT_X1R5G5B5:			return D3D_OK;
+      case D3DFMT_A1R5G5B5:			return D3D_OK;
+      case D3DFMT_A4R4G4B4:			return D3D_OK;
+      case D3DFMT_R3G3B2:				return D3D_OK;
+      case D3DFMT_A8R3G3B2:			return D3D_OK;
+      case D3DFMT_X4R4G4B4:			return D3D_OK;
+      case D3DFMT_R8G8B8:				return D3D_OK;
+      case D3DFMT_X8R8G8B8:			return D3D_OK;
+      case D3DFMT_A8R8G8B8:			return D3D_OK;
+      case D3DFMT_X8B8G8R8:			return D3D_OK;
+      case D3DFMT_A8B8G8R8:			return D3D_OK;
+        // Paletted formats
+      case D3DFMT_P8:					return D3D_OK;
+      case D3DFMT_A8P8:				return D3D_OK;
+        // Integer HDR formats
+      case D3DFMT_G16R16:				return D3D_OK;
+      case D3DFMT_A2R10G10B10:		return D3D_OK;
+      case D3DFMT_A2B10G10R10:		return D3D_OK;
+      case D3DFMT_A16B16G16R16:		return D3D_OK;
+        // Compressed formats
+      case D3DFMT_DXT1:				return D3D_OK;
+      case D3DFMT_DXT2:				return D3D_OK;
+      case D3DFMT_DXT3:				return D3D_OK;
+      case D3DFMT_DXT4:				return D3D_OK;
+      case D3DFMT_DXT5:				return D3D_OK;
+      //case D3DFMT_ATI1:				return D3D_OK;
+      //case D3DFMT_ATI2:				return D3D_OK;
+        // Floating-point formats
+      case D3DFMT_R16F:				return D3D_OK;
+      case D3DFMT_G16R16F:			return D3D_OK;
+      case D3DFMT_A16B16G16R16F:		return D3D_OK;
+      case D3DFMT_R32F:				return D3D_OK;
+      case D3DFMT_G32R32F:			return D3D_OK;
+      case D3DFMT_A32B32G32R32F:		return D3D_OK;
+        // Bump map formats
+      case D3DFMT_V8U8:				return D3D_OK;
+      case D3DFMT_L6V5U5:				return D3D_OK;
+      case D3DFMT_X8L8V8U8:			return D3D_OK;
+      case D3DFMT_Q8W8V8U8:			return D3D_OK;
+      case D3DFMT_V16U16:				return D3D_OK;
+      case D3DFMT_A2W10V10U10:		return D3D_OK;
+      case D3DFMT_Q16W16V16U16:		return D3D_OK;
+        // Luminance formats
+      case D3DFMT_L8:					return D3D_OK;
+      case D3DFMT_A4L4:				return D3D_OK;
+      case D3DFMT_L16:				return D3D_OK;
+      case D3DFMT_A8L8:				return D3D_OK;
+      default:
+        return D3DERR_NOTAVAILABLE;
+      }
+    case D3DRTYPE_TEXTURE:
+      if (Usage & D3DUSAGE_RENDERTARGET) {
+        switch (CheckFormat) {
+        //case D3DFMT_NULL:			return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else if (Usage & D3DUSAGE_DEPTHSTENCIL) {
+        switch (CheckFormat) {
+        case D3DFMT_D32:			return D3D_OK;
+        case D3DFMT_D24S8:			return D3D_OK;
+        case D3DFMT_D24X8:			return D3D_OK;
+        case D3DFMT_D16:			return D3D_OK;
+        case D3DFMT_D24FS8:			return D3D_OK;
+        case D3DFMT_D32F_LOCKABLE:	return D3D_OK;
+        case D3DFMT_DF24:			return D3D_OK;
+        case D3DFMT_DF16:			return D3D_OK;
+        case D3DFMT_INTZ:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+      else {
+        switch (CheckFormat) {
+        //case D3DFMT_NULL:			return D3D_OK;
+        case D3DFMT_A8:				return D3D_OK;
+        case D3DFMT_R5G6B5:			return D3D_OK;
+        case D3DFMT_X1R5G5B5:		return D3D_OK;
+        case D3DFMT_A1R5G5B5:		return D3D_OK;
+        case D3DFMT_A4R4G4B4:		return D3D_OK;
+        case D3DFMT_R3G3B2:			return D3D_OK;
+        case D3DFMT_A8R3G3B2:		return D3D_OK;
+        case D3DFMT_X4R4G4B4:		return D3D_OK;
+        case D3DFMT_R8G8B8:			return D3D_OK;
+        case D3DFMT_X8R8G8B8:		return D3D_OK;
+        case D3DFMT_A8R8G8B8:		return D3D_OK;
+        case D3DFMT_X8B8G8R8:		return D3D_OK;
+        case D3DFMT_A8B8G8R8:		return D3D_OK;
+          // Paletted formats
+        case D3DFMT_P8:				return D3D_OK;
+        case D3DFMT_A8P8:			return D3D_OK;
+          // Integer HDR formats
+        case D3DFMT_G16R16:			return D3D_OK;
+        case D3DFMT_A2R10G10B10:	return D3D_OK;
+        case D3DFMT_A2B10G10R10:	return D3D_OK;
+        case D3DFMT_A16B16G16R16:	return D3D_OK;
+          // Compressed formats
+        case D3DFMT_DXT1:			return D3D_OK;
+        case D3DFMT_DXT2:			return D3D_OK;
+        case D3DFMT_DXT3:			return D3D_OK;
+        case D3DFMT_DXT4:			return D3D_OK;
+        case D3DFMT_DXT5:			return D3D_OK;
+        //case D3DFMT_ATI1:			return D3D_OK;
+        //case D3DFMT_ATI2:			return D3D_OK;
+          // Floating-point formats
+        case D3DFMT_R16F:			return D3D_OK;
+        case D3DFMT_G16R16F:		return D3D_OK;
+        case D3DFMT_A16B16G16R16F:	return D3D_OK;
+        case D3DFMT_R32F:			return D3D_OK;
+        case D3DFMT_G32R32F:		return D3D_OK;
+        case D3DFMT_A32B32G32R32F:	return D3D_OK;
+          // Bump map formats
+        case D3DFMT_V8U8:			return D3D_OK;
+        case D3DFMT_L6V5U5:			return D3D_OK;
+        case D3DFMT_X8L8V8U8:		return D3D_OK;
+        case D3DFMT_Q8W8V8U8:		return D3D_OK;
+        case D3DFMT_V16U16:			return D3D_OK;
+        case D3DFMT_A2W10V10U10:	return D3D_OK;
+        case D3DFMT_Q16W16V16U16:	return D3D_OK;
+          // Luminance formats
+        case D3DFMT_L8:				return D3D_OK;
+        case D3DFMT_A4L4:			return D3D_OK;
+        case D3DFMT_L16:			return D3D_OK;
+        case D3DFMT_A8L8:			return D3D_OK;
+          // Depth formats
+        case D3DFMT_D32:			return D3D_OK;
+        case D3DFMT_D24S8:			return D3D_OK;
+        case D3DFMT_D24X8:			return D3D_OK;
+        case D3DFMT_D16:			return D3D_OK;
+        case D3DFMT_D24FS8:			return D3D_OK;
+        case D3DFMT_D32F_LOCKABLE:	return D3D_OK;
+        case D3DFMT_DF24:			return D3D_OK;
+        case D3DFMT_DF16:			return D3D_OK;
+        case D3DFMT_INTZ:			return D3D_OK;
+        default:
+          return D3DERR_NOTAVAILABLE;
+        }
+      }
+    case D3DRTYPE_VERTEXBUFFER:
+      if (CheckFormat == D3DFMT_VERTEXDATA)
+        return D3D_OK;
+      else
+        return D3DERR_NOTAVAILABLE;
+    case D3DRTYPE_INDEXBUFFER:
+      switch (CheckFormat) {
+      case D3DFMT_INDEX16:
+      case D3DFMT_INDEX32:
+        return D3D_OK;
+      default:
+        return D3DERR_NOTAVAILABLE;
+      };
+    default:
+      return D3DERR_NOTAVAILABLE;
+    }
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceMultiSampleType(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels) {
-    if (pQualityLevels)
-      *pQualityLevels = 3;
+    if (Adapter >= GetAdapterCount())
+      return D3DERR_INVALIDCALL;
+
+    if (pQualityLevels) {
+      if (MultiSampleType == D3DMULTISAMPLE_NONMASKABLE)
+        *pQualityLevels = 4;
+      else
+        *pQualityLevels = 1;
+    }
+
+    if (MultiSampleType == D3DMULTISAMPLE_NONE ||
+      MultiSampleType == D3DMULTISAMPLE_NONMASKABLE ||
+      MultiSampleType == D3DMULTISAMPLE_2_SAMPLES ||
+      MultiSampleType == D3DMULTISAMPLE_4_SAMPLES ||
+      MultiSampleType == D3DMULTISAMPLE_8_SAMPLES ||
+      MultiSampleType == D3DMULTISAMPLE_16_SAMPLES) {
+      if (CheckDeviceFormat(Adapter, DeviceType, D3DFMT_X8R8G8B8, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, SurfaceFormat) == D3D_OK ||
+        CheckDeviceFormat(Adapter, DeviceType, D3DFMT_X8R8G8B8, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_SURFACE, SurfaceFormat) == D3D_OK) {
+        if (SurfaceFormat != D3DFMT_D32F_LOCKABLE && SurfaceFormat != D3DFMT_D16_LOCKABLE)
+          return D3D_OK;
+      }
+    }
 
     return D3D_OK;
   }
@@ -297,7 +823,7 @@ namespace dxup {
     Com<IDXGIAdapter1> adapter = nullptr;
     if (!FAILED(m_dxgiFactory->EnumAdapters1(Adapter, &adapter)))
     {
-      DXGI_ADAPTER_DESC adapterDesc;      
+      DXGI_ADAPTER_DESC adapterDesc;
 
       if (!FAILED(adapter->GetDesc(&adapterDesc)))
         *pLUID = adapterDesc.AdapterLuid;
