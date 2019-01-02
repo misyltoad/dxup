@@ -36,16 +36,12 @@ namespace dxup {
       }
       
       D3D9ResourceDesc d3d9Desc;
-      {
-        D3D11_TEXTURE2D_DESC desc;
-        texture->GetDesc(&desc);
-
-        d3d9Desc.Discard = false;
-        d3d9Desc.Format = convert::format(desc.Format);
-        d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
-      }
+      d3d9Desc.Discard = false;
+      d3d9Desc.Format = convert::format(desc.Format);
+      d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
       
       m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
+      device->CreateRenderTarget(desc.Width, desc.Height, d3d9Desc.Format, D3DMULTISAMPLE_NONE, 0, false, (IDirect3DSurface9**)&m_renderTargets[i], nullptr);
     }
 
     Com<IDXGIOutput> output;
@@ -97,10 +93,15 @@ namespace dxup {
     return E_NOINTERFACE;
   }
 
-  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::Present(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags) {
-    return PresentD3D11(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags, 0, false);
+  void Direct3DSwapChain9Ex::BlitRenderTargetToBackBuffer() {
+    // TODO! Support other backbuffers than 0.
+    m_device->GetContext()->CopyResource(m_buffers[0]->GetDXUPResource()->GetResource(), m_renderTargets[0]->GetDXUPResource()->GetResource());
+  }
 
-    return D3D_OK;
+  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::Present(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags) {
+    BlitRenderTargetToBackBuffer();
+
+    return PresentD3D11(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags, 0, false);
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetFrontBufferData(IDirect3DSurface9* pDestSurface) {
     log::stub("Direct3DSwapChain9Ex::GetFrontBufferData");
@@ -119,10 +120,10 @@ namespace dxup {
     if (!ppBackBuffer || iBackBuffer > D3DPRESENT_BACK_BUFFERS_MAX_EX)
       return D3DERR_INVALIDCALL;
 
-    if (m_buffers[iBackBuffer] == nullptr)
+    if (m_buffers[iBackBuffer] == nullptr || m_renderTargets[iBackBuffer] == nullptr)
       return D3DERR_INVALIDCALL;
 
-    *ppBackBuffer = ref(m_buffers[iBackBuffer]);
+    *ppBackBuffer = ref(m_renderTargets[iBackBuffer]);
 
     return D3D_OK;
   }
@@ -175,7 +176,7 @@ namespace dxup {
     return PresentD3D11(nullptr, nullptr, hDestWindowOverride, nullptr, 0, DXGI_PRESENT_TEST, ex);
   }
 
-  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex) {
+  HRESULT Direct3DSwapChain9Ex::PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex) {
     HRESULT result;
 
     if (hDestWindowOverride != nullptr) {
