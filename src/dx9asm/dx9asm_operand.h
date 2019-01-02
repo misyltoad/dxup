@@ -86,7 +86,7 @@ namespace dxup {
       }
 
       bool relativeAddressingUsesToken(uint32_t majorVersion) const {
-        return (m_info->isSrc() && majorVersion >= 3) || (m_info->isDst() && majorVersion >= 2);
+        return (m_info->isSrc() && majorVersion >= 2) || (m_info->isDst() && majorVersion >= 3);
       }
 
       inline uint32_t getRelativeAddrIndex(uint32_t majorVersion) const {
