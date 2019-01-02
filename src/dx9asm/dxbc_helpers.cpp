@@ -24,8 +24,10 @@ namespace dxup {
         setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
         setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32_PLUS_RELATIVE);
 
-        const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, DX9Operand{ lookupOperandInfo(optype::Src0), operand.getRelativeOperand() });
+        uint32_t dx9Swizzle = operand.getRelativeAddrSwizzle(state.getMajorVersion());
+        const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, D3DSPR_ADDR, operand.getRelativeAddrIndex(state.getMajorVersion()), calcReadMask(dx9Swizzle, 1), 0, false );
         m_relativeIndex = address->dxbcOperand.getRegNumber();
+        m_relativeSwizzle = calcSwizzle(dx9Swizzle, 1);
       } else if (isLiteral()) {
         if (operand.isSrc())
           setSwizzleOrWritemask(noSwizzle);
@@ -92,7 +94,7 @@ namespace dxup {
             ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(D3D10_SB_OPERAND_INDEX_1D) |
             ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(D3D10_SB_OPERAND_4_COMPONENT) |
             ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32) |
-            noSwizzle;
+            m_relativeSwizzle;
 
           code->push_back(header);
         }

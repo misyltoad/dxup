@@ -82,11 +82,25 @@ namespace dxup {
       }
 
       inline uint32_t isIndirect() const {
-        return (getRegType() == D3DSPR_CONST && getToken() & D3DSHADER_ADDRESSMODE_MASK) ? 1 : 0;
+        return (getToken() & D3DSHADER_ADDRESSMODE_MASK) == D3DVS_ADDRMODE_RELATIVE ? 1 : 0;
       }
 
-      inline uint32_t getRelativeOperand() const {
-        return m_dx9tokens[m_info->sizeInTokens];
+      bool relativeAddressingUsesToken(uint32_t majorVersion) const {
+        return (m_info->isSrc() && majorVersion >= 3) || (m_info->isDst() && majorVersion >= 2);
+      }
+
+      inline uint32_t getRelativeAddrIndex(uint32_t majorVersion) const {
+        if (relativeAddressingUsesToken(majorVersion))
+          return m_dx9tokens[m_info->sizeInTokens] & D3DSP_REGNUM_MASK;
+        else
+          return 0;
+      }
+
+      inline uint32_t getRelativeAddrSwizzle(uint32_t majorVersion) const {
+        if (relativeAddressingUsesToken(majorVersion))
+          return m_dx9tokens[m_info->sizeInTokens] & D3DVS_SWIZZLE_MASK;
+        else
+          return 0;
       }
 
       inline bool centroid() const {

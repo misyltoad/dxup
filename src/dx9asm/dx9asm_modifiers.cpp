@@ -137,13 +137,8 @@ namespace dxup {
       return outSwizzle;
     }
 
-    uint32_t calcSwizzle(const DX9Operand& operand) {
-      uint32_t dx9swizzle = operand.getSwizzleData();
-
-      if (!operand.isSrc() || !operand.isRegister())
-        return 0;
-
-      dx9swizzle = fixSwizzle(operand.getUsedComponents(), dx9swizzle);
+    uint32_t calcSwizzle(uint32_t dx9swizzle, uint32_t numComponents) {
+      dx9swizzle = fixSwizzle(numComponents, dx9swizzle);
 
       if (dx9swizzle == D3DVS_NOSWIZZLE)
         return noSwizzle;
@@ -155,13 +150,17 @@ namespace dxup {
       return dx9swizzle | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE);
     }
 
-    uint32_t calcReadMask(const DX9Operand& operand) {
+    uint32_t calcSwizzle(const DX9Operand& operand) {
       uint32_t dx9swizzle = operand.getSwizzleData();
 
       if (!operand.isSrc() || !operand.isRegister())
         return 0;
 
-      dx9swizzle = fixSwizzle(operand.getUsedComponents(), dx9swizzle);
+      return calcSwizzle(operand.getSwizzleData(), operand.getUsedComponents());
+    }
+
+    uint32_t calcReadMask(uint32_t dx9swizzle, uint32_t usedComponents) {
+      dx9swizzle = fixSwizzle(usedComponents, dx9swizzle);
 
       uint32_t readMask = 0;
 
@@ -185,6 +184,15 @@ namespace dxup {
       }
 
       return readMask;
+    }
+
+    uint32_t calcReadMask(const DX9Operand& operand) {
+      uint32_t dx9swizzle = operand.getSwizzleData();
+
+      if (!operand.isSrc() || !operand.isRegister())
+        return 0;
+
+      return calcReadMask(dx9swizzle, operand.getUsedComponents());
     }
 
     uint32_t calcWriteMask(const DX9Operand& operand) {

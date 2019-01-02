@@ -140,6 +140,7 @@ namespace dxup {
       uint32_t m_dataCount = 0;
       uint32_t m_dummy = 0;
       uint32_t m_relativeIndex = UINT32_MAX;
+      uint32_t m_relativeSwizzle = UINT32_MAX;
       bool m_hasExtension = false;
     };
 
