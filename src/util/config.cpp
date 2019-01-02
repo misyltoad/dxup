@@ -21,6 +21,7 @@ namespace dxup {
 
       ConfigMgr() {
 		  initVar(var::EmitNop, "DXUP_EMITNOP", "0");
+          initVar(var::Log, "DXUP_LOG", "1");
 
 #ifdef _DEBUG
           initVar(var::Debug, "DXUP_DEBUG", "1");
