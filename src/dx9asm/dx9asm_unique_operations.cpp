@@ -107,6 +107,22 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleMov(DX9Operation& operation) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+
+      if (dst->getRegType() == D3DSPR_ADDR)
+        return handleMova(operation);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand srcOp = { *this, operation, *src0, 0 };
+
+      DXBCOperation{ D3D10_SB_OPCODE_MOV, false }
+        .appendOperand(dstOp)
+        .appendOperand(srcOp)
+        .push(*this);
+    }
+
     bool ShaderCodeTranslator::handleMova(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
