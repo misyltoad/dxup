@@ -102,6 +102,8 @@ namespace dxup {
     if (!pCaps)
       return D3DERR_INVALIDCALL;
 
+    std::string shaderModel = config::getString(config::ShaderModel);
+
     // Assuming you're not running a potato if you're using dxup.
     // Feel free to improve.
 
@@ -156,11 +158,20 @@ namespace dxup {
     pCaps->MaxVertexIndex = 0xFFFFFFFF;
     pCaps->MaxStreams = 1024;
     pCaps->MaxStreamStride = 4096;
-    //pCaps->VertexShaderVersion = D3DVS_VERSION(3, 0);
-    pCaps->VertexShaderVersion = D3DVS_VERSION(2, 0); // Only sm1_1 support for now!
+
+    if (shaderModel == "3") {
+      pCaps->VertexShaderVersion = D3DVS_VERSION(3, 0);
+      pCaps->PixelShaderVersion = D3DPS_VERSION(3, 0);
+    }
+    else if (shaderModel == "2b" || shaderModel == "2B" || shaderModel == "2") {
+      pCaps->VertexShaderVersion = D3DVS_VERSION(2, 0);
+      pCaps->PixelShaderVersion = D3DPS_VERSION(2, 0);
+    }
+    else if (shaderModel == "1") {
+      pCaps->VertexShaderVersion = D3DVS_VERSION(1, 4);
+      pCaps->PixelShaderVersion = D3DPS_VERSION(1, 4);
+    }
     pCaps->MaxVertexShaderConst = 256;
-    //pCaps->PixelShaderVersion = D3DPS_VERSION(3, 0);
-    pCaps->PixelShaderVersion = D3DPS_VERSION(2, 0);
     pCaps->PixelShader1xMaxValue = 65504.f;
     pCaps->DevCaps2 = D3DDEVCAPS2_STREAMOFFSET | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES;
     pCaps->MasterAdapterOrdinal = 0;
@@ -177,7 +188,12 @@ namespace dxup {
     pCaps->PS20Caps.DynamicFlowControlDepth = 24;
     pCaps->PS20Caps.StaticFlowControlDepth = 4;
     pCaps->PS20Caps.NumTemps = 32;
-    pCaps->PS20Caps.NumInstructionSlots = 4096;
+
+    if (shaderModel == "3" || shaderModel == "2b" || shaderModel == "2B")
+      pCaps->PS20Caps.NumInstructionSlots = 4096;
+    else
+      pCaps->PS20Caps.NumInstructionSlots = 256;
+
     pCaps->VertexTextureFilterCaps = pCaps->TextureFilterCaps;
     pCaps->MaxVertexShader30InstructionSlots = 32768;
     pCaps->MaxPixelShader30InstructionSlots = 32768;

@@ -22,6 +22,7 @@ namespace dxup {
       ConfigMgr() {
 		  initVar(var::EmitNop, "DXUP_EMITNOP", "0");
           initVar(var::Log, "DXUP_LOG", "1");
+          initVar(var::ShaderModel, "DXUP_SHADERMODEL", "2b");
 
 #ifdef _DEBUG
           initVar(var::Debug, "DXUP_DEBUG", "1");

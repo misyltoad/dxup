@@ -8,6 +8,7 @@ namespace dxup {
     enum var {
       EmitNop,
       Log,
+      ShaderModel,
       Debug,
       ShaderSpew,
       ShaderDump,
