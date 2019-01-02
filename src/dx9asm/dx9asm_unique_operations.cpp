@@ -121,6 +121,8 @@ namespace dxup {
         .appendOperand(dstOp)
         .appendOperand(srcOp)
         .push(*this);
+
+      return true;
     }
 
     bool ShaderCodeTranslator::handleMova(DX9Operation& operation) {
