@@ -130,23 +130,24 @@ namespace dxup {
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
-
-      DXBCOperand dstOpAsSrc = { *this, operation, *dst, 0 };
-      dstOpAsSrc.setSwizzleOrWritemask(noSwizzle);
-
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
+      
+      DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpDst = tempOpSrc;
+      tempOpSrc.setSwizzleOrWritemask(noSwizzle);
+      tempOpDst.setSwizzleOrWritemask(writeAll);
 
       // dst = round(src)
       // Human rounding, dst is an addr register which is mapped to a temp for us.
       DXBCOperation{ D3D10_SB_OPCODE_ROUND_NI, false }
-        .appendOperand(dstOp)
+        .appendOperand(tempOpDst)
         .appendOperand(srcOp)
         .push(*this);
 
       // dst = int(dst)
       DXBCOperation{ D3D10_SB_OPCODE_FTOI, operation.saturate() }
         .appendOperand(dstOp)
-        .appendOperand(dstOpAsSrc)
+        .appendOperand(tempOpSrc)
         .push(*this);
 
       return true;
