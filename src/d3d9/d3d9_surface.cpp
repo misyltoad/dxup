@@ -27,13 +27,15 @@ namespace dxup {
     if (GetSubresource() == 0 && desc.Usage & D3DUSAGE_RENDERTARGET) {
       D3D11_RENDER_TARGET_VIEW_DESC desc;
       desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-      desc.Format = convert::makeUntypeless(resource->GetDXGIFormat(), false);
       desc.Texture2D.MipSlice = 0;
 
+      desc.Format = convert::makeTypeless(resource->GetDXGIFormat());
+      desc.Format = convert::makeUntypeless(desc.Format, false);
       if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), &desc, &m_rtView)))
         log::warn("Failed to create non-SRGB render target for surface!");
 
-      desc.Format = convert::makeUntypeless(resource->GetDXGIFormat(), true);
+      desc.Format = convert::makeTypeless(resource->GetDXGIFormat());
+      desc.Format = convert::makeUntypeless(desc.Format, true);
       if (FAILED(GetD3D11Device()->CreateRenderTargetView(resource->GetResource(), &desc, &m_rtViewSRGB)))
         log::warn("Failed to create SRGB render target for surface!");
     }
