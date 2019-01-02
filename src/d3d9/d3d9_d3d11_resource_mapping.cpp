@@ -86,8 +86,12 @@ namespace dxup {
       uint8_t* read = (uint8_t*)d3d9Res.pData;
       uint8_t* write = (uint8_t*)fixupRes.pData;
 
-      for (uint32_t y = 0; y < desc.Height; y++) {
-        for (uint32_t x = 0; x < desc.Width; x++) {
+      // TODO: Investigate if this is right or good enough.
+      uint32_t mippedHeight = desc.Height >> mip;
+      uint32_t mippedWidth = desc.Width >> mip;
+
+      for (uint32_t y = 0; y < mippedHeight; y++) {
+        for (uint32_t x = 0; x < mippedWidth; x++) {
           for (uint32_t c = 0; c < 3; c++) {
             write[y * fixupRes.RowPitch + x * 4 + c] = read[y * fixupRes.RowPitch + x * 3 + c];
           }
