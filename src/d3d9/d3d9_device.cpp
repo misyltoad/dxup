@@ -235,6 +235,8 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+    Lock lock(m_mutex);
+
     if (pPresentationParameters == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -524,6 +526,8 @@ namespace dxup {
     return m_parent->GetDeviceCaps(0, D3DDEVTYPE_HAL, pCaps);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDisplayMode(UINT iSwapChain, D3DDISPLAYMODE* pMode) {
+    Lock lock(m_mutex);
+
     if (GetInternalSwapchain(iSwapChain) == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -545,6 +549,8 @@ namespace dxup {
     return D3D_OK;
   }
   void    STDMETHODCALLTYPE Direct3DDevice9Ex::SetCursorPosition(int X, int Y, DWORD Flags) {
+    Lock lock(m_mutex);
+
     if (Flags & D3DCURSOR_IMMEDIATE_UPDATE) {
       ::SetCursorPos(X, Y);
       m_pendingCursorUpdate = { 0 };
@@ -562,6 +568,7 @@ namespace dxup {
     return TRUE;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateAdditionalSwapChain(D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DSwapChain9** ppSwapChain) {
+    Lock lock(m_mutex);
     InitReturnPtr(ppSwapChain);
 
     if (!ppSwapChain)
@@ -637,6 +644,8 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSwapChain(UINT iSwapChain, IDirect3DSwapChain9** pSwapChain) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(pSwapChain);
     if (!pSwapChain || iSwapChain >= m_swapchains.size() || GetInternalSwapchain(iSwapChain) == nullptr)
       return D3DERR_INVALIDCALL;
@@ -646,6 +655,8 @@ namespace dxup {
     return D3D_OK;
   }
   UINT    STDMETHODCALLTYPE Direct3DDevice9Ex::GetNumberOfSwapChains() {
+    Lock lock(m_mutex);
+
     UINT swapchainCount = 0;
 
     for (size_t i = 0; i < m_swapchains.size(); i++) {
@@ -658,6 +669,7 @@ namespace dxup {
     return PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetBackBuffer(UINT iSwapChain, UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface9** ppBackBuffer) {
+    Lock lock(m_mutex);
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
@@ -702,6 +714,7 @@ namespace dxup {
     BOOL Discard,
     void** ppTexture,
     HANDLE* pSharedHandle) {
+    Lock lock(m_mutex);
     InitReturnPtr(ppTexture);
     InitReturnPtr(pSharedHandle);
 
@@ -776,6 +789,7 @@ namespace dxup {
     return CreateTextureInternal(D3DRTYPE_CUBETEXTURE, false, EdgeLength, EdgeLength, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, (void**)ppCubeTexture, pSharedHandle);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexBuffer(UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle) {
+    Lock lock(m_mutex);
     InitReturnPtr(ppVertexBuffer);
     InitReturnPtr(pSharedHandle);
 
@@ -811,6 +825,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateIndexBuffer(UINT Length, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DIndexBuffer9** ppIndexBuffer, HANDLE* pSharedHandle) {
+    Lock lock(m_mutex);
     InitReturnPtr(ppIndexBuffer);
     InitReturnPtr(pSharedHandle);
 
@@ -878,7 +893,7 @@ namespace dxup {
     return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateSurface(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint) {
-
+    Lock lock(m_mutex);
     RECT destRect;
     destRect.left = pDestPoint ? pDestPoint->x : 0;
     destRect.top = pDestPoint ? pDestPoint->y : 0;
@@ -888,6 +903,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateTexture(IDirect3DBaseTexture9* pSourceTexture, IDirect3DBaseTexture9* pDestinationTexture) {
+    Lock lock(m_mutex);
     if (pSourceTexture == nullptr || pDestinationTexture == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -921,6 +937,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
+    Lock lock(m_mutex);
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
@@ -930,6 +947,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::StretchRect(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestSurface, CONST RECT* pDestRect, D3DTEXTUREFILTERTYPE Filter) {
+    Lock lock(m_mutex);
     Direct3DSurface9* src = reinterpret_cast<Direct3DSurface9*>(pSourceSurface);
     Direct3DSurface9* dst = reinterpret_cast<Direct3DSurface9*>(pDestSurface);
 
@@ -1353,10 +1371,13 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::EndScene() {
+    Lock lock(m_mutex);
     m_context->Flush();
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Clear(DWORD Count, CONST D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
+    Lock lock(m_mutex);
+
     FLOAT color[4];
     convert::color(Color, color);
 
@@ -1403,6 +1424,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetViewport(CONST D3DVIEWPORT9* pViewport) {
+    Lock lock(m_mutex);
+
     if (!pViewport)
       return D3DERR_INVALIDCALL;
 
@@ -1418,6 +1441,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetViewport(D3DVIEWPORT9* pViewport) {
+    Lock lock(m_mutex);
+
     if (!pViewport)
       return D3DERR_INVALIDCALL;
 
@@ -1467,6 +1492,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) {
+    Lock lock(m_mutex);
+
     if (State < D3DRS_ZENABLE || State > D3DRS_BLENDOPALPHA)
       return D3D_OK;
 
@@ -1523,6 +1550,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) {
+    Lock lock(m_mutex);
+
     if (pValue == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -1571,6 +1600,8 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppTexture);
 
     if (ppTexture == nullptr)
@@ -1584,6 +1615,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
+    Lock lock(m_mutex);
+
     if (FAILED(MapStageToSampler(Stage, &Stage)))
       return D3DERR_INVALIDCALL;
 
@@ -1632,6 +1665,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) {
+    Lock lock(m_mutex);
+
     if (pValue == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -1646,6 +1681,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) {
+    Lock lock(m_mutex);
+
     if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
       return D3D_OK;
 
@@ -1661,6 +1698,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) {
+    Lock lock(m_mutex);
+
     if (pValue == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -1675,6 +1714,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) {
+    Lock lock(m_mutex);
+
     if (FAILED(MapStageToSampler(Sampler, &Sampler)))
       return D3DERR_INVALIDCALL;
 
@@ -1713,6 +1754,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetScissorRect(CONST RECT* pRect) {
+    Lock lock(m_mutex);
+
     if (pRect == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -1726,6 +1769,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetScissorRect(RECT* pRect) {
+    Lock lock(m_mutex);
+
     if (pRect == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -1741,6 +1786,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetSoftwareVertexProcessing(BOOL bSoftware) {
+    Lock lock(m_mutex);
+
     m_softwareVertexProcessing = bSoftware;
     return D3D_OK;
   }
@@ -1756,6 +1803,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
+    Lock lock(m_mutex);
+
     if (!PrepareDraw()) {
       log::warn("Invalid internal render state achieved.");
       return D3D_OK; // Lies!
@@ -1772,6 +1821,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
+    Lock lock(m_mutex);
+
     if (!PrepareDraw()) {
       log::warn("Invalid internal render state achieved.");
       return D3D_OK; // Lies!
@@ -1800,6 +1851,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexDeclaration(CONST D3DVERTEXELEMENT9* pVertexElements, IDirect3DVertexDeclaration9** ppDecl) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppDecl);
 
     if (ppDecl == nullptr || pVertexElements == nullptr)
@@ -1963,12 +2016,16 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
+    Lock lock(m_mutex);
+
     m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
     m_state->dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppDecl);
 
     if (ppDecl == nullptr)
@@ -1982,10 +2039,14 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetFVF(DWORD FVF) {
+    Lock lock(m_mutex);
+
     m_fvf = FVF;
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetFVF(DWORD* pFVF) {
+    Lock lock(m_mutex);
+
     if (pFVF == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -2039,6 +2100,8 @@ namespace dxup {
 
   template <bool Vertex, typename ID3D9, typename D3D9, typename D3D11>
   HRESULT CreateShader(CONST DWORD* pFunction, ID3D9** ppShader, ID3D11Device* device, Direct3DDevice9Ex* wrapDevice) {
+    Lock lock(wrapDevice->GetDeviceMutex());
+
     InitReturnPtr(ppShader);
 
     if (pFunction == nullptr || ppShader == nullptr)
@@ -2081,6 +2144,8 @@ namespace dxup {
     return CreateShader<true, IDirect3DVertexShader9, Direct3DVertexShader9, ID3D11VertexShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
+    Lock lock(m_mutex);
+
     m_state->dirtyFlags |= dirtyFlags::vertexShader;
 
     if (pShader == nullptr) {
@@ -2093,6 +2158,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShader(IDirect3DVertexShader9** ppShader) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppShader);
 
     if (ppShader == nullptr)
@@ -2106,24 +2173,38 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Vertex, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Vertex, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Vertex, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Vertex, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Vertex, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Vertex, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
+    Lock lock(m_mutex);
+
     if (StreamNumber >= 16)
       return D3DERR_INVALIDCALL;
 
@@ -2143,6 +2224,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppStreamData);
 
     if (StreamNumber >= 16 || ppStreamData == nullptr || pOffsetInBytes == nullptr)
@@ -2173,6 +2256,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
+    Lock lock(m_mutex);
+
     Direct3DIndexBuffer9* indexBuffer = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
 
     DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
@@ -2191,6 +2276,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppIndexData);
 
     if (ppIndexData == nullptr)
@@ -2207,6 +2294,8 @@ namespace dxup {
     return CreateShader<false, IDirect3DPixelShader9, Direct3DPixelShader9, ID3D11PixelShader>(pFunction, ppShader, m_device.ptr(), this);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
+    Lock lock(m_mutex);
+
     m_state->dirtyFlags |= dirtyFlags::pixelShader;
 
     if (pShader == nullptr) {
@@ -2219,6 +2308,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
+    Lock lock(m_mutex);
+
     InitReturnPtr(ppShader);
 
     if (ppShader == nullptr)
@@ -2232,21 +2323,33 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Pixel, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Pixel, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Pixel, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Pixel, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
+    Lock lock(m_mutex);
+
     return m_constants.set(ShaderType::Pixel, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
+    Lock lock(m_mutex);
+
     return m_constants.get(ShaderType::Pixel, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawRectPatch(UINT Handle, CONST float* pNumSegs, CONST D3DRECTPATCH_INFO* DrawRectPatch) {
@@ -2292,6 +2395,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::WaitForVBlank(UINT iSwapChain) {
+    Lock lock(m_mutex);
+
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
@@ -2340,6 +2445,8 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::PresentEx(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags) {
+    Lock lock(m_mutex);
+
     // Not sure what swapchain to use here, going with this one ~ Josh
     HRESULT result = GetInternalSwapchain(0)->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
 
@@ -2379,6 +2486,10 @@ namespace dxup {
   }
   ID3D11Device* Direct3DDevice9Ex::GetD3D11Device() {
     return m_device.ptr();
+  }
+
+  Mutex& Direct3DDevice9Ex::GetDeviceMutex() {
+    return m_mutex;
   }
 
 }

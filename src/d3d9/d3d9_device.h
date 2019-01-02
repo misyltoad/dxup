@@ -3,6 +3,7 @@
 #include "d3d9_base.h"
 #include "d3d9_constant_buffer.h"
 #include <array>
+#include "../util/thread.h"
 
 namespace dxup {
 
@@ -200,6 +201,8 @@ namespace dxup {
       IDirect3DDevice9Ex** outDevice
       );
 
+    Mutex& GetDeviceMutex();
+
   private:
 
     static HRESULT CreateD3D11Device(UINT adpater, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** adapter);
@@ -237,6 +240,8 @@ namespace dxup {
 
     Com<IDirect3D9Ex> m_parent;
     D3DDEVTYPE m_deviceType;
+
+    Mutex m_mutex;
 
     struct PendingCursorUpdate {
       int x, y;

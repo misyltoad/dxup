@@ -57,6 +57,8 @@ namespace dxup {
   }
 
   HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
+    Lock lock(m_device->GetDeviceMutex());
+
     m_presentationParameters = *parameters;
 
     UINT BackBufferCount = parameters->BackBufferCount;
@@ -101,6 +103,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetBackBuffer(UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface9** ppBackBuffer) {
+    Lock lock(m_device->GetDeviceMutex());
+
     InitReturnPtr(ppBackBuffer);
 
     if (Type != D3DBACKBUFFER_TYPE_MONO)
@@ -124,6 +128,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayMode(D3DDISPLAYMODE* pMode) {
+    Lock lock(m_device->GetDeviceMutex());
+
     if (pMode == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -135,6 +141,8 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentParameters(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+    Lock lock(m_device->GetDeviceMutex());
+
     if (!pPresentationParameters)
       return D3DERR_INVALIDCALL;
 

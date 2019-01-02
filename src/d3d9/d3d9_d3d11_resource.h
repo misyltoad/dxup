@@ -91,6 +91,8 @@ namespace dxup {
 
     Com<ID3D11ShaderResourceView> m_srv;
     Com<ID3D11ShaderResourceView> m_srvSRGB;
+
+    Mutex m_lockMutex;
   };
 
 }
