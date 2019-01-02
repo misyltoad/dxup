@@ -179,7 +179,7 @@ namespace dxup {
     if (behaviourFlags & D3DCREATE_MULTITHREADED) {
       // Try ID3D11Multithread.
       Com<ID3D11Multithread> d3d11Multithread;
-      device->QueryInterface(__uuidof(ID3D10Multithread), reinterpret_cast<void**>(&d3d11Multithread));
+      device->QueryInterface(__uuidof(ID3D11Multithread), reinterpret_cast<void**>(&d3d11Multithread));
 
       if (d3d11Multithread == nullptr) {
         // Try ID3D10Multithread.
