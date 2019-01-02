@@ -6,14 +6,14 @@ namespace dxup {
 
   namespace convert {
 
-    using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT, 48>;
+    using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT>;
 
     #define D3DFMT_INTZ ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z')))
     #define D3DFMT_RAWZ ((D3DFORMAT)(MAKEFOURCC('R','A','W','Z')))
     #define D3DFMT_DF24 ((D3DFORMAT)(MAKEFOURCC('D','F','2','4')))
     #define D3DFMT_DF16 ((D3DFORMAT)(MAKEFOURCC('D','F','1','6')))
 
-    FormatConverter::TypeMapping formats[] = {
+    std::vector<FormatConverter::TypeMapping> formats = {
       { D3DFMT_UNKNOWN, DXGI_FORMAT_UNKNOWN },
       //{ D3DFMT_B32G32R32F, DXGI_FORMAT_R32G32B32_FLOAT },
       { D3DFMT_A32B32G32R32F, DXGI_FORMAT_R32G32B32A32_FLOAT },
@@ -117,9 +117,9 @@ namespace dxup {
 
     //
 
-    using ScanlineConverter = TypeConverter<D3DSCANLINEORDERING, DXGI_MODE_SCANLINE_ORDER, 4>;
+    using ScanlineConverter = TypeConverter<D3DSCANLINEORDERING, DXGI_MODE_SCANLINE_ORDER>;
 
-    ScanlineConverter::TypeMapping scanlines[] = {
+    std::vector<ScanlineConverter::TypeMapping> scanlines = {
       { D3DSCANLINEORDERING_UNKNOWN, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED },
       { D3DSCANLINEORDERING_PROGRESSIVE, DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE },
       { D3DSCANLINEORDERING_INTERLACED, DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST},

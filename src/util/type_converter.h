@@ -1,8 +1,10 @@
 #pragma once
 
+#include <vector>
+
 namespace dxup {
 
-  template <typename T, typename J, size_t Size>
+  template <typename T, typename J>
   class TypeConverter {
 
   public:
@@ -12,12 +14,11 @@ namespace dxup {
       J Type2;
     };
 
-    TypeConverter(TypeMapping map[Size]) {
-      std::memcpy(m_map, map, sizeof(TypeMapping) * Size);
-    }
+    TypeConverter(const std::vector<TypeMapping>& map)
+      : m_map(map) {}
 
     T toT(J j) {
-      for (size_t i = 0; i < Size; i++)
+      for (size_t i = 0; i < m_map.size(); i++)
       {
         if (m_map[i].Type2 == j)
           return m_map[i].Type1;
@@ -26,7 +27,7 @@ namespace dxup {
     }
 
     J toJ(T t) {
-      for (size_t i = 0; i < Size; i++)
+      for (size_t i = 0; i < m_map.size(); i++)
       {
         if (m_map[i].Type1 == t)
           return m_map[i].Type2;
@@ -36,7 +37,7 @@ namespace dxup {
 
   private:
 
-    TypeMapping m_map[Size];
+    const std::vector<TypeMapping>& m_map;
 
   };
 
