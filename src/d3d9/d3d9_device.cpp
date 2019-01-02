@@ -14,6 +14,7 @@
 #include "d3d9_state_cache.h"
 #include "d3d9_d3d11_resource.h"
 #include "../util/hash.h"
+#include <d3d11_4.h>
 
 namespace dxup {
 
@@ -174,6 +175,24 @@ namespace dxup {
 
     HRESULT result = CreateD3D11Device(adapter, parent, &device, &context, &dxgiDevice, &dxgiAdapter);
     SetupD3D11Debug(device.ptr());
+
+    if (behaviourFlags & D3DCREATE_MULTITHREADED) {
+      // Try ID3D11Multithread.
+      Com<ID3D11Multithread> d3d11Multithread;
+      device->QueryInterface(__uuidof(ID3D10Multithread), reinterpret_cast<void**>(&d3d11Multithread));
+
+      if (d3d11Multithread == nullptr) {
+        // Try ID3D10Multithread.
+        Com<ID3D10Multithread> d3d10Multithread;
+        device->QueryInterface(__uuidof(ID3D10Multithread), reinterpret_cast<void**>(&d3d10Multithread));
+        if (d3d10Multithread == nullptr)
+          log::warn("Failed to respect D3D9 multithread parameter.");
+        else
+          d3d10Multithread->SetMultithreadProtected(true);
+      }
+      else
+        d3d11Multithread->SetMultithreadProtected(true);
+    }
 
     if (FAILED(result))
       return D3DERR_DEVICELOST;
