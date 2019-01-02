@@ -1063,6 +1063,28 @@ namespace dxup {
       case D3DBLEND_INVSRCCOLOR2: return D3D11_BLEND_INV_SRC1_COLOR;
       }
     }
+
+    D3D11_FILTER_TYPE filterType(DWORD filter, bool& anisotropic) {
+      switch (filter) {
+      case D3DTEXF_NONE:
+      case D3DTEXF_POINT: return D3D11_FILTER_TYPE_POINT;
+      default:
+      case D3DTEXF_LINEAR: return D3D11_FILTER_TYPE_LINEAR;
+      case D3DTEXF_ANISOTROPIC: anisotropic = true; return D3D11_FILTER_TYPE_LINEAR;
+      }
+    }
+
+    D3D11_FILTER filter(DWORD magFilter, DWORD minFilter, DWORD mipFilter) {
+      bool anisotropic = false;
+      D3D11_FILTER_TYPE magType = filterType(magFilter, anisotropic);
+      D3D11_FILTER_TYPE minType = filterType(minFilter, anisotropic);
+      D3D11_FILTER_TYPE mipType = filterType(mipFilter, anisotropic);
+
+      if (anisotropic)
+        return D3D11_ENCODE_ANISOTROPIC_FILTER(D3D11_FILTER_REDUCTION_TYPE_STANDARD);
+      else
+        return D3D11_ENCODE_BASIC_FILTER(minType, magType, mipType, D3D11_FILTER_REDUCTION_TYPE_STANDARD);
+    }
   }
 
   void Direct3DDevice9Ex::UpdateDepthStencilState() {
@@ -1207,7 +1229,7 @@ namespace dxup {
     desc.AddressW = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSW]);
     convert::color(samplerState[D3DSAMP_BORDERCOLOR], desc.BorderColor);
     desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // TODO! Use the proper filtering here...
+    desc.Filter = convert::filter(samplerState[D3DSAMP_MAGFILTER], samplerState[D3DSAMP_MINFILTER], samplerState[D3DSAMP_MIPFILTER]);
     desc.MaxAnisotropy = std::clamp((UINT)samplerState[D3DSAMP_MAXANISOTROPY], 0u, 16u);
     desc.MipLODBias = std::clamp(dwordToFloat(samplerState[D3DSAMP_MIPMAPLODBIAS]), -16.0f, 15.99f);
     desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
