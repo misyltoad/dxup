@@ -27,7 +27,17 @@ namespace dxup {
         uint32_t dx9Swizzle = operand.getRelativeAddrSwizzle(state.getMajorVersion());
         const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, D3DSPR_ADDR, operand.getRelativeAddrIndex(state.getMajorVersion()), calcReadMask(dx9Swizzle, 1), 0, false );
         m_relativeIndex = address->dxbcOperand.getRegNumber();
-        m_relativeSwizzle = calcSwizzle(dx9Swizzle, 1);
+
+        if (dx9Swizzle & D3DVS_X_Y)
+          m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_Y);
+        else if (dx9Swizzle & D3DVS_X_Z)
+          m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_Z);
+        else if (dx9Swizzle & D3DVS_X_W)
+          m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_W);
+        else
+          m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_X);
+
+        m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SELECT_1_MODE) | m_relativeSelect;
       } else if (isLiteral()) {
         if (operand.isSrc())
           setSwizzleOrWritemask(noSwizzle);
@@ -94,7 +104,7 @@ namespace dxup {
             ENCODE_D3D10_SB_OPERAND_INDEX_DIMENSION(D3D10_SB_OPERAND_INDEX_1D) |
             ENCODE_D3D10_SB_OPERAND_NUM_COMPONENTS(D3D10_SB_OPERAND_4_COMPONENT) |
             ENCODE_D3D10_SB_OPERAND_INDEX_REPRESENTATION(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32) |
-            m_relativeSwizzle;
+            m_relativeSelect;
 
           code->push_back(header);
         }
