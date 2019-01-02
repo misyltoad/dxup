@@ -181,17 +181,10 @@ namespace dxup {
       Com<ID3D11Multithread> d3d11Multithread;
       device->QueryInterface(__uuidof(ID3D11Multithread), reinterpret_cast<void**>(&d3d11Multithread));
 
-      if (d3d11Multithread == nullptr) {
-        // Try ID3D10Multithread.
-        Com<ID3D10Multithread> d3d10Multithread;
-        device->QueryInterface(__uuidof(ID3D10Multithread), reinterpret_cast<void**>(&d3d10Multithread));
-        if (d3d10Multithread == nullptr)
-          log::warn("Failed to respect D3D9 multithread parameter.");
-        else
-          d3d10Multithread->SetMultithreadProtected(true);
-      }
-      else
+      if (d3d11Multithread != nullptr)
         d3d11Multithread->SetMultithreadProtected(true);
+      else
+        log::warn("Failed to respect D3D9 multithread parameter.");
     }
 
     if (FAILED(result))
