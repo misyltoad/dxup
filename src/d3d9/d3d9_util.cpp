@@ -1,4 +1,5 @@
 #include "d3d9_util.h"
+#include "d3d9_format.h"
 #include "../util/type_converter.h"
 #include <array>
 
