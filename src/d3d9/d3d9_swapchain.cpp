@@ -57,7 +57,7 @@ namespace dxup {
   }
 
   HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
-    Lock lock(m_device->GetDeviceMutex());
+    CriticalSection cs(m_device);
 
     m_presentationParameters = *parameters;
 
@@ -95,15 +95,18 @@ namespace dxup {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::Present(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags) {
+    CriticalSection cs(m_device);
+
     return PresentD3D11(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags, 0, false);
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetFrontBufferData(IDirect3DSurface9* pDestSurface) {
+    CriticalSection cs(m_device);
     log::stub("Direct3DSwapChain9Ex::GetFrontBufferData");
 
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetBackBuffer(UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface9** ppBackBuffer) {
-    Lock lock(m_device->GetDeviceMutex());
+    CriticalSection cs(m_device);
 
     InitReturnPtr(ppBackBuffer);
 
@@ -124,11 +127,13 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetRasterStatus(D3DRASTER_STATUS* pRasterStatus) {
+    CriticalSection cs(m_device);
+
     log::stub("Direct3DSwapChain9Ex::GetRasterStatus");
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayMode(D3DDISPLAYMODE* pMode) {
-    Lock lock(m_device->GetDeviceMutex());
+    CriticalSection cs(m_device);
 
     if (pMode == nullptr)
       return D3DERR_INVALIDCALL;
@@ -141,7 +146,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentParameters(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-    Lock lock(m_device->GetDeviceMutex());
+    CriticalSection cs(m_device);
 
     if (!pPresentationParameters)
       return D3DERR_INVALIDCALL;
@@ -151,18 +156,21 @@ namespace dxup {
     return D3D_OK;
   }
 
-  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetLastPresentCount(UINT* pLastPresentCount)
-  {
+  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetLastPresentCount(UINT* pLastPresentCount) {
+    CriticalSection cs(m_device);
+
     log::stub("Direct3DSwapChain9Ex::GetLastPresentCount");
     return D3D_OK;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics)
-  {
+  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics) {
+    CriticalSection cs(m_device);
+
     log::stub("Direct3DSwapChain9Ex::GetPresentStats");
     return D3D_OK;
   }
-  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayModeEx(D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation)
-  {
+  HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayModeEx(D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) {
+    CriticalSection cs(m_device);
+
     log::stub("Direct3DSwapChain9Ex::GetDisplayModeEx");
     return D3D_OK;
   }

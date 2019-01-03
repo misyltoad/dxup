@@ -3,7 +3,6 @@
 #include "d3d9_base.h"
 #include "d3d9_constant_buffer.h"
 #include <array>
-#include "../util/thread.h"
 
 namespace dxup {
 
@@ -201,7 +200,12 @@ namespace dxup {
       IDirect3DDevice9Ex** outDevice
       );
 
-    Mutex& GetDeviceMutex();
+  protected:
+
+    friend class CriticalSection;
+
+    CRITICAL_SECTION m_criticalSection;
+    DWORD m_behaviourFlags;
 
   private:
 
@@ -230,7 +234,6 @@ namespace dxup {
     UINT m_adapterNum;
     Com<IDXGIAdapter1> m_adapter;
     HWND m_window;
-    DWORD m_behaviourFlags;
 
     Com<ID3D11DeviceContext1> m_context;
     D3D9ConstantBuffers m_constants;
@@ -240,8 +243,6 @@ namespace dxup {
 
     Com<IDirect3D9Ex> m_parent;
     D3DDEVTYPE m_deviceType;
-
-    Mutex m_mutex;
 
     struct PendingCursorUpdate {
       int x, y;
@@ -253,4 +254,24 @@ namespace dxup {
     BOOL m_softwareVertexProcessing = 0;
   };
 
+  class CriticalSection {
+
+  public:
+
+    CriticalSection(Direct3DDevice9Ex *device)
+      : m_device(device) {
+      if (m_device->m_behaviourFlags & D3DCREATE_MULTITHREADED)
+        EnterCriticalSection(&device->m_criticalSection);
+    }
+
+    ~CriticalSection()
+    {
+      if (m_device->m_behaviourFlags & D3DCREATE_MULTITHREADED)
+        LeaveCriticalSection(&m_device->m_criticalSection);
+    }
+
+  private:
+
+    Direct3DDevice9Ex* m_device;
+  };
 }

@@ -57,6 +57,8 @@ namespace dxup {
     }
   }
   HRESULT STDMETHODCALLTYPE Direct3DQuery9::Issue(DWORD dwIssueFlags) {
+    CriticalSection cs(m_device);
+
     if (dwIssueFlags != D3DISSUE_BEGIN && dwIssueFlags != D3DISSUE_END)
       return D3DERR_INVALIDCALL;
 
@@ -70,7 +72,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DQuery9::GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) {
-    Lock lock(m_device->GetDeviceMutex());
+    CriticalSection cs(m_device);
 
     if (pData == nullptr)
       return D3DERR_INVALIDCALL;

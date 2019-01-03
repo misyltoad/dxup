@@ -30,7 +30,7 @@ namespace dxup {
   }
 
   HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage) {
-    Lock lock(m_lockMutex);
+    CriticalSection cs(m_device);
 
     if (!pLockedRect)
       return D3DERR_INVALIDCALL;
@@ -69,7 +69,7 @@ namespace dxup {
   }
 
   HRESULT DXUPResource::D3D9UnlockRect(UINT slice, UINT mip) {
-    Lock lock(m_lockMutex);
+    CriticalSection cs(m_device);
 
     UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
 
