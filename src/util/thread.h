@@ -4,23 +4,31 @@
 
 namespace dxup {
 
+  bool MutexesEnabled();
+  void EnableMutexes();
+
   class Mutex {
   public:
     Mutex() {
-      m_mutex = CreateMutex(nullptr, false, nullptr);
+      if (MutexesEnabled())
+        m_mutex = CreateMutex(nullptr, false, nullptr);
     }
 
     ~Mutex() {
-      unlock();
-      CloseHandle(m_mutex);
+      if (MutexesEnabled()) {
+        unlock();
+        CloseHandle(m_mutex);
+      }
     }
 
     inline void lock() {
-      WaitForSingleObject(m_mutex, INFINITE);
+      if (MutexesEnabled())
+        WaitForSingleObject(m_mutex, INFINITE);
     }
 
     inline void unlock() {
-      ReleaseMutex(m_mutex);
+      if (MutexesEnabled())
+        ReleaseMutex(m_mutex);
     }
 
   private:

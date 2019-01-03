@@ -3,6 +3,7 @@ util_src = files([
   'log.cpp',
   'config.cpp',
   'shared_conversions.cpp',
+  'thread.cpp',
   'd3dcompiler_helpers.cpp',
   '../extern/smhasher/MurmurHash3.cpp'
 ])

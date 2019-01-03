@@ -177,6 +177,8 @@ namespace dxup {
     SetupD3D11Debug(device.ptr());
 
     if (behaviourFlags & D3DCREATE_MULTITHREADED) {
+      EnableMutexes();
+
       // Try ID3D11Multithread.
       Com<ID3D11Multithread> d3d11Multithread;
       device->QueryInterface(__uuidof(ID3D11Multithread), reinterpret_cast<void**>(&d3d11Multithread));
