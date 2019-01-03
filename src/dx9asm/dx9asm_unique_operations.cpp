@@ -429,6 +429,22 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleDefi(DX9Operation& operation) {
+      log::warn("Unimplemented operation defi.");
+
+      nextToken(); // dst
+
+       nextToken(); // int0
+
+      if (getShaderType() == ShaderType::Vertex) {
+        nextToken(); // int1
+        nextToken(); // int1
+        nextToken(); // int1
+      }
+
+      return true;
+    }
+
     bool ShaderCodeTranslator::handleUniqueOperation(DX9Operation& operation) {
       UniqueFunction function = operation.getUniqueFunction();
       if (function == nullptr) {
