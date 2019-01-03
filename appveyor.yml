@@ -10,14 +10,14 @@ environment:
       builder: msbuild
       compiler: cl
       toolchain: vs2017
-      arch: x86_64
+      arch: x86
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      
+  
     - frontend: meson
       builder: msbuild
       compiler: cl
       toolchain: vs2017
-      arch: x86
+      arch: x86_64
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
 install:
