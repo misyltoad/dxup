@@ -4,6 +4,9 @@
 #include "../util/config.h"
 #include <algorithm>
 #include <vector>
+#include <rpcdce.h>
+
+#pragma comment(lib, "Rpcrt4.lib")
 
 namespace dxup {
 
@@ -53,18 +56,32 @@ namespace dxup {
     DXGI_OUTPUT_DESC outDesc;
     output->GetDesc(&outDesc);
 
-    strcpy(pIdentifier->Driver, "DXUP Generic Device");
-    wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
-    wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+    bool fake = config::getBool(config::UseFakes);
 
-    std::memset(&pIdentifier->DriverVersion, 0, sizeof(LARGE_INTEGER));
+    if (!fake) {
+      wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
+      wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+      strcpy(pIdentifier->Driver, "d3d9.dll");
+      pIdentifier->DriverVersion.QuadPart = 0;
+      pIdentifier->VendorId = desc.VendorId;
+      pIdentifier->DeviceId = desc.DeviceId;
+      pIdentifier->SubSysId = desc.SubSysId;
+      pIdentifier->Revision = desc.Revision;
+      std::memcpy(&pIdentifier->DeviceIdentifier, &desc.AdapterLuid, sizeof(LUID));
+    }
+    else {
+      strcpy(pIdentifier->Description, config::getString(config::FakeDescription).c_str());
+      strcpy(pIdentifier->DeviceName, config::getString(config::FakeDeviceName).c_str());
+      strcpy(pIdentifier->Driver, config::getString(config::FakeDriver).c_str());
+      pIdentifier->DriverVersion.QuadPart = config::getInt(config::FakeDriverVersion);
 
-    pIdentifier->VendorId = desc.VendorId;
-    pIdentifier->DeviceId = desc.DeviceId;
-    pIdentifier->SubSysId = desc.SubSysId;
-    pIdentifier->Revision = desc.Revision;
+      pIdentifier->VendorId = config::getInt(config::FakeVendorId);
+      pIdentifier->DeviceId = config::getInt(config::FakeDeviceId);
+      pIdentifier->SubSysId = config::getInt(config::FakeSubSysId);
+      pIdentifier->Revision = config::getInt(config::FakeRevision);
 
-    std::memcpy(&pIdentifier->DeviceIdentifier, &desc.AdapterLuid, sizeof(LUID));
+      UuidFromStringA((RPC_CSTR)config::getString(config::FakeDeviceIdentifier).c_str(), &pIdentifier->DeviceIdentifier);
+    }
 
     pIdentifier->WHQLLevel = 0;
 

@@ -11,7 +11,7 @@ namespace dxup {
     struct VarValue {
       std::string strVal;
       float floatVal;
-	  int intVal;
+      int64_t intVal;
       bool boolVal;
     };
 
@@ -36,6 +36,17 @@ namespace dxup {
           initVar(var::InitialHideCursor, "DXUP_INITIALHIDECURSOR", "0");
           initVar(var::RefactoringAllowed, "DXUP_REFACTORINGALLOWED", "1");
           initVar(var::GDICompatible, "DXUP_GDI_COMPATIBLE", "0");
+
+          initVar(var::UseFakes, "DXUP_USEFAKES", "1");
+          initVar(var::FakeDriver, "DXUP_FAKE_DRIVER", "aticfx32.dll");
+          initVar(var::FakeDescription, "DXUP_FAKE_DESCRIPTION", "AMD Radeon R9 200 Series");
+          initVar(var::FakeDeviceName, "DXUP_FAKE_DEVICENAME", "\\\\.\\DISPLAY1");
+          initVar(var::FakeDriverVersion, "DXUP_FAKE_DRIVERVERSION", "7036961300353938");
+          initVar(var::FakeVendorId, "DXUP_FAKE_VENDORID", "4098");
+          initVar(var::FakeDeviceId, "DXUP_FAKE_DEVICEID", "26520");
+          initVar(var::FakeSubSysId, "DXUP_FAKE_SUBSYSID", "661984354");
+          initVar(var::FakeRevision, "DXUP_FAKE_REVISION", "0");
+          initVar(var::FakeDeviceIdentifier, "DXUP_FAKE_DEVICEIDENTIFIER", "{D7B71EE2-24D8-11CF-4064-EE3DBBC2D435}");
       }
 
 	  void initVar(var variable, const char* name, const char* default) {
@@ -53,7 +64,7 @@ namespace dxup {
 
         VarValue typedValues;
         typedValues.strVal = value;
-        typedValues.intVal = atoi(value);
+        typedValues.intVal = _atoi64(value);
         typedValues.boolVal = typedValues.intVal != 0;
         typedValues.floatVal = atof(value);
 
@@ -64,7 +75,7 @@ namespace dxup {
         return m_varList[variable].floatVal;
       }
 
-	  int getInt(var variable) {
+      int64_t getInt(var variable) {
 		  return m_varList[variable].intVal;
 	  }
 
@@ -88,7 +99,7 @@ namespace dxup {
       return dxupConfig.getFloat(variable);
     }
 
-    int getInt(var variable) {
+    int64_t getInt(var variable) {
       return dxupConfig.getInt(variable);
     }
 
