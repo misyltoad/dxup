@@ -14,6 +14,7 @@
 #include "d3d9_state_cache.h"
 #include "d3d9_d3d11_resource.h"
 #include "../util/hash.h"
+#include "d3d9_query.h"
 #include <d3d11_4.h>
 
 namespace dxup {
@@ -2367,7 +2368,33 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) {
-    log::stub("Direct3DDevice9Ex::CreateQuery");
+    InitReturnPtr(ppQuery);
+
+    switch (Type) {
+    case D3DQUERYTYPE_VCACHE:
+    case D3DQUERYTYPE_EVENT:
+    case D3DQUERYTYPE_OCCLUSION:
+    case D3DQUERYTYPE_TIMESTAMP:
+    case D3DQUERYTYPE_TIMESTAMPDISJOINT:
+    case D3DQUERYTYPE_TIMESTAMPFREQ:
+      break;
+    default:
+    case D3DQUERYTYPE_RESOURCEMANAGER:
+    case D3DQUERYTYPE_VERTEXSTATS:
+    case D3DQUERYTYPE_PIPELINETIMINGS:
+    case D3DQUERYTYPE_INTERFACETIMINGS:
+    case D3DQUERYTYPE_VERTEXTIMINGS:
+    case D3DQUERYTYPE_PIXELTIMINGS:
+    case D3DQUERYTYPE_BANDWIDTHTIMINGS:
+    case D3DQUERYTYPE_CACHEUTILIZATION:
+      log::warn("Returned query not available, type: %d", Type);
+      return D3DERR_NOTAVAILABLE;
+    }
+
+    if (ppQuery == nullptr)
+      return D3D_OK;
+
+    *ppQuery = ref(new Direct3DQuery9(this, Type));
     return D3D_OK;
   }
 
