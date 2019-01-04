@@ -3,7 +3,6 @@
 #include "../dx9asm/dx9asm_meta.h"
 #include "d3d9_base.h"
 #include <array>
-#include <memory>
 
 namespace dxup {
 
@@ -23,6 +22,7 @@ namespace dxup {
     D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType shaderType, BufferType bufferType);
 
     void prepareDraw();
+    void finishDraw();
     void bind();
 
     HRESULT set(uint32_t index, const void* values, uint32_t count);
@@ -37,7 +37,6 @@ namespace dxup {
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
 
-    std::shared_ptr<uint8_t> m_elements;
     uint32_t m_elementSize;
     uint32_t m_elementCount;
 
@@ -45,7 +44,10 @@ namespace dxup {
     BufferType m_bufferType;
 
     Com<ID3D11Buffer> m_buffer;
+    Com<ID3D11Buffer> m_stagingBuffer;
 
+    D3D11_MAPPED_SUBRESOURCE m_stagingMapping;
+    D3D11_BOX m_dirtyBox;
   };
 
   class D3D9ConstantBuffers {
@@ -58,6 +60,7 @@ namespace dxup {
     HRESULT get(ShaderType shdrType, BufferType bufferType, uint32_t index, void* values, uint32_t count);
 
     void prepareDraw();
+    void finishDraw();
 
   private:
 
