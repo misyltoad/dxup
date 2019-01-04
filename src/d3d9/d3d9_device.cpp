@@ -2132,7 +2132,6 @@ namespace dxup {
   }
 
   void Direct3DDevice9Ex::FinishDraw() {
-    m_constants.finishDraw();
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
