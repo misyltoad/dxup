@@ -8,21 +8,20 @@ namespace dxup {
     : D3D9DeviceUnknown<IDirect3DQuery9>(device)
     , m_type(type) {
     bool doD3D11Query = true;
-    D3D11_QUERY query;
     switch (m_type) {
-    case D3DQUERYTYPE_EVENT: query = D3D11_QUERY_EVENT; break;
-    case D3DQUERYTYPE_OCCLUSION: query = D3D11_QUERY_OCCLUSION; break;
-    case D3DQUERYTYPE_TIMESTAMP: query = D3D11_QUERY_TIMESTAMP; break;
-    case D3DQUERYTYPE_TIMESTAMPDISJOINT: query = D3D11_QUERY_TIMESTAMP_DISJOINT; break;
+    case D3DQUERYTYPE_EVENT: m_d3d11Type = D3D11_QUERY_EVENT; break;
+    case D3DQUERYTYPE_OCCLUSION: m_d3d11Type = D3D11_QUERY_OCCLUSION; break;
+    case D3DQUERYTYPE_TIMESTAMP: m_d3d11Type = D3D11_QUERY_TIMESTAMP; break;
+    case D3DQUERYTYPE_TIMESTAMPDISJOINT: m_d3d11Type = D3D11_QUERY_TIMESTAMP_DISJOINT; break;
 
     case D3DQUERYTYPE_VCACHE:
     case D3DQUERYTYPE_TIMESTAMPFREQ: 
-    default: doD3D11Query = false; break;
+    default: m_d3d11Type = D3D11_QUERY_EVENT; doD3D11Query = false; break;
     }
 
     if (doD3D11Query) {
       D3D11_QUERY_DESC desc;
-      desc.Query = query;
+      desc.Query = m_d3d11Type;
       desc.MiscFlags = 0;
       m_device->GetD3D11Device()->CreateQuery(&desc, &m_query);
     }
@@ -56,6 +55,15 @@ namespace dxup {
     default: return 0;
     }
   }
+  UINT Direct3DQuery9::GetD3D11DataSize() {
+    switch (m_d3d11Type) {
+    case D3D11_QUERY_EVENT: return sizeof(BOOL);
+    default:
+    case D3D11_QUERY_OCCLUSION:
+    case D3DQUERYTYPE_TIMESTAMPDISJOINT:
+    case D3D11_QUERY_TIMESTAMP: return sizeof(UINT64);
+    }
+  }
   HRESULT STDMETHODCALLTYPE Direct3DQuery9::Issue(DWORD dwIssueFlags) {
     CriticalSection cs(m_device);
 
@@ -85,8 +93,8 @@ namespace dxup {
     if (m_query != nullptr) {
       uint64_t queryData = 0;
       
-      HRESULT result = m_device->GetContext()->GetData(m_query.ptr(), &queryData, sizeof(queryData), flush ? 0 : D3D11_ASYNC_GETDATA_DONOTFLUSH);
-      std::memcpy(pData, &queryData, std::min(sizeof(uint64_t), (size_t)dwSize));
+      HRESULT result = m_device->GetContext()->GetData(m_query.ptr(), &queryData, GetD3D11DataSize(), flush ? 0 : D3D11_ASYNC_GETDATA_DONOTFLUSH);
+      std::memcpy(pData, &queryData, std::min(GetD3D11DataSize(), (size_t)dwSize));
 
       if (FAILED(result))
         return S_FALSE;

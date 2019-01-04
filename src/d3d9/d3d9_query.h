@@ -20,7 +20,10 @@ namespace dxup {
 
   private:
 
+    UINT GetD3D11DataSize();
+
     D3DQUERYTYPE m_type;
+    D3D11_QUERY m_d3d11Type;
     Com<ID3D11Query> m_query;
   };
 
