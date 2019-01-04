@@ -33,11 +33,11 @@ namespace dxup {
         srvDesc.Texture2DArray.ArraySize = -1;
       }
 
-      srvDesc.Format = convert::makeTypeless(desc.Format);
+      srvDesc.Format = desc.Format;
       srvDesc.Format = convert::makeUntypeless(srvDesc.Format, false);
       device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srv);
 
-      srvDesc.Format = convert::makeTypeless(desc.Format);
+      srvDesc.Format = desc.Format;
       srvDesc.Format = convert::makeUntypeless(srvDesc.Format, true);
       device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srvSRGB);
     }
