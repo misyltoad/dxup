@@ -23,11 +23,14 @@ namespace dxup {
     , m_shaderType{ shaderType }
     , m_bufferType{ bufferType }
     , m_dirty{ false } {
-    m_elements.reset(new uint8_t[m_elementSize * m_elementCount]);
-    std::memset(m_elements.get(), 0, m_elementSize * m_elementCount);
+    m_bufferSize = m_elementSize * m_elementCount;
+
+    m_elements.reset(new uint8_t[m_bufferSize]);
+    std::memset(m_elements.get(), 0, m_bufferSize);
+
 
     D3D11_BUFFER_DESC cbDesc;
-    cbDesc.ByteWidth = m_elementSize * m_elementCount;
+    cbDesc.ByteWidth = m_bufferSize;
     cbDesc.Usage = D3D11_USAGE_DYNAMIC;
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -36,7 +39,7 @@ namespace dxup {
 
     D3D11_SUBRESOURCE_DATA data;
     data.pSysMem = (void*) m_elements.get();
-    data.SysMemPitch = m_elementSize * m_elementCount;
+    data.SysMemPitch = m_bufferSize;
     data.SysMemSlicePitch = 0;
 
     HRESULT result = m_device->CreateBuffer(&cbDesc, &data, &m_buffer);
@@ -88,7 +91,7 @@ namespace dxup {
   void D3D9ConstantBuffer::pushData() {
     D3D11_MAPPED_SUBRESOURCE res;
     m_context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-    std::memcpy(res.pData, m_elements.get(), m_elementSize * m_elementCount);
+    std::memcpy(res.pData, m_elements.get(), m_bufferSize);
     m_context->Unmap(m_buffer.ptr(), 0);
 
     m_dirty = false;

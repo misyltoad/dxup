@@ -40,6 +40,7 @@ namespace dxup {
     std::shared_ptr<uint8_t> m_elements;
     uint32_t m_elementSize;
     uint32_t m_elementCount;
+    size_t m_bufferSize;
 
     ShaderType m_shaderType;
     BufferType m_bufferType;
