@@ -43,6 +43,8 @@ namespace dxup {
     if (FAILED(result))
       log::fail("Couldn't create constant buffer.");
 
+    bind();
+
     prepareDraw();
   }
 
@@ -57,8 +59,6 @@ namespace dxup {
   void D3D9ConstantBuffer::prepareDraw() {
     if (m_dirty)
       pushData();
-
-    bind();
   }
 
   HRESULT D3D9ConstantBuffer::set(uint32_t index, const void* values, uint32_t count) {
