@@ -21,7 +21,8 @@ namespace dxup {
     , m_elementSize{ bufferInfo[bufferType].elementSize }
     , m_elementCount{ bufferInfo[bufferType].elementCount }
     , m_shaderType{ shaderType }
-    , m_bufferType{ bufferType } {
+    , m_bufferType{ bufferType }
+    , m_dirty{ false } {
     m_elements.reset(new uint8_t[m_elementSize * m_elementCount]);
     std::memset(m_elements.get(), 0, m_elementSize * m_elementCount);
 
@@ -54,7 +55,9 @@ namespace dxup {
   }
 
   void D3D9ConstantBuffer::prepareDraw() {
-    pushData();
+    if (m_dirty)
+      pushData();
+
     bind();
   }
 
@@ -64,6 +67,8 @@ namespace dxup {
 
     if (count == 0)
       return D3D_OK;
+
+    m_dirty = true;
 
     std::memcpy(&m_elements.get()[index * m_elementSize], values, m_elementSize * count);
     return D3D_OK;
@@ -85,6 +90,8 @@ namespace dxup {
     m_context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
     std::memcpy(res.pData, m_elements.get(), m_elementSize * m_elementCount);
     m_context->Unmap(m_buffer.ptr(), 0);
+
+    m_dirty = false;
   }
 
   //

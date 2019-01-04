@@ -46,6 +46,7 @@ namespace dxup {
 
     Com<ID3D11Buffer> m_buffer;
 
+    bool m_dirty;
   };
 
   class D3D9ConstantBuffers {
