@@ -94,7 +94,7 @@ namespace dxup {
       uint64_t queryData = 0;
       
       HRESULT result = m_device->GetContext()->GetData(m_query.ptr(), &queryData, GetD3D11DataSize(), flush ? 0 : D3D11_ASYNC_GETDATA_DONOTFLUSH);
-      std::memcpy(pData, &queryData, std::min(GetD3D11DataSize(), (size_t)dwSize));
+      std::memcpy(pData, &queryData, std::min((size_t)GetD3D11DataSize(), (size_t)dwSize));
 
       if (FAILED(result))
         return S_FALSE;
