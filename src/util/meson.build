@@ -3,8 +3,7 @@ util_src = files([
   'log.cpp',
   'config.cpp',
   'shared_conversions.cpp',
-  'd3dcompiler_helpers.cpp',
-  '../extern/smhasher/MurmurHash3.cpp'
+  'd3dcompiler_helpers.cpp'
 ])
 
 util_lib = static_library('util', util_src,

@@ -2,32 +2,53 @@
 #include <vector>
 #include <string>
 #include "d3d9_base.h"
+#include <unordered_map>
+
+#include "../util/hash.h"
 
 namespace dxup {
+
+  struct D3D11StateDescHash {
+    size_t operator () (const D3D11_SAMPLER_DESC& desc) const;
+    size_t operator () (const D3D11_RENDER_TARGET_BLEND_DESC1& desc) const;
+    size_t operator () (const D3D11_BLEND_DESC1& desc) const;
+    size_t operator () (const D3D11_RASTERIZER_DESC1& desc) const;
+    size_t operator () (const D3D11_DEPTH_STENCILOP_DESC& desc) const;
+    size_t operator () (const D3D11_DEPTH_STENCIL_DESC& desc) const;
+  };
+
+  struct D3D11StateDescEqual {
+    bool operator () (const D3D11_SAMPLER_DESC& a, const D3D11_SAMPLER_DESC& b) const;
+    bool operator () (const D3D11_RENDER_TARGET_BLEND_DESC1& a, const D3D11_RENDER_TARGET_BLEND_DESC1& b) const;
+    bool operator () (const D3D11_BLEND_DESC1& a, const D3D11_BLEND_DESC1& b) const;
+    bool operator () (const D3D11_RASTERIZER_DESC1& a, const D3D11_RASTERIZER_DESC1& b) const;
+    bool operator () (const D3D11_DEPTH_STENCILOP_DESC& a, const D3D11_DEPTH_STENCILOP_DESC& b) const;
+    bool operator () (const D3D11_DEPTH_STENCIL_DESC& a, const D3D11_DEPTH_STENCIL_DESC& b) const;
+  };
 
   template <typename Desc, typename Object>
   class StateCache {
 
   public:
 
-    Object* lookupObject(uint32_t key) {
-      for (uint32_t i = 0; i < m_keys.size(); i++) {
-        if (m_keys[i] == key)
-          return m_objects[i].ptr();
-      }
+    using StateMap = std::unordered_map<Desc, Com<Object>, D3D11StateDescHash, D3D11StateDescEqual>;
 
-      return nullptr;
+    Object* lookupObject(const Desc& desc) {
+      StateMap::const_iterator iter = m_map.find(desc);
+
+      if (iter == m_map.end())
+        return nullptr;
+
+      return iter->second.ptr();
     }
 
-    void pushState(uint32_t key, Object* object) {
-      m_keys.push_back(key);
-      m_objects.emplace_back(object);
+    void pushState(const Desc& desc, Object* object) {
+      m_map.emplace(desc, object);
     }
 
   private:
 
-    std::vector<uint32_t> m_keys;
-    std::vector<Com<Object>> m_objects;
+    StateMap m_map;
   };
 
 }

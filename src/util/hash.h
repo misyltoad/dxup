@@ -1,14 +1,30 @@
 #pragma once
 
-#include "../extern/smhasher/MurmurHash3.h"
+// HashState taken from DXVK.
+// https://github.com/doitsujin/dxvk/blob/master/src/dxvk/dxvk_hash.h
+
+#include <cstddef>
 
 namespace dxup {
-
-  template <typename T>
-  uint32_t hash(const T& item) {
-    uint32_t val;
-    MurmurHash3_x86_32(&item, sizeof(T), 0xB0F57EE3, &val);
-    return val;
-  }
+  
+  class HashState {
+    
+  public:
+    
+    inline void add(size_t hash) {
+      m_value ^= hash + 0x9e3779b9
+               + (m_value << 6)
+               + (m_value >> 2);
+    }
+    
+    operator size_t () const {
+      return m_value;
+    }
+    
+  private:
+    
+    size_t m_value = 0;
+    
+  };
 
 }

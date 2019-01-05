@@ -111,8 +111,8 @@ namespace dxup {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
-      if (dst->getRegType() == D3DSPR_ADDR)
-        return handleMova(operation);
+      //if (dst->getRegType() == D3DSPR_ADDR)
+      //  return handleMova(operation);
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
