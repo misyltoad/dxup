@@ -25,7 +25,7 @@ namespace dxup {
     , m_dirty{ false } {
     m_bufferSize = m_elementSize * m_elementCount;
 
-    m_elements.reset(new uint8_t[m_bufferSize]);
+    m_elements.reset((uint8_t*)_aligned_malloc(m_bufferSize, 16));
     std::memset(m_elements.get(), 0, m_bufferSize);
 
 
