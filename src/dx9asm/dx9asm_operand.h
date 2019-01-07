@@ -2,7 +2,6 @@
 
 #include "dx9asm_meta.h"
 #include "../util/log.h"
-#include "dx9asm_register_id.h"
 #include "dx9asm_util.h"
 #include <vector>
 
@@ -82,8 +81,8 @@ namespace dxup {
         return m_info;
       }
 
-      inline bool isIndirect() const {
-        return (getToken() & D3DSHADER_ADDRESSMODE_MASK) == D3DVS_ADDRMODE_RELATIVE ? true : false;
+      inline uint32_t isIndirect() const {
+        return (getToken() & D3DSHADER_ADDRESSMODE_MASK) == D3DVS_ADDRMODE_RELATIVE ? 1 : 0;
       }
 
       bool relativeAddressingUsesToken(uint32_t majorVersion) const {
@@ -116,12 +115,8 @@ namespace dxup {
         return getToken() & D3DSP_REGNUM_MASK;
       }
 
-      inline RegisterId getRegId() const {
-        return RegisterId{ getRegType(), getRegNumber() };
-      }
-
-      inline uint32_t getRegType() const {
-        return ((getToken() & D3DSP_REGTYPE_MASK2) >> D3DSP_REGTYPE_SHIFT2) | ((getToken() & D3DSP_REGTYPE_MASK) >> D3DSP_REGTYPE_SHIFT);
+      inline D3DSHADER_PARAM_REGISTER_TYPE getRegType() const {
+        return (D3DSHADER_PARAM_REGISTER_TYPE)(((getToken() & D3DSP_REGTYPE_MASK2) >> D3DSP_REGTYPE_SHIFT2) | ((getToken() & D3DSP_REGTYPE_MASK) >> D3DSP_REGTYPE_SHIFT));
       }
 
       inline D3DDECLUSAGE getUsage() const {

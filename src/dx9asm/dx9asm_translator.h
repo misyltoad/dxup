@@ -58,10 +58,6 @@ namespace dxup {
           nextToken();
       }
 
-      inline void returnToStart() {
-        m_head = m_base;
-      }
-
       inline ShaderType getShaderType() const {
         return (getHeaderToken() & 0xFFFF0000) == 0xFFFF0000 ? ShaderType::Pixel : ShaderType::Vertex;
       }
@@ -71,7 +67,11 @@ namespace dxup {
                (getShaderType() == ShaderType::Vertex && !input);
       }
 
-      bool handleOperation(uint32_t token, bool parsePass);
+      inline bool shouldGenerateId(bool transient) const {
+        return true;//!transient || (transient && getMajorVersion() != 3);
+      }
+
+      bool handleOperation(uint32_t token);
 
       inline bool isSamplerUsed(uint32_t i) {
         for (auto& desc : m_samplers) {
@@ -90,7 +90,7 @@ namespace dxup {
         m_indirectConstantUsed = true;
       }
 
-      inline bool isIndirectMarked() const {
+      inline bool isIndirectMarked() {
         return m_indirectConstantUsed;
       }
 

@@ -1,7 +1,6 @@
 #pragma once
 #include "dx9asm_register_mapping.h"
 #include "dx9asm_meta.h"
-#include <unordered_map>
 
 namespace dxup {
 
@@ -20,25 +19,30 @@ namespace dxup {
     };
 
     class RegisterMap {
-      using RegisterMapInternal = std::unordered_map<RegisterId, RegisterMapping, RegisterIdHasher, RegisterIdEqual>;
-
     public:
-
       inline void reset() {
-        m_map.clear();
+        m_registerMap.clear();
         m_highestInternalTemp = UINT32_MAX;
       }
 
-      inline const RegisterMapping* getRegisterMapping(RegisterId id) const {
-        auto iter = m_map.find(id);
-        if (iter == m_map.end())
-          return nullptr;
-
-        return &iter->second;
+      inline const RegisterMapping* getRegisterMapping(const DX9Operand& operand) const {
+        return getRegisterMapping(operand);
       }
 
-      inline RegisterMapping* getRegisterMapping(RegisterId id) {
-        return const_cast<RegisterMapping*>(std::as_const(*this).getRegisterMapping(id));
+      inline RegisterMapping* getRegisterMapping(const DX9Operand& operand) {
+        return getRegisterMapping(operand.getRegType(), operand.getRegNumber());
+      }
+
+      inline const RegisterMapping* getRegisterMapping(uint32_t type, uint32_t index) const {
+        return getRegisterMapping(type, index);
+      }
+
+      inline RegisterMapping* getRegisterMapping(uint32_t type, uint32_t index) {
+        for (RegisterMapping& mapping : m_registerMap) {
+          if (mapping.dx9Type == type && mapping.dx9Id == index)
+            return &mapping;
+        }
+        return nullptr;
       }
 
       inline uint32_t getHighestIdForDXBCType(uint32_t type) const {
@@ -46,11 +50,11 @@ namespace dxup {
 
         uint32_t highestIdForType = invalidId;
 
-        for (auto iter : m_map) {
-          const DXBCOperand& lumOperand = iter.second.getDXBCOperand();
+        for (const RegisterMapping& lum : m_registerMap) {
+          const DXBCOperand& lumOperand = lum.dxbcOperand;
 
           if (lumOperand.getRegisterType() == type) {
-            highestIdForType = std::max(highestIdForType, lumOperand.getRegNumber());
+            highestIdForType = max(highestIdForType, lumOperand.getRegNumber());
 
             if (highestIdForType == invalidId)
               highestIdForType = lumOperand.getRegNumber();
@@ -70,27 +74,28 @@ namespace dxup {
         return highestId + 1;
       }
 
-      RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, RegisterId id, uint32_t mask, uint32_t versionOverride = 0);
+      RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput = false);
 
       RegisterMapping* lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, const DX9Operand& operand, uint32_t regOffset = 0);
 
-      uint32_t getTransientId(const DclInfo& info);
+      uint32_t getTransientId(DclInfo& info);
 
-      inline void generateId(bool transient, DXBCOperand& operand, const DclInfo& info) {
-        uint32_t& regNumber = operand.getRegNumber();
+      inline void addRegisterMapping(bool transient, bool generateDXBCId, RegisterMapping& mapping) {
+        DXBCOperand& dxbcOperand = mapping.dxbcOperand;
+        if (generateDXBCId) {
+          uint32_t& regNumber = dxbcOperand.getRegNumber();
 
-        if (!transient) {
-          uint32_t highestIdForType = getHighestIdForDXBCType(operand.getRegisterType());
+          if (!transient) {
+            uint32_t highestIdForType = getHighestIdForDXBCType(dxbcOperand.getRegisterType());
 
-          highestIdForType++;
-          regNumber = highestIdForType;
+            highestIdForType++;
+            regNumber = highestIdForType;
+          }
+          else
+            regNumber = getTransientId(mapping.dclInfo);
         }
-        else
-          regNumber = getTransientId(info);
-      }
 
-      inline void addRegisterMapping(RegisterId id, RegisterMapping& mapping) {
-        m_map[id] = mapping;
+        m_registerMap.push_back(mapping);
       }
 
       inline uint32_t getTotalTempCount() {
@@ -104,7 +109,7 @@ namespace dxup {
         if (m_highestInternalTemp == UINT32_MAX)
           return highestRealTempId + 1;
 
-        return std::max(highestRealTempId, m_highestInternalTemp) + 1;
+        return max(highestRealTempId, m_highestInternalTemp) + 1;
       }
 
       inline DXBCOperand getNextInternalTemp() {
@@ -118,13 +123,12 @@ namespace dxup {
         return op;
       }
 
-      inline RegisterMapInternal& getRegisterMappings() {
-        return m_map;
+      inline std::vector<RegisterMapping>& getRegisterMappings() {
+        return m_registerMap;
       }
     private:
-
       uint32_t m_highestInternalTemp = UINT32_MAX;
-      RegisterMapInternal m_map;
+      std::vector<RegisterMapping> m_registerMap;
     };
 
   }

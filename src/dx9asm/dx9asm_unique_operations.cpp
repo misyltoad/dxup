@@ -30,37 +30,36 @@ namespace dxup {
       const DX9Operand* usageToken = operation.getOperandByType(optype::UsageToken);
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
 
-      
-      uint32_t mask = calcWriteMask(*dst);
+      RegisterMapping mapping;
+      mapping.dx9Id = dst->getRegNumber();
+      mapping.dx9Type = dst->getRegType();
+      mapping.readMask |= calcWriteMask(*dst);
 
-      DXBCOperand dxbcOperand;
+      mapping.dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      mapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
+      mapping.dxbcOperand.stripModifier();
 
-      dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
-      dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
-      dxbcOperand.stripModifier();
+      mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
 
-      dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
-
-      uint32_t dclFlags = 0;
-      D3DDECLUSAGE dclUsage = usageToken->getUsage();
-      uint32_t dclUsageIndex = usageToken->getUsageIndex();
+      mapping.dclInfo.usage = usageToken->getUsage();
+      mapping.dclInfo.usageIndex = usageToken->getUsageIndex();
 
       if (dst->getRegType() == D3DSPR_INPUT) {
-        dclFlags |= dclFlags::input;
+        mapping.dclInfo.type = UsageType::Input;
 
         if (getMajorVersion() != 3 && getShaderType() == ShaderType::Pixel) {
-          dclUsage = D3DDECLUSAGE_COLOR;
-          dclUsageIndex = dst->getRegNumber();
+          mapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
+          mapping.dclInfo.usageIndex = mapping.dx9Id;
         }
       }
       else if (dst->getRegType() == D3DSPR_TEXTURE) {
-        dclFlags |= dclFlags::input;
-        dclUsage = D3DDECLUSAGE_TEXCOORD;
-        dclUsageIndex = dst->getRegNumber();
+        mapping.dclInfo.type = UsageType::Input;
+        mapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
+        mapping.dclInfo.usageIndex = dst->getRegNumber();
       }
       else if (dst->getRegType() == D3DSPR_OUTPUT) {
-        dclFlags |= dclFlags::output;
-        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
+        mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
+        mapping.dclInfo.type = UsageType::Output;
       }
       else if (dst->getRegType() == D3DSPR_SAMPLER) {
 
@@ -82,32 +81,28 @@ namespace dxup {
         return true;
 
       }
-      else
+      else {
         log::fail("Unhandled reg type in dcl, %d.", dst->getRegType());
-
-      // Add target flags if pixel color output.
-      if (getShaderType() == ShaderType::Pixel && dclFlags & dclFlags::output) {
-        if (dclUsage == D3DDECLUSAGE_COLOR)
-          dclFlags |= dclFlags::target;
-        else if (dclUsage == D3DDECLUSAGE_DEPTH)
-          log::warn("Writing to oDepth not supported yet.");
+        mapping.dclInfo.type = UsageType::Output;
       }
 
-      if (dst->centroid())
-        dclFlags |= dclFlags::centroid;
+      if (getShaderType() == ShaderType::Pixel && mapping.dclInfo.type == UsageType::Output) {
+        if (mapping.dclInfo.usage == D3DDECLUSAGE_COLOR)
+          mapping.dclInfo.target = true;
+        else if (mapping.dclInfo.usage == D3DDECLUSAGE_DEPTH)
+          log::fail("Writing to oDepth not supported yet.");
+      }
+
+      mapping.dclInfo.centroid = dst->centroid();
 
       // This may get changed later...
-      {
-        uint32_t id = dst->getRegNumber();
-        dxbcOperand.setData(&id, 1);
-      }
+      mapping.dxbcOperand.setData(&mapping.dx9Id, 1);
 
-      DclInfo dclInfo = { dclUsage, dclUsageIndex, dclFlags };
+      bool io = mapping.dclInfo.type != UsageType::None;
+      bool transient = io && isTransient(mapping.dclInfo.type == UsageType::Input);
+      bool generateId = shouldGenerateId(transient);
 
-      bool transient = dclInfo.isValid() && isTransient(dclInfo.isInput());
-      bool shouldGenerateId = true;
-
-      getRegisterMap().addRegisterMapping(dst->getRegId(), RegisterMapping{ dxbcOperand, mask, dclInfo });
+      getRegisterMap().addRegisterMapping(transient, generateId, mapping);
       
       return true;
     }
@@ -116,8 +111,8 @@ namespace dxup {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
-      //if (dst->getRegType() == D3DSPR_ADDR)
-      //  return handleMova(operation);
+      if (dst->getRegType() == D3DSPR_ADDR)
+        return handleMova(operation);
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
@@ -305,13 +300,19 @@ namespace dxup {
       // sm_1.1 - sm1.3
       if (getMajorVersion() == 1 && getMinorVersion() <= 3) {
         // Fake a D3D9 texcoord register.
-        RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(*this, { D3DSPR_TEXTURE, samplerRegNum },
-            ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
-          2);
+        RegisterMapping* texCoordMapping = m_map.lookupOrCreateRegisterMapping(
+          *this,
+          D3DSPR_TEXCRDOUT,
+          samplerRegNum,
+          ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_MASK_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(D3D10_SB_OPERAND_4_COMPONENT_MASK_X | D3D10_SB_OPERAND_4_COMPONENT_MASK_Y),
+          0,
+          true
+		  );
 
-        texCoordOp = texCoordMapping->getDXBCOperand();
+        texCoordOp = texCoordMapping->dxbcOperand;
 
-        texCoordOp.setSwizzleOrWritemask( ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+        texCoordOp.setSwizzleOrWritemask(
+          ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
           ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X)
         );
       }
@@ -347,7 +348,7 @@ namespace dxup {
       // In SM2.0+ the dst is also an rx, and we use a sampler different to the reg number.
 
       RegisterMapping* dstMapping = m_map.lookupOrCreateRegisterMapping(*this, dst);
-      DXBCOperand dstOp = dstMapping->getDXBCOperand();
+      DXBCOperand dstOp = dstMapping->dxbcOperand;
       dstOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
       calculateDXBCSwizzleAndWriteMask(dstOp, dst);
       calculateDXBCModifiers(dstOp, operation, dst);
@@ -413,13 +414,17 @@ namespace dxup {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* vec4 = operation.getOperandByType(optype::Vec4);
 
-      DXBCOperand dxbcOperand;
+      RegisterMapping mapping;
+      mapping.dx9Id = dst->getRegNumber();
+      mapping.dx9Type = dst->getRegType();
       uint32_t data[4];
       vec4->getValues(data);
-      dxbcOperand.setData(data, 4);
-      dxbcOperand.setupLiteral(4);
+      mapping.dxbcOperand.setData(data, 4);
+      mapping.dxbcOperand.setupLiteral(4);
 
-      m_map.addRegisterMapping(dst->getRegId(), RegisterMapping{ dxbcOperand, 0 });
+      mapping.dxbcOperand.setSwizzleOrWritemask(noSwizzle);
+
+      m_map.addRegisterMapping(false, false, mapping);
 
       return true;
     }
