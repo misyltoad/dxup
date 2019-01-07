@@ -24,7 +24,7 @@ namespace dxup {
       }
 
       inline bool isOutput() const {
-        return !isInput();
+        return m_flags & dclFlags::output;
       }
 
       inline bool isCentroid() const {
