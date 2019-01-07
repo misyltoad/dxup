@@ -53,7 +53,7 @@ namespace dxup {
         {"m3x3",    D3DSIO_M3x3, 3, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP3, 0, 3, 3}},
         {"m3x4",    D3DSIO_M3x4, 4, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP3, 0, 3, 3}},
         {"m4x3",    D3DSIO_M4x3, 3, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP4, 0, 4, 4}},
-        {"m4x3",    D3DSIO_M4x3, 4, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP4, 0, 4, 4}},
+        {"m4x4",    D3DSIO_M4x4, 4, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_DP4, 0, 4, 4}},
         {"mad",     D3DSIO_MAD, 1, { Dst, Src0, Src1, Src2 }, {D3D10_SB_OPCODE_MAD, 0}},
         {"max",     D3DSIO_MAX, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MAX, 0}},
         {"min",     D3DSIO_MIN, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_MIN, 0}},
