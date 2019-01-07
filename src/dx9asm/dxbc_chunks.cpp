@@ -34,14 +34,14 @@ namespace dxup {
     void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t num = 0;
       if (shdrCode.isIndirectMarked())
-        num = 256; // Do all 256 if we use indirect addressing.
+        num = 256 + 16; // Do all 256 + 16 ints if we use indirect addressing.
       else
         num = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
       for (uint32_t i = 0; i < num; i++) {
         bool used = false;
-        for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-          if (mapping.dxbcOperand.getRegisterType() == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER && mapping.dxbcOperand.getRegNumber() == i)
+        for (auto iter : shdrCode.getRegisterMap().getRegisterMappings()) {
+          if (iter.second.getDXBCOperand().getRegisterType() == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER && iter.second.getDXBCOperand().getRegNumber() == i)
             used = true;
         }
 
@@ -56,19 +56,16 @@ namespace dxup {
     template <bool Input, typename T>
     void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t i = 0;
-      for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-        bool valid = mapping.dclInfo.type == UsageType::Input && Input ||
-                     mapping.dclInfo.type == UsageType::Output && !Input;
-
-        if (!valid)
+      for (auto iter : shdrCode.getRegisterMap().getRegisterMappings()) {
+        if (!iter.second.getDclInfo().isValid() || iter.second.getDclInfo().isInput() != Input)
           continue;
 
-        if (mapping.dxbcOperand.isLiteral()) {
+        if (iter.second.getDXBCOperand().isLiteral()) {
           log::warn("IO is a literal..?");
           continue;
         }
 
-        func(mapping, i);
+        func(iter.second, i);
         i++;
       }
     }
@@ -305,7 +302,7 @@ namespace dxup {
       void writeIODcls(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         auto& obj = bytecode.getBytecodeVector();
         forEachValidElement<Input>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-          uint32_t siv = convert::sysValue(Input && shdrCode.getShaderType() == ShaderType::Vertex, mapping.dclInfo.target, mapping.dclInfo.usage);
+          uint32_t siv = convert::sysValue(Input && shdrCode.getShaderType() == ShaderType::Vertex, mapping.getDclInfo().isTarget(), mapping.getDclInfo().getUsage());
           const bool hasSiv = siv != D3D_NAME_UNDEFINED;
 
           uint32_t opcode = 0;
@@ -320,7 +317,7 @@ namespace dxup {
           else {
             if (Input) {
               opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_PS_SIV : D3D10_SB_OPCODE_DCL_INPUT_PS;
-              interpMode = mapping.dclInfo.centroid ? D3D10_SB_INTERPOLATION_LINEAR_CENTROID : D3D10_SB_INTERPOLATION_LINEAR;
+              interpMode = mapping.getDclInfo().isCentroid() ? D3D10_SB_INTERPOLATION_LINEAR_CENTROID : D3D10_SB_INTERPOLATION_LINEAR;
             }
             else
               opcode = hasSiv ? D3D10_SB_OPCODE_DCL_OUTPUT_SIV : D3D10_SB_OPCODE_DCL_OUTPUT;
@@ -328,13 +325,8 @@ namespace dxup {
 
           uint32_t lengthOffset = hasSiv ? 1 : 0;
 
-          DXBCOperand operand = mapping.dxbcOperand;
-          
-          if (!Input)
-            operand.setSwizzleOrWritemask(mapping.writeMask);
-          else
-            operand.setSwizzleOrWritemask(mapping.readMask);
-
+          DXBCOperand operand = mapping.getDXBCOperand();
+          operand.setSwizzleOrWritemask(mapping.getMask());
 
           DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset, interpMode }
             .appendOperand(operand)
@@ -412,7 +404,7 @@ namespace dxup {
           uint32_t cbufferCount = 0;
 
           if (shdrCode.isIndirectMarked())
-            cbufferCount = 256;
+            cbufferCount = 256 + 16;
           else
             cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
@@ -496,8 +488,8 @@ namespace dxup {
 
             uint32_t baseMask = 0;
             forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-              if (mapping.dclInfo.usage == transMapping.d3d9Usage && mapping.dclInfo.usageIndex == transMapping.d3d9UsageIndex)
-                baseMask |= isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+              if (mapping.getDclInfo().getUsage() == transMapping.d3d9Usage && mapping.getDclInfo().getUsageIndex() == transMapping.d3d9UsageIndex)
+                baseMask |= mapping.getMask();
             });
             
             baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
@@ -527,10 +519,10 @@ namespace dxup {
             IOSGNElement element;
 
             element.nameOffset = 0; // <-- Must be set later!
-            element.registerIndex = mapping.dxbcOperand.getRegNumber();
-            element.semanticIndex = mapping.dclInfo.usageIndex;
+            element.registerIndex = mapping.getDXBCOperand().getRegNumber();
+            element.semanticIndex = mapping.getDclInfo().getUsageIndex();
 
-            uint32_t baseMask = isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
+            uint32_t baseMask = mapping.getMask();
             baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
             element.mask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;
             uint32_t rwMask = element.mask;
@@ -541,14 +533,14 @@ namespace dxup {
             rwMask = rwMask << 8;
             element.mask |= rwMask;
 
-            element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage);
+            element.systemValueType = convert::sysValue(ChunkType == chunks::ISGN, mapping.getDclInfo().isTarget(), mapping.getDclInfo().getUsage());
             pushObject(obj, element);
           });
 
           uint32_t count = 0;
           forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
             elementStart[i].nameOffset = getChunkSize(bytecode);
-            pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
+            pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.getDclInfo().isTarget(), mapping.getDclInfo().getUsage()));
 
             count++;
           });

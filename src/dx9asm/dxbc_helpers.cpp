@@ -11,7 +11,8 @@ namespace dxup {
 
     DXBCOperand::DXBCOperand(ShaderCodeTranslator& state, const DX9Operation& operation, const DX9Operand& operand, uint32_t regOffset) {
       RegisterMapping* mapping = state.getRegisterMap().lookupOrCreateRegisterMapping(state, operand, regOffset);
-      std::memcpy(this, &mapping->dxbcOperand, sizeof(DXBCOperand));
+      DXBCOperand baseOperand = mapping->getDXBCOperand();
+      std::memcpy(this, &baseOperand, sizeof(DXBCOperand));
 
       if (operand.isIndirect()) {
         const uint32_t constantBufferIndex = 0;
@@ -25,8 +26,8 @@ namespace dxup {
         setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32_PLUS_RELATIVE);
 
         uint32_t dx9Swizzle = operand.getRelativeAddrSwizzle(state.getMajorVersion());
-        const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, D3DSPR_ADDR, operand.getRelativeAddrIndex(state.getMajorVersion()), calcReadMask(dx9Swizzle, 1), 0, false );
-        m_relativeIndex = address->dxbcOperand.getRegNumber();
+        const RegisterMapping* address = state.getRegisterMap().lookupOrCreateRegisterMapping(state, { D3DSPR_ADDR, operand.getRelativeAddrIndex(state.getMajorVersion()) }, calcReadMask(dx9Swizzle, 1));
+        m_relativeIndex = address->getDXBCOperand().getRegNumber();
 
         if (dx9Swizzle & D3DVS_X_Y)
           m_relativeSelect = ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_Y);

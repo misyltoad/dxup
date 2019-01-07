@@ -9,7 +9,7 @@ namespace dxup {
 
   namespace dx9asm {
 
-    bool ShaderCodeTranslator::handleOperation(uint32_t token) {
+    bool ShaderCodeTranslator::handleOperation(uint32_t token, bool parsePass) {
       DX9Operation operation{ *this, token };
       if (!operation.isValid()) {
         log::fail("Unknown opcode %lu encountered!", opcode(token));
@@ -19,47 +19,59 @@ namespace dxup {
       if (config::getBool(config::ShaderSpew))
         log::msg("Translating operation %s.", operation.getName());
 
-      if (operation.isUnique())
-        return handleUniqueOperation(operation);
-      else
-        return handleStandardOperation(operation);
+      if (parsePass) {
+        // We are just parsing. At the moment this is just to find out about any dynamic indexing.
+        for (uint32_t i = 0; i < operation.operandCount(); i++) {
+          const DX9Operand* operand = operation.getOperandByIndex(i);
+          if (operand->isIndirect())
+            markIndirect();
+        }
+      }
+      else {
+        if (operation.isUnique())
+          return handleUniqueOperation(operation);
+        else
+          return handleStandardOperation(operation);
+      }
 
       return true;
     }
 
     bool ShaderCodeTranslator::translate() {
-      nextToken(); // Skip header.
 
-      uint32_t token = nextToken();
-      while (token != D3DPS_END()) {
-        if (!handleOperation(token))
-          return false;
-        token = nextToken();
-      }
+      //for (uint32_t i = 0; i < 2; i++) {
+        returnToStart();
+        nextToken(); // Skip header.
+
+        uint32_t token = nextToken();
+        while (token != D3DPS_END()) {
+          if (!handleOperation(token, false))//i == 0))
+            return false;
+          token = nextToken();
+        }
+      //}
 
       // r0 in SM1 is the colour output register. Move r0 -> target here.
       if (getShaderType() == ShaderType::Pixel && getMajorVersion() == 1) {
-        RegisterMapping* r0 = getRegisterMap().getRegisterMapping(D3DSPR_TEMP, 0);
-        DXBCOperand r0Op = r0->dxbcOperand;
+        RegisterMapping* r0 = getRegisterMap().getRegisterMapping({ D3DSPR_TEMP, 0 });
+        DXBCOperand r0Op = r0->getDXBCOperand();
         r0Op.setSwizzleOrWritemask(noSwizzle);
 
         if (r0 != nullptr) {
-          RegisterMapping* target = getRegisterMap().lookupOrCreateRegisterMapping(
-            *this,
-            D3DSPR_COLOROUT,
-            0,
-            0,
-            writeAll
-          );
+          RegisterMapping* target = getRegisterMap().lookupOrCreateRegisterMapping(*this, { D3DSPR_COLOROUT, 0 }, writeAll);
 
-          DXBCOperand targetOp = target->dxbcOperand;
+          DXBCOperand targetOp = target->getDXBCOperand();
           targetOp.setSwizzleOrWritemask(writeAll);
 
+          // mov v0 r0
           DXBCOperation{ D3D10_SB_OPCODE_MOV, false }
-          .appendOperand(targetOp).appendOperand(r0Op).push(*this);
+            .appendOperand(targetOp)
+            .appendOperand(r0Op)
+            .push(*this);
         }
       }
 
+      // ret
       DXBCOperation{ D3D10_SB_OPCODE_RET, false }.push(*this);
 
       return true;

@@ -236,7 +236,8 @@ namespace dxup {
     HWND m_window;
 
     Com<ID3D11DeviceContext1> m_context;
-    D3D9ConstantBuffers m_constants;
+    D3D9ConstantBuffer m_vsConstants;
+    D3D9ConstantBuffer m_psConstants;
 
     static const uint8_t DeviceFlag_Ex = 0x01;
     uint8_t m_flags;

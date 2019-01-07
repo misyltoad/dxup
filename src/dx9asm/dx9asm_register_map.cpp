@@ -9,16 +9,14 @@ namespace dxup {
   namespace dx9asm {
 
     RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, const DX9Operand& operand, uint32_t regOffset) {
-      uint32_t writeMask = 0;
-      uint32_t readMask = 0;
+      uint32_t mask = 0;
 
       if (operand.isDst())
-        writeMask |= calcWriteMask(operand);
+        mask |= calcWriteMask(operand);
+      else if (operand.isSrc())
+        mask |= calcReadMask(operand);
 
-      if (operand.isSrc())
-        readMask |= calcReadMask(operand);
-
-      return lookupOrCreateRegisterMapping(translator, operand.getRegType(), operand.getRegNumber() + regOffset, readMask, writeMask);
+      return lookupOrCreateRegisterMapping(translator, { operand.getRegType(), operand.getRegNumber() + regOffset }, mask);
     }
 
     std::vector<TransientRegisterMapping> transientMappings = {
@@ -45,19 +43,19 @@ namespace dxup {
       return transientMappings;
     }
 
-    uint32_t RegisterMap::getTransientId(DclInfo& info) {
+    uint32_t RegisterMap::getTransientId(const DclInfo& info) {
       for (const TransientRegisterMapping& mapping : transientMappings) {
-        if (mapping.d3d9Usage == info.usage) {
-          if (mapping.d3d9UsageIndex == info.usageIndex)
+        if (mapping.d3d9Usage == info.getUsage()) {
+          if (mapping.d3d9UsageIndex == info.getUsageIndex())
             return mapping.dxbcRegNum;
         }
       }
 
-      log::warn("Unable to find transient register! Creating a new transient mapping:\nUsage: %lu\nUsage Index: %lu", info.usage, info.usageIndex);
+      log::warn("Unable to find transient register! Creating a new transient mapping:\nUsage: %lu\nUsage Index: %lu", info.getUsage(), info.getUsageIndex());
 
       TransientRegisterMapping mapping;
-      mapping.d3d9Usage = info.usage;
-      mapping.d3d9UsageIndex = info.usageIndex;
+      mapping.d3d9Usage = info.getUsage();
+      mapping.d3d9UsageIndex = info.getUsageIndex();
       mapping.dxbcRegNum = transientMappings.size();
 
       transientMappings.push_back(mapping);
@@ -65,124 +63,109 @@ namespace dxup {
       return mapping.dxbcRegNum;
     }
 
-    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, uint32_t regType, uint32_t regNum, uint32_t readMask, uint32_t writeMask, bool readingLikeVSOutput) {
-      RegisterMapping* mapping = getRegisterMapping(regType, regNum);
+    RegisterMapping* RegisterMap::lookupOrCreateRegisterMapping(const ShaderCodeTranslator& translator, RegisterId id, uint32_t mask, uint32_t versionOverride) {
+      RegisterMapping* mapping = getRegisterMapping(id);
 
       if (mapping != nullptr) {
-        mapping->writeMask |= writeMask;
-        mapping->readMask |= readMask;
+        mapping->addToMask(mask);
 
         return mapping;
       }
 
-      RegisterMapping newMapping;
-      newMapping.dclInfo.type = UsageType::None;
+      DXBCOperand dxbcOperand;
 
-      newMapping.dx9Id = regNum;
-      newMapping.dx9Type = regType;
-      newMapping.writeMask = writeMask;
-      newMapping.readMask = readMask;
-
-      newMapping.dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
-      newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
-      newMapping.dxbcOperand.stripModifier();
-
-      uint32_t dxbcType = 0;
-      bool addMapping = true;
+      dxbcOperand.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_1D);
 
       // This may get set later depending on the following stuff.
-      newMapping.dxbcOperand.setData(&newMapping.dx9Id, 1);
+      {
+        uint32_t dx9Id = id.getRegNum();
+        dxbcOperand.setData(&dx9Id, 1);
+      }
 
-      // LUT later!
-      switch (regType) {
+      DclInfo dclInfo;
+
+      switch (id.getRegType()) {
       case D3DSPR_TEMP:
-        dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_TEMP); break;
 
       case D3DSPR_INPUT: {
-        dxbcType = D3D10_SB_OPERAND_TYPE_INPUT;
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
 
-        if (translator.getMajorVersion() != 3 && translator.getShaderType() == ShaderType::Pixel) {
-          newMapping.dclInfo.type = UsageType::Input;
-          newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
-          newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-        }
+        if (translator.getMajorVersion() != 3 && translator.getShaderType() == ShaderType::Pixel)
+          dclInfo = DclInfo{ D3DDECLUSAGE_COLOR, id.getRegNum(), dclFlags::input };
       } break;
 
+      case D3DSPR_CONSTINT:
       case D3DSPR_CONST: {
 
         const uint32_t constantBufferIndex = 0;
-        uint32_t dataWithDummyId[2] = { constantBufferIndex, newMapping.dx9Id };
-        newMapping.dxbcOperand.setData(dataWithDummyId, 2);
-        newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
-        newMapping.dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
-        dxbcType = D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER;
+        uint32_t fullId = id.getRegNum();
+        if (id.getRegType() == D3DSPR_CONSTINT)
+          fullId += 256;
+
+        uint32_t dataWithDummyId[2] = { constantBufferIndex, fullId };
+        dxbcOperand.setData(dataWithDummyId, 2);
+        dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
+        dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
       } break;
 
       case D3DSPR_RASTOUT: {
-        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
+        D3DDECLUSAGE usage = D3DDECLUSAGE_POSITION;
+        if (id.getRegNum() == D3DSRO_FOG)
+          usage = D3DDECLUSAGE_FOG;
+        else if (id.getRegNum() == D3DSRO_POINT_SIZE)
+          usage = D3DDECLUSAGE_PSIZE;
 
-        if (newMapping.dx9Id == D3DSRO_POSITION)
-          newMapping.dclInfo.usage = D3DDECLUSAGE_POSITION;
-        else if (newMapping.dx9Id == D3DSRO_FOG)
-          newMapping.dclInfo.usage = D3DDECLUSAGE_FOG;
-        else if (newMapping.dx9Id == D3DSRO_POINT_SIZE)
-          newMapping.dclInfo.usage = D3DDECLUSAGE_PSIZE;
+        dclInfo = DclInfo{ usage, 0, dclFlags::output };
 
-        newMapping.dclInfo.usageIndex = 0;
-
-        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
 
       } break;
 
       case D3DSPR_TEXCRDOUT: { // D3DSPR_OUTPUT
-        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
-        newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
-        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
+        dclInfo = DclInfo{ D3DDECLUSAGE_TEXCOORD, id.getRegNum(), dclFlags::output };
 
-        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
       } break;
 
       case D3DSPR_ATTROUT: {
+        dclInfo = DclInfo{ D3DDECLUSAGE_COLOR, id.getRegNum(), dclFlags::output };
 
-        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
-        newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
-        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-
-        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
         break;
       }
 
       case D3DSPR_ADDR: { // D3DSPR_TEXTURE
-        if (translator.getShaderType() == ShaderType::Pixel) {
 
-          // SM2 or 1.4
-          if (translator.getMajorVersion() >= 2 || (translator.getMajorVersion() == 1 && translator.getMinorVersion() == 4)) {
-            newMapping.dclInfo.type = UsageType::Input;
-            newMapping.dclInfo.usage = D3DDECLUSAGE_TEXCOORD;
-            newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-            dxbcType = D3D10_SB_OPERAND_TYPE_INPUT;
-          }
-          else
-            dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
+        // Texcoord/Tex Register
+
+        bool input = translator.getMajorVersion() >= 2 || (translator.getMajorVersion() == 1 && translator.getMinorVersion() == 4);
+        input = input || versionOverride >= 2;
+        input = input && translator.getShaderType() == ShaderType::Pixel;
+
+        if (input) {
+          dclInfo = DclInfo{ D3DDECLUSAGE_TEXCOORD, id.getRegNum(), dclFlags::input };
+          dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
         }
-        else {
-          dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
-        }
+        else
+          dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_TEMP); // This changes value w/ tex/texcoord operands.
 
         break;
       }
 
       case D3DSPR_COLOROUT: {
-        newMapping.dclInfo.type = readingLikeVSOutput ? UsageType::Input : UsageType::Output;
-        newMapping.dclInfo.target = true;
-        newMapping.dclInfo.usage = D3DDECLUSAGE_COLOR;
-        newMapping.dclInfo.usageIndex = newMapping.dx9Id;
-        dxbcType = readingLikeVSOutput ? D3D10_SB_OPERAND_TYPE_INPUT : D3D10_SB_OPERAND_TYPE_OUTPUT;
+        uint32_t dclFlags = dclFlags::output;
+        if (translator.getShaderType() == ShaderType::Pixel)
+          dclFlags |= dclFlags::target;
+
+        dclInfo = DclInfo{ D3DDECLUSAGE_COLOR, id.getRegNum(), dclFlags };
+        dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
         break;
       }
 
-      case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:
       case D3DSPR_CONST2:
@@ -195,21 +178,21 @@ namespace dxup {
       case D3DSPR_LABEL:
       case D3DSPR_PREDICATE:
       default:
-        log::fail("Invalid Register Type"); break;
+        log::fail("Unsupported register type: %d", id.getRegType()); break;
       }
 
-      newMapping.dxbcOperand.setRegisterType(dxbcType);
+      bool shouldGenerateId = true;
+      bool transient = dclInfo.isValid() && translator.isTransient(dclInfo.isInput());
 
-      bool io = newMapping.dclInfo.type != UsageType::None;
-      bool transient = io && translator.isTransient(newMapping.dclInfo.type == UsageType::Input);
-      bool generateId = translator.shouldGenerateId(transient);
+      if (dxbcOperand.getRegisterType() == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)//&& translator.isIndirectMarked())
+        shouldGenerateId = false;
 
-      if (dxbcType == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
-        generateId = false;
+      if (shouldGenerateId)
+        generateId(translator.isTransient(dclInfo.isInput()), dxbcOperand, dclInfo);
 
-      addRegisterMapping(transient, generateId, newMapping);
+      addRegisterMapping(id, RegisterMapping{ dxbcOperand, mask, dclInfo });
 
-      return lookupOrCreateRegisterMapping(translator, regType, regNum, readMask, writeMask);
+      return lookupOrCreateRegisterMapping(translator, id, mask);
     }
 
   }

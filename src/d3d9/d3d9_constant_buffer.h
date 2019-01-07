@@ -20,14 +20,27 @@ namespace dxup {
 
   public:
 
-    D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, ShaderType shaderType, BufferType bufferType);
+    static constexpr size_t singleFloatConstantSize = sizeof(float) * 4;
+    static constexpr size_t floatConstantCount = 256;
+    static constexpr size_t floatElementsSize = singleFloatConstantSize * floatConstantCount;
+
+    static constexpr size_t singleIntConstantSize = sizeof(int) * 4;
+    static constexpr size_t intConstantCount = 16;
+    static constexpr size_t intElementsSize = singleIntConstantSize * intConstantCount;
+
+    static constexpr size_t singleBoolConstantSize = sizeof(int);
+    static constexpr size_t boolConstantCount = 16;
+    static constexpr size_t boolElementsSize = singleBoolConstantSize * boolConstantCount;
+
+    D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, bool pixelShader);
+    ~D3D9ConstantBuffer();
 
     void prepareDraw();
     void bind();
 
-    HRESULT set(uint32_t index, const void* values, uint32_t count);
+    HRESULT set(BufferType type, uint32_t index, const void* values, uint32_t count);
 
-    HRESULT get(uint32_t index, void* values, uint32_t count);
+    HRESULT get(BufferType type, uint32_t index, void* values, uint32_t count);
 
   private:
 
@@ -37,35 +50,15 @@ namespace dxup {
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
 
-    std::shared_ptr<uint8_t> m_elements;
-    uint32_t m_elementSize;
-    uint32_t m_elementCount;
-    size_t m_bufferSize;
+    float* m_floatElements;
+    int* m_intElements;
+    bool* m_boolElements;
 
-    ShaderType m_shaderType;
-    BufferType m_bufferType;
+    bool m_pixelShader;
 
     Com<ID3D11Buffer> m_buffer;
 
     bool m_dirty;
   };
 
-  class D3D9ConstantBuffers {
-
-  public:
-
-    D3D9ConstantBuffers(ID3D11Device1* device, ID3D11DeviceContext1* context);
-
-    HRESULT set(ShaderType shdrType, BufferType bufferType, uint32_t index, const void* values, uint32_t count);
-    HRESULT get(ShaderType shdrType, BufferType bufferType, uint32_t index, void* values, uint32_t count);
-
-    void prepareDraw();
-
-  private:
-
-    static constexpr uint32_t permutations = ShaderType::Count * BufferType::Count;
-
-    D3D9ConstantBuffer& getBuffer(ShaderType shdrType, BufferType bufferType);
-    std::array<std::shared_ptr<D3D9ConstantBuffer>, permutations> m_buffers;
-  };
 }

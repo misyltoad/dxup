@@ -12,7 +12,7 @@ namespace dxup {
     Com<IDirect3DVertexDeclaration9> vertexDcl;
   };
 
-  template <dx9asm::ShaderType Type, typename D3D11Shader, typename Base>
+  template <typename D3D11Shader, typename Base>
   class Direct3DShader9 final : public D3D9DeviceUnknown<Base> {
 
   public:
@@ -94,7 +94,7 @@ namespace dxup {
     const dx9asm::ShaderBytecode* m_translation;
   };
 
-  using Direct3DVertexShader9 = Direct3DShader9<dx9asm::ShaderType::Vertex, ID3D11VertexShader, IDirect3DVertexShader9>;
-  using Direct3DPixelShader9 = Direct3DShader9<dx9asm::ShaderType::Pixel, ID3D11PixelShader, IDirect3DPixelShader9>;
+  using Direct3DVertexShader9 = Direct3DShader9<ID3D11VertexShader, IDirect3DVertexShader9>;
+  using Direct3DPixelShader9 = Direct3DShader9<ID3D11PixelShader, IDirect3DPixelShader9>;
 
 }

@@ -6,7 +6,6 @@
 #include "d3d9_buffer.h"
 #include "d3d9_shaders.h"
 #include "../dx9asm/dx9asm_translator.h"
-#include "../dx9asm/dx9asm_util.h"
 #include "../util/config.h"
 #include "../util/d3dcompiler_helpers.h"
 #include "d3d9_resource.h"
@@ -96,7 +95,8 @@ namespace dxup {
     , m_flags(flags)
     , m_deviceType(deviceType)
     , m_state{ new InternalRenderState }
-    , m_constants{ device, context } {
+    , m_vsConstants{ device, context, false }
+    , m_psConstants{ device, context, true }{
     InitializeCriticalSection(&m_criticalSection);
   }
 
@@ -766,7 +766,7 @@ namespace dxup {
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = Type == D3DRTYPE_CUBETEXTURE ? 6 : 1;
 
-    UINT sampleCount = max(1, (UINT)MultiSample);
+    UINT sampleCount = std::max(1u, (UINT)MultiSample);
 
     bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
     bool isRenderTarget = Usage & D3DUSAGE_RENDERTARGET;
@@ -2065,6 +2065,12 @@ namespace dxup {
   }
 
   bool Direct3DDevice9Ex::PrepareDraw() {
+    if (m_state->vertexShader != nullptr)
+      m_vsConstants.prepareDraw();
+
+    if (m_state->pixelShader != nullptr)
+      m_psConstants.prepareDraw();
+
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
 
@@ -2088,8 +2094,6 @@ namespace dxup {
 
     if (m_state->dirtyFlags & dirtyFlags::pixelShader)
       UpdatePixelShader();
-
-    m_constants.prepareDraw();
 
     return CanDraw();
   }
@@ -2288,32 +2292,32 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Vertex, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
+    return m_vsConstants.set(BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Vertex, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
+    return m_vsConstants.get(BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Vertex, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
+    return m_vsConstants.set(BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Vertex, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
+    return m_vsConstants.get(BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Vertex, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
+    return m_vsConstants.set(BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Vertex, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
+    return m_vsConstants.get(BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     CriticalSection cs(this);
@@ -2444,32 +2448,32 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Pixel, BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
+    return m_psConstants.set(BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Pixel, BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
+    return m_psConstants.get(BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Pixel, BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
+    return m_psConstants.set(BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Pixel, BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
+    return m_psConstants.get(BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
 
-    return m_constants.set(ShaderType::Pixel, BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
+    return m_psConstants.set(BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
 
-    return m_constants.get(ShaderType::Pixel, BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
+    return m_psConstants.get(BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawRectPatch(UINT Handle, CONST float* pNumSegs, CONST D3DRECTPATCH_INFO* DrawRectPatch) {
     CriticalSection cs(this);
