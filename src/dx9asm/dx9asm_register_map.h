@@ -54,7 +54,7 @@ namespace dxup {
           const DXBCOperand& lumOperand = lum.dxbcOperand;
 
           if (lumOperand.getRegisterType() == type) {
-            highestIdForType = max(highestIdForType, lumOperand.getRegNumber());
+            highestIdForType = std::max(highestIdForType, lumOperand.getRegNumber());
 
             if (highestIdForType == invalidId)
               highestIdForType = lumOperand.getRegNumber();
@@ -109,7 +109,7 @@ namespace dxup {
         if (m_highestInternalTemp == UINT32_MAX)
           return highestRealTempId + 1;
 
-        return max(highestRealTempId, m_highestInternalTemp) + 1;
+        return std::max(highestRealTempId, m_highestInternalTemp) + 1;
       }
 
       inline DXBCOperand getNextInternalTemp() {
