@@ -108,10 +108,15 @@ namespace dxup {
         }
       } break;
 
+      case D3DSPR_CONSTINT:
       case D3DSPR_CONST: {
 
         const uint32_t constantBufferIndex = 0;
-        uint32_t dataWithDummyId[2] = { constantBufferIndex, newMapping.dx9Id };
+        uint32_t constId = newMapping.dx9Id;
+        if (regType == D3DSPR_CONSTINT)
+          constId += 256;
+
+        uint32_t dataWithDummyId[2] = { constantBufferIndex, constId };
         newMapping.dxbcOperand.setData(dataWithDummyId, 2);
         newMapping.dxbcOperand.setDimension(D3D10_SB_OPERAND_INDEX_2D);
         newMapping.dxbcOperand.setRepresentation(1, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
@@ -182,7 +187,6 @@ namespace dxup {
         break;
       }
 
-      case D3DSPR_CONSTINT:
       case D3DSPR_DEPTHOUT:
       case D3DSPR_SAMPLER:
       case D3DSPR_CONST2:
