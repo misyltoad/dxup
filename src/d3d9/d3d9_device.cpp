@@ -581,7 +581,10 @@ namespace dxup {
   BOOL    STDMETHODCALLTYPE Direct3DDevice9Ex::ShowCursor(BOOL bShow) {
     CriticalSection cs(this);
 
-    ::ShowCursor(bShow);
+    // Ok so if they call FALSE here it means they want to use the regular windows cursor.
+    // if they call TRUE here it means they want to use some weird bitmap cursor that I currently dont care about.
+    // Therefore we always want to show the regular cursor no matter what!
+    ::ShowCursor(true);
 
     return TRUE;
   }
