@@ -21,9 +21,14 @@ namespace dxup {
     , m_pixelShader{ pixelShader }
     , m_dirty{ true } {
 
-    m_floatElements = (float*) _aligned_malloc(floatElementsSize, 16);
-    m_intElements = (int*) _aligned_malloc(intElementsSize, 16);
-    m_boolElements = (bool*) _aligned_malloc(boolElementsSize, 16);
+    m_floatElements = (uint8_t*) _aligned_malloc(floatElementsSize, 16);
+    std::memset(m_floatElements, 0, floatElementsSize);
+
+    m_intElements = (uint8_t*) _aligned_malloc(intElementsSize, 16);
+    std::memset(m_intElements, 0, intElementsSize);
+
+    m_boolElements = (uint8_t*) _aligned_malloc(boolElementsSize, 16);
+    std::memset(m_boolElements, 0, boolElementsSize);
 
     D3D11_BUFFER_DESC cbDesc;
     cbDesc.ByteWidth = floatElementsSize + intElementsSize; //+ sizeof(uint32_t); // bool elements are encoded as a bitfield but not impl yet.

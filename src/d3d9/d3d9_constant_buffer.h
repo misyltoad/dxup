@@ -50,9 +50,9 @@ namespace dxup {
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
 
-    float* m_floatElements;
-    int* m_intElements;
-    bool* m_boolElements;
+    uint8_t* m_floatElements;
+    uint8_t* m_intElements;
+    uint8_t* m_boolElements;
 
     bool m_pixelShader;
 
