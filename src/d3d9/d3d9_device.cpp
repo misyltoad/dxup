@@ -2008,7 +2008,7 @@ namespace dxup {
       desc.SemanticName = convert::declUsage(true, false, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
       desc.SemanticIndex = pVertexElements[i].UsageIndex;
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
-      desc.InputSlot = pVertexElements[i].UsageIndex;
+      desc.InputSlot = 0;
       desc.AlignedByteOffset = pVertexElements[i].Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
       desc.InstanceDataStepRate = 0;
