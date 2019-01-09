@@ -2080,7 +2080,7 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
     CriticalSection cs(this);
-    return m_state->SetIndices(pIndexData);
+    return GetEditState()->SetIndices(pIndexData);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
     CriticalSection cs(this);
@@ -2093,7 +2093,7 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
     CriticalSection cs(this);
-    return m_state->SetPixelShader(pShader);
+    return GetEditState()->SetPixelShader(pShader);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
     CriticalSection cs(this);
