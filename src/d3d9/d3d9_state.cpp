@@ -255,7 +255,12 @@ namespace dxup {
   }
 
   HRESULT D3D9State::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
-    vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
+    Direct3DVertexDeclaration9* newDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
+
+    if (vertexDecl == newDecl)
+      return D3D_OK;
+
+    vertexDecl = newDecl;
     dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
