@@ -714,12 +714,15 @@ namespace dxup {
 
     D3D11_USAGE d3d11Usage = convert::usage(Pool, Usage);
 
+    if (Type == D3DRTYPE_CUBETEXTURE)
+      d3d11Usage = D3D11_USAGE_DEFAULT;
+
     D3D11_TEXTURE2D_DESC desc;
     desc.Width = Width;
     desc.Height = Height;
     desc.Format = convert::format(Format);
     desc.Usage = d3d11Usage;
-    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
+    desc.CPUAccessFlags = Type == D3DRTYPE_CUBETEXTURE ? 0 : convert::cpuFlags(Pool, Usage);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = Type == D3DRTYPE_CUBETEXTURE ? 6 : 1;
 
