@@ -24,6 +24,8 @@ namespace dxup {
     DXGI_FORMAT declType(D3DDECLTYPE type);
 
     void color(D3DCOLOR color, FLOAT* d3d11Color);
+
+    HRESULT mapStageToSampler(DWORD Stage, DWORD* Sampler);
   }
 
   template <typename T>

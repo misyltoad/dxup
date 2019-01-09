@@ -2,11 +2,12 @@
 
 #include "d3d9_base.h"
 #include "d3d9_constant_buffer.h"
+#include "d3d9_state_caches.h"
 #include <array>
 
 namespace dxup {
 
-  struct InternalRenderState;
+  struct D3D9State;
 
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
@@ -78,7 +79,6 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE EndStateBlock(IDirect3DStateBlock9** ppSB) override;
     HRESULT STDMETHODCALLTYPE SetClipStatus(const D3DCLIPSTATUS9* pClipStatus) override;
     HRESULT STDMETHODCALLTYPE GetClipStatus(D3DCLIPSTATUS9* pClipStatus) override;
-    HRESULT MapStageToSampler(DWORD Stage, DWORD* Sampler);
     HRESULT STDMETHODCALLTYPE GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) override;
     HRESULT STDMETHODCALLTYPE SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) override;
     HRESULT STDMETHODCALLTYPE GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) override;
@@ -226,7 +226,15 @@ namespace dxup {
 
     std::array< Com<IDirect3DSwapChain9Ex>, D3DPRESENT_BACK_BUFFERS_MAX_EX > m_swapchains;
 
-    InternalRenderState* m_state;
+    inline ID3D9State* GetEditState() {
+      if (m_stateBlock != nullptr)
+        return m_stateBlock;
+
+      return m_state;
+    }
+
+    D3D9State* m_state;
+    ID3D9State* m_stateBlock;
 
     Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device1> m_device;
@@ -238,6 +246,8 @@ namespace dxup {
     Com<ID3D11DeviceContext1> m_context;
     D3D9ConstantBuffer m_vsConstants;
     D3D9ConstantBuffer m_psConstants;
+
+    D3D9StateCaches m_caches;
 
     static const uint8_t DeviceFlag_Ex = 0x01;
     uint8_t m_flags;

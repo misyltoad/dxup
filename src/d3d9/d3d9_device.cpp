@@ -14,6 +14,7 @@
 #include "d3d9_d3d11_resource.h"
 #include "../util/hash.h"
 #include "d3d9_query.h"
+#include "d3d9_state.h"
 #include <d3d11_4.h>
 
 namespace dxup {
@@ -25,54 +26,6 @@ namespace dxup {
   DWORD floatToDword(float val) {
     return *((DWORD*)(&val));
   }
-
-  namespace dirtyFlags {
-    const uint32_t vertexShader = 1 << 0;
-    const uint32_t vertexDecl = 1 << 1;
-    const uint32_t pixelShader = 1 << 2;
-    const uint32_t renderTargets = 1 << 3;
-    const uint32_t depthStencilState = 1 << 4;
-    const uint32_t rasterizer = 1 << 5;
-    const uint32_t blendState = 1 << 6;
-    const uint32_t textures = 1 << 7;
-  }
-
-  struct InternalRenderState{
-
-    InternalRenderState() {
-      std::memset(textures.data(), 0, sizeof(IDirect3DBaseTexture9*) * textures.size());
-      std::memset(vertexOffsets.data(), 0, sizeof(UINT) * vertexOffsets.size());
-      std::memset(vertexStrides.data(), 0, sizeof(UINT) * vertexStrides.size());
-    }
-
-    // Manual COM
-    std::array<IDirect3DBaseTexture9*, 20> textures;
-
-    ComPrivate<Direct3DVertexShader9> vertexShader;
-    ComPrivate<Direct3DPixelShader9> pixelShader;
-    ComPrivate<Direct3DVertexDeclaration9> vertexDecl;
-    ComPrivate<Direct3DSurface9> depthStencil;
-    std::array<ComPrivate<Direct3DSurface9>, 4> renderTargets;
-    uint32_t dirtyFlags = 0;
-    uint32_t dirtySamplers = 0;
-
-    std::array<ComPrivate<Direct3DVertexBuffer9>, 16> vertexBuffers;
-    std::array<UINT, 16> vertexOffsets;
-    std::array<UINT, 16> vertexStrides;
-
-    std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
-    std::array<std::array<DWORD, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStates;
-    std::array<std::array<DWORD, D3DTSS_CONSTANT + 1>, 8> textureStageStates;
-
-    ComPrivate<Direct3DIndexBuffer9> indexBuffer;
-
-    struct {
-      StateCache<D3D11_RASTERIZER_DESC1, ID3D11RasterizerState1> rasterizer;
-      StateCache<D3D11_BLEND_DESC1, ID3D11BlendState1> blendState;
-      StateCache<D3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState> depthStencil;
-      StateCache<D3D11_SAMPLER_DESC, ID3D11SamplerState> sampler;
-    } caches;
-  };
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
     UINT adapterNum,
@@ -94,7 +47,8 @@ namespace dxup {
     , m_behaviourFlags{ behaviourFlags }
     , m_flags(flags)
     , m_deviceType(deviceType)
-    , m_state{ new InternalRenderState }
+    , m_state{ new D3D9State }
+    , m_stateBlock{ nullptr }
     , m_vsConstants{ device, context, false }
     , m_psConstants{ device, context, true }{
     InitializeCriticalSection(&m_criticalSection);
@@ -1194,7 +1148,7 @@ namespace dxup {
     desc.StencilReadMask = (UINT8)(m_state->renderState[D3DRS_STENCILMASK] & 0x000000FF); // I think we can do this.
     desc.StencilWriteMask = (UINT8)(m_state->renderState[D3DRS_STENCILWRITEMASK] & 0x000000FF);
 
-    ID3D11DepthStencilState* state = m_state->caches.depthStencil.lookupObject(desc);
+    ID3D11DepthStencilState* state = m_caches.depthStencil.lookupObject(desc);
 
     if (state == nullptr) {
       Com<ID3D11DepthStencilState> comState;
@@ -1205,7 +1159,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.depthStencil.pushState(desc, comState.ptr());
+      m_caches.depthStencil.pushState(desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1228,7 +1182,7 @@ namespace dxup {
     desc.ScissorEnable = m_state->renderState[D3DRS_SCISSORTESTENABLE] == TRUE ? TRUE : FALSE;
     desc.SlopeScaledDepthBias = dwordToFloat(m_state->renderState[D3DRS_SLOPESCALEDEPTHBIAS]);
 
-    ID3D11RasterizerState1* state = m_state->caches.rasterizer.lookupObject(desc);
+    ID3D11RasterizerState1* state = m_caches.rasterizer.lookupObject(desc);
 
     if (state == nullptr) {
       Com<ID3D11RasterizerState1> comState;
@@ -1239,7 +1193,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.rasterizer.pushState(desc, comState.ptr());
+      m_caches.rasterizer.pushState(desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1283,7 +1237,7 @@ namespace dxup {
       desc.RenderTarget[i].SrcBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_SRCBLENDALPHA] : m_state->renderState[D3DRS_SRCBLEND]);
     }
 
-    ID3D11BlendState1* state = m_state->caches.blendState.lookupObject(desc);
+    ID3D11BlendState1* state = m_caches.blendState.lookupObject(desc);
 
     if (state == nullptr) {
       Com<ID3D11BlendState1> comState;
@@ -1294,7 +1248,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.blendState.pushState(desc, comState.ptr());
+      m_caches.blendState.pushState(desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1318,7 +1272,7 @@ namespace dxup {
     desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
     desc.MinLOD = -FLT_MAX;
 
-    ID3D11SamplerState* state = m_state->caches.sampler.lookupObject(desc);
+    ID3D11SamplerState* state = m_caches.sampler.lookupObject(desc);
 
     if (state == nullptr) {
       Com<ID3D11SamplerState> comState;
@@ -1329,7 +1283,7 @@ namespace dxup {
         return;
       }
 
-      m_state->caches.sampler.pushState(desc, comState.ptr());
+      m_caches.sampler.pushState(desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -1374,57 +1328,20 @@ namespace dxup {
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
     CriticalSection cs(this);
-
-    if (RenderTargetIndex >= 4)
-      return D3DERR_INVALIDCALL;
-
-    m_state->renderTargets[RenderTargetIndex] = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
-    m_state->dirtyFlags |= dirtyFlags::renderTargets;
-
-    return D3D_OK;
+    return GetEditState()->SetRenderTarget(RenderTargetIndex, pRenderTarget);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppRenderTarget);
-
-    if (ppRenderTarget == nullptr)
-      return D3DERR_INVALIDCALL;
-    
-    if (RenderTargetIndex > m_state->renderTargets.size())
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->renderTargets[RenderTargetIndex] == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppRenderTarget = ref(m_state->renderTargets[RenderTargetIndex]);
-
-    return D3D_OK;
+    return m_state->GetRenderTarget(RenderTargetIndex, ppRenderTarget);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
     CriticalSection cs(this);
-
-    DoDepthDiscardCheck();
-
-    m_state->depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
-    m_state->dirtyFlags |= dirtyFlags::renderTargets;
-
-    return D3D_OK;
+    DoDepthDiscardCheck(); // TODO! Does this only get done in d3d9 if it gets set.
+    return GetEditState()->SetDepthStencilSurface(pNewZStencil);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppZStencilSurface);
-
-    if (ppZStencilSurface == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->depthStencil == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppZStencilSurface = ref(m_state->depthStencil);
-
-    return D3D_OK;
+    return m_state->GetDepthStencilSurface(ppZStencilSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::BeginScene() {
     CriticalSection cs(this);
@@ -1489,6 +1406,7 @@ namespace dxup {
     log::stub("Direct3DDevice9Ex::MultiplyTransform");
     return D3D_OK;
   }
+  // TODO! Put viewport in state.
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetViewport(CONST D3DVIEWPORT9* pViewport) {
     CriticalSection cs(this);
 
@@ -1575,77 +1493,11 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) {
     CriticalSection cs(this);
-
-    if (State < D3DRS_ZENABLE || State > D3DRS_BLENDOPALPHA)
-      return D3D_OK;
-
-    if (m_state->renderState[State] == Value)
-      return D3D_OK;
-
-    m_state->renderState[State] = Value;
-
-    if (State == D3DRS_CULLMODE ||
-        State == D3DRS_DEPTHBIAS ||
-        State == D3DRS_FILLMODE ||
-        State == D3DRS_SCISSORTESTENABLE ||
-        State == D3DRS_SLOPESCALEDEPTHBIAS )
-      m_state->dirtyFlags |= dirtyFlags::rasterizer;
-    else if ( State == D3DRS_CCW_STENCILZFAIL ||
-              State == D3DRS_CCW_STENCILFAIL ||
-              State == D3DRS_CCW_STENCILPASS ||
-              State == D3DRS_CCW_STENCILFUNC ||
-
-              State == D3DRS_ZENABLE ||
-              State == D3DRS_ZFUNC ||
-              State == D3DRS_ZWRITEENABLE ||
-
-              State == D3DRS_STENCILZFAIL ||
-              State == D3DRS_STENCILFAIL ||
-              State == D3DRS_STENCILPASS ||
-              State == D3DRS_STENCILFUNC ||
-
-              State == D3DRS_STENCILENABLE ||
-              State == D3DRS_STENCILMASK ||
-              State == D3DRS_STENCILWRITEMASK ||
-
-              State == D3DRS_STENCILREF )
-      m_state->dirtyFlags |= dirtyFlags::depthStencilState;
-    else if ( State == D3DRS_BLENDOP ||
-              State == D3DRS_BLENDOPALPHA || 
-              State == D3DRS_DESTBLEND ||
-              State == D3DRS_DESTBLENDALPHA ||
-              State == D3DRS_SRCBLEND ||
-              State == D3DRS_SRCBLENDALPHA ||
-              State == D3DRS_SEPARATEALPHABLENDENABLE ||
-              State == D3DRS_ALPHABLENDENABLE ||
-              State == D3DRS_BLENDFACTOR ||
-              State == D3DRS_COLORWRITEENABLE ||
-              State == D3DRS_COLORWRITEENABLE1 || 
-              State == D3DRS_COLORWRITEENABLE2 || 
-              State == D3DRS_COLORWRITEENABLE3 )
-      m_state->dirtyFlags |= dirtyFlags::blendState;
-    else if ( State == D3DRS_SRGBWRITEENABLE )
-      m_state->dirtyFlags |= dirtyFlags::renderTargets;
-    else
-      log::warn("Unhandled render state: %lu", State);
-
-    return D3D_OK;
+    return GetEditState()->SetRenderState(State, Value);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) {
     CriticalSection cs(this);
-
-    if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (State < D3DRS_ZENABLE || State > D3DRS_BLENDOPALPHA) {
-      *pValue = 0;
-
-      return D3D_OK;
-    }
-
-    *pValue = m_state->renderState[State];
-
-    return D3D_OK;
+    return m_state->GetRenderState(State, pValue);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateStateBlock(D3DSTATEBLOCKTYPE Type, IDirect3DStateBlock9** ppSB) {
     CriticalSection cs(this);
@@ -1678,149 +1530,29 @@ namespace dxup {
     return D3D_OK;
   }
 
-  HRESULT Direct3DDevice9Ex::MapStageToSampler(DWORD Stage, DWORD* Sampler){
-    if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
-      return D3DERR_INVALIDCALL;
-
-    // For vertex samplers.
-    if (Stage >= D3DVERTEXTEXTURESAMPLER0)
-      Stage = 16 + (Stage - D3DVERTEXTEXTURESAMPLER0);
-
-    *Sampler = Stage;
-
-    return D3D_OK;
-  }
-
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppTexture);
-
-    if (ppTexture == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (FAILED(MapStageToSampler(Stage, &Stage)))
-      return D3DERR_INVALIDCALL;
-
-    *ppTexture = ref(m_state->textures[Stage]);
-
-    return D3D_OK;
+    return m_state->GetTexture(Stage, ppTexture);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
     CriticalSection cs(this);
-
-    if (FAILED(MapStageToSampler(Stage, &Stage)))
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->textures[Stage] == pTexture)
-      return D3D_OK;
-
-    IDirect3DBaseTexture9* currentBinding = m_state->textures[Stage];
-
-    if (currentBinding != nullptr) {
-      switch (m_state->textures[Stage]->GetType()) {
-      case D3DRTYPE_TEXTURE: reinterpret_cast<Direct3DTexture9*>(currentBinding)->ReleasePrivate(); break;
-      case D3DRTYPE_CUBETEXTURE: reinterpret_cast<Direct3DCubeTexture9*>(currentBinding)->ReleasePrivate(); break;
-      default:
-        log::warn("Unable to find what texture stage really is to release internally.");
-        break;
-      }
-    }
-
-    if (pTexture != nullptr) {
-      switch (pTexture->GetType()) {
-
-      case D3DRTYPE_TEXTURE: {
-        Direct3DTexture9* tex = reinterpret_cast<Direct3DTexture9*>(pTexture);
-        tex->AddRefPrivate();
-        break;
-      }
-
-      case D3DRTYPE_CUBETEXTURE: {
-        Direct3DCubeTexture9* tex = reinterpret_cast<Direct3DCubeTexture9*>(pTexture);
-        tex->AddRefPrivate();
-        break;
-      }
-
-      default: {
-        m_state->textures[Stage] = nullptr;
-        log::warn("Unable to find what new texture to bind really is.");
-        break;
-      }
-
-      }
-    }
-
-    m_state->textures[Stage] = pTexture;
-    m_state->dirtyFlags |= dirtyFlags::textures;
-
-    return D3D_OK;
+    return GetEditState()->SetTexture(Stage, pTexture);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) {
     CriticalSection cs(this);
-
-    if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
-      return D3D_OK;
-
-    if (Stage > 7)
-      return D3D_OK;
-
-    *pValue = m_state->textureStageStates[Stage][Type];
-
-    return D3D_OK;
+    return m_state->GetTextureStageState(Stage, Type, pValue);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) {
     CriticalSection cs(this);
-
-    if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
-      return D3D_OK;
-
-    if (Stage > 7)
-      return D3D_OK;
-
-    if (m_state->textureStageStates[Stage][Type] == Value)
-      return D3D_OK;
-
-    m_state->textureStageStates[Stage][Type] = Value;
-    //m_state->dirtyTextureStage |= 1 << Stage;
-
-    return D3D_OK;
+    return GetEditState()->SetTextureStageState(Stage, Type, Value);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) {
     CriticalSection cs(this);
-
-    if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (FAILED(MapStageToSampler(Sampler, &Sampler)))
-      return D3DERR_INVALIDCALL;
-
-    if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
-      return D3D_OK;
-
-    *pValue = m_state->samplerStates[Sampler][Type];
-
-    return D3D_OK;
+    return m_state->GetSamplerState(Sampler, Type, pValue);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) {
     CriticalSection cs(this);
-
-    if (FAILED(MapStageToSampler(Sampler, &Sampler)))
-      return D3DERR_INVALIDCALL;
-
-    if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
-      return D3D_OK;
-
-    if (m_state->samplerStates[Sampler][Type] == Value)
-      return D3D_OK;
-
-    m_state->samplerStates[Sampler][Type] = Value;
-    m_state->dirtySamplers |= 1 << Sampler;
-
-    return D3D_OK;
+    return GetEditState()->SetSamplerState(Sampler, Type, Value);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ValidateDevice(DWORD* pNumPasses) {
     CriticalSection cs(this);
@@ -2068,11 +1800,15 @@ namespace dxup {
   }
 
   bool Direct3DDevice9Ex::PrepareDraw() {
-    if (m_state->vertexShader != nullptr)
-      m_vsConstants.prepareDraw();
+    if (m_state->dirtyFlags & dirtyFlags::vertexBuffer)
+      UpdateVertexBuffer();
 
-    if (m_state->pixelShader != nullptr)
-      m_psConstants.prepareDraw();
+    if (m_state->dirtyFlags & dirtyFlags::indexBuffer)
+      UpdateIndexBuffer();
+
+    if (m_state->dirtyFlags & dirtyFlags::constants)
+      UpdateConstants();
+      //m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
 
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();
@@ -2137,26 +1873,11 @@ namespace dxup {
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
     CriticalSection cs(this);
-
-    m_state->vertexDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
-    m_state->dirtyFlags |= dirtyFlags::vertexDecl;
-
-    return D3D_OK;
+    return GetEditState()->SetVertexDeclaration(pDecl);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppDecl);
-
-    if (ppDecl == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->vertexDecl == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppDecl = ref(m_state->vertexDecl);
-
-    return D3D_OK;
+    return m_state->GetVertexDeclaration(ppDecl);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetFVF(DWORD FVF) {
     CriticalSection cs(this);
@@ -2265,107 +1986,43 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShader(IDirect3DVertexShader9* pShader) {
     CriticalSection cs(this);
-
-    m_state->dirtyFlags |= dirtyFlags::vertexShader;
-
-    if (pShader == nullptr) {
-      m_state->vertexShader = nullptr;
-      return D3D_OK;
-    }
-
-    m_state->vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
-
-    return D3D_OK;
+    return GetEditState()->SetVertexShader(pShader);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShader(IDirect3DVertexShader9** ppShader) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppShader);
-
-    if (ppShader == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->vertexShader == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppShader = ref(m_state->vertexShader);
-
-    return D3D_OK;
+    return m_state->GetVertexShader(ppShader);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.set(BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
+    return GetEditState()->SetVertexShaderConstantF(StartRegister, pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.get(BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
+    return m_state->GetVertexShaderConstantF(StartRegister, pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.set(BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
+    return GetEditState()->SetVertexShaderConstantI(StartRegister, pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.get(BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
+    return m_state->GetVertexShaderConstantI(StartRegister, pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.set(BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
+    return GetEditState()->SetVertexShaderConstantB(StartRegister, pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
-
-    return m_vsConstants.get(BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
+    return m_state->GetVertexShaderConstantB(StartRegister, pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     CriticalSection cs(this);
-
-    if (StreamNumber >= 16)
-      return D3DERR_INVALIDCALL;
-
-    Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
-
-    ID3D11Buffer* buffer = nullptr;
-
-    if (vertexBuffer != nullptr)
-      buffer = vertexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-
-    m_state->vertexBuffers[StreamNumber] = vertexBuffer;
-    m_state->vertexOffsets[StreamNumber] = OffsetInBytes;
-    m_state->vertexStrides[StreamNumber] = Stride;
-
-    m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
-
-    return D3D_OK;
+    return GetEditState()->SetStreamSource(StreamNumber, pStreamData, OffsetInBytes, Stride);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppStreamData);
-
-    if (StreamNumber >= 16 || ppStreamData == nullptr || pOffsetInBytes == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    *pOffsetInBytes = 0;
-
-    if (pStride == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    *pStride = 0;
-
-    if (m_state->vertexBuffers[StreamNumber] == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppStreamData = ref(m_state->vertexBuffers[StreamNumber]);
-    *pOffsetInBytes = m_state->vertexOffsets[StreamNumber];
-    *pStride = m_state->vertexStrides[StreamNumber];
-
-    return D3D_OK;
+    return m_state->GetStreamSource(StreamNumber, ppStreamData, pOffsetInBytes, pStride);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetStreamSourceFreq(UINT StreamNumber, UINT Setting) {
     CriticalSection cs(this);
@@ -2381,38 +2038,11 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
     CriticalSection cs(this);
-
-    Direct3DIndexBuffer9* indexBuffer = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
-
-    DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
-
-    ID3D11Buffer* buffer = nullptr;
-    if (indexBuffer != nullptr) {
-      if (indexBuffer->GetD3D9Desc().Format == D3DFMT_INDEX32)
-        format = DXGI_FORMAT_R32_UINT;
-
-      buffer = indexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-    }
-
-    m_state->indexBuffer = indexBuffer;
-    m_context->IASetIndexBuffer(buffer, format, 0);
-
-    return D3D_OK;
+    return m_state->SetIndices(pIndexData);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppIndexData);
-
-    if (ppIndexData == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->indexBuffer == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppIndexData = ref(m_state->indexBuffer);
-
-    return D3D_OK;
+    return m_state->GetIndices(ppIndexData);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreatePixelShader(CONST DWORD* pFunction, IDirect3DPixelShader9** ppShader) {
     CriticalSection cs(this);
@@ -2421,62 +2051,35 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShader(IDirect3DPixelShader9* pShader) {
     CriticalSection cs(this);
-
-    m_state->dirtyFlags |= dirtyFlags::pixelShader;
-
-    if (pShader == nullptr) {
-      m_state->pixelShader = nullptr;
-      return D3D_OK;
-    }
-
-    m_state->pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
-
-    return D3D_OK;
+    return m_state->SetPixelShader(pShader);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShader(IDirect3DPixelShader9** ppShader) {
     CriticalSection cs(this);
-
-    InitReturnPtr(ppShader);
-
-    if (ppShader == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    if (m_state->pixelShader == nullptr)
-      return D3DERR_NOTFOUND;
-
-    *ppShader = ref(m_state->pixelShader);
-
-    return D3D_OK;
+    return m_state->GetPixelShader(ppShader);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.set(BufferType::Float, StartRegister, (const void*)pConstantData, Vector4fCount);
+    return GetEditState()->SetPixelShaderConstantF(StartRegister, pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.get(BufferType::Float, StartRegister, (void*)pConstantData, Vector4fCount);
+    return m_state->GetPixelShaderConstantF(StartRegister, pConstantData, Vector4fCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantI(UINT StartRegister, CONST int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.set(BufferType::Int, StartRegister, (const void*)pConstantData, Vector4iCount);
+    return GetEditState()->SetPixelShaderConstantI(StartRegister, pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.get(BufferType::Int, StartRegister, (void*)pConstantData, Vector4iCount);
+    return m_state->GetPixelShaderConstantI(StartRegister, pConstantData, Vector4iCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetPixelShaderConstantB(UINT StartRegister, CONST BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.set(BufferType::Bool, StartRegister, (const void*)pConstantData, BoolCount);
+    return GetEditState()->SetPixelShaderConstantB(StartRegister, pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
     CriticalSection cs(this);
-
-    return m_psConstants.get(BufferType::Bool, StartRegister, (void*)pConstantData, BoolCount);
+    return m_state->GetPixelShaderConstantB(StartRegister, pConstantData, BoolCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawRectPatch(UINT Handle, CONST float* pNumSegs, CONST D3DRECTPATCH_INFO* DrawRectPatch) {
     CriticalSection cs(this);

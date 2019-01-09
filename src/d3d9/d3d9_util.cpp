@@ -247,5 +247,18 @@ namespace dxup {
 
     }
 
+    HRESULT mapStageToSampler(DWORD Stage, DWORD* Sampler) {
+      if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
+        return D3DERR_INVALIDCALL;
+
+      // For vertex samplers.
+      if (Stage >= D3DVERTEXTEXTURESAMPLER0)
+        Stage = 16 + (Stage - D3DVERTEXTEXTURESAMPLER0);
+
+      *Sampler = Stage;
+
+      return D3D_OK;
+    }
+
   }
 }

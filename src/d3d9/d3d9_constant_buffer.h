@@ -16,6 +16,8 @@ namespace dxup {
     Count,
   };
 
+  class D3D9ShaderConstants;
+
   class D3D9ConstantBuffer {
 
   public:
@@ -33,32 +35,19 @@ namespace dxup {
     static constexpr size_t boolElementsSize = singleBoolConstantSize * boolConstantCount;
 
     D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, bool pixelShader);
-    ~D3D9ConstantBuffer();
 
-    void prepareDraw();
+    void update(D3D9ShaderConstants* constants);
     void bind();
 
-    HRESULT set(BufferType type, uint32_t index, const void* values, uint32_t count);
-
-    HRESULT get(BufferType type, uint32_t index, void* values, uint32_t count);
-
   private:
-
-    void pushData();
 
     // I exist as long as my parent D3D9 device exists. No need for COM.
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
 
-    uint8_t* m_floatElements;
-    uint8_t* m_intElements;
-    uint8_t* m_boolElements;
-
     bool m_pixelShader;
 
     Com<ID3D11Buffer> m_buffer;
-
-    bool m_dirty;
   };
 
 }

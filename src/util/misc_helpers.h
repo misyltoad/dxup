@@ -55,4 +55,14 @@ namespace dxup {
     pushAlignedString(vec, str.c_str(), str.length());
   }
 
+  template <typename T, typename J>
+  void arrayCopyT(T* dst, const J* src, size_t tCount) {
+    std::memcpy((void*)dst, (const void*)src, sizeof(T) * tCount);
+  }
+
+  template <typename T, typename J>
+  void arrayCopyJ(T* dst, const J* src, size_t jCount) {
+    std::memcpy((void*)dst, (const void*)src, sizeof(J) * jCount);
+  }
+
 }
