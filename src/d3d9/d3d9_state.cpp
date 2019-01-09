@@ -112,7 +112,11 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT D3D9State::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
-    depthStencil = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
+    Direct3DSurface9* newSurface = reinterpret_cast<Direct3DSurface9*>(pNewZStencil);
+    if (depthStencil == newSurface)
+      return D3D_OK;
+
+    depthStencil = newSurface;
     dirtyFlags |= dirtyFlags::renderTargets;
 
     return D3D_OK;
