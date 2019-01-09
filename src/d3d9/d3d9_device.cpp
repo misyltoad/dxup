@@ -1835,7 +1835,7 @@ namespace dxup {
       return;
     }
 
-    m_psConstants.update(m_state->vsConstants);
+    m_vsConstants.update(m_state->vsConstants);
     m_state->dirtyFlags &= ~dirtyFlags::vsConstants;
   }
 
