@@ -5,7 +5,7 @@
 #include "d3d9_shaders.h"
 #include "d3d9_vertexdeclaration.h"
 #include "d3d9_buffer.h"
-#include "../util/vectypes.h"
+#include "d3d9_constant_buffer.h"
 
 namespace dxup {
 
@@ -23,18 +23,6 @@ namespace dxup {
     const uint32_t vertexBuffers = 1 << 10;
     const uint32_t indexBuffer = 1 << 11;
   }
-
-  struct D3D9ShaderConstants {
-    D3D9ShaderConstants() {
-      std::memset(floatConstants.data(), 0, floatConstants.size() * sizeof(floatConstants[0]));
-      std::memset(intConstants.data(), 0, intConstants.size() * sizeof(intConstants[0]));
-      std::memset(boolConstants.data(), 0, boolConstants.size() * sizeof(boolConstants[0]));
-    }
-
-    std::array<Vector<float, 4>, 256> floatConstants;
-    std::array<Vector<int, 4>, 16> intConstants;
-    std::array<int, 16> boolConstants;
-  };
 
   class D3D9State {
   public:

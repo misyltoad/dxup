@@ -49,8 +49,8 @@ namespace dxup {
     , m_deviceType(deviceType)
     , m_state{ new D3D9State }
     , m_stateBlock{ nullptr }
-    , m_vsConstants{ device, context, false }
-    , m_psConstants{ device, context, true }{
+    , m_vsConstants{ device, context }
+    , m_psConstants{ device, context }{
     InitializeCriticalSection(&m_criticalSection);
   }
 

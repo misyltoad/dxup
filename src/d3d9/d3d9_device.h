@@ -247,8 +247,8 @@ namespace dxup {
     HWND m_window;
 
     Com<ID3D11DeviceContext1> m_context;
-    D3D9ConstantBuffer m_vsConstants;
-    D3D9ConstantBuffer m_psConstants;
+    D3D9ConstantBuffer<false> m_vsConstants;
+    D3D9ConstantBuffer<true> m_psConstants;
 
     D3D9StateCaches m_caches;
 
