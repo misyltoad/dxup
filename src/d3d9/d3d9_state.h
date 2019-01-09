@@ -25,6 +25,12 @@ namespace dxup {
   }
 
   struct D3D9ShaderConstants {
+    D3D9ShaderConstants() {
+      std::memset(floatConstants.data(), 0, floatConstants.size() * sizeof(floatConstants[0]));
+      std::memset(intConstants.data(), 0, intConstants.size() * sizeof(intConstants[0]));
+      std::memset(boolConstants.data(), 0, boolConstants.size() * sizeof(boolConstants[0]));
+    }
+
     std::array<Vector<float, 4>, 256> floatConstants;
     std::array<Vector<int, 4>, 16> intConstants;
     std::array<int, 16> boolConstants;
