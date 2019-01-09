@@ -8,7 +8,7 @@ namespace dxup {
     , m_context{ context }
     , m_pixelShader{ pixelShader } {
     D3D11_BUFFER_DESC cbDesc;
-    cbDesc.ByteWidth = floatElementsSize + intElementsSize; //+ sizeof(uint32_t); // bool elements are encoded as a bitfield but not impl yet.
+    cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants); //+ sizeof(uint32_t); // bool elements are encoded as a bitfield but not impl yet.
     cbDesc.Usage = D3D11_USAGE_DYNAMIC;
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -36,8 +36,8 @@ namespace dxup {
 
     // This can probably be consolidated into a single one.
     uint8_t* data = (uint8_t*)res.pData;
-    std::memcpy(data, constants.floatConstants.data(), floatElementsSize);
-    std::memcpy(data + floatElementsSize, constants.intConstants.data(), intElementsSize);
+    std::memcpy(data, constants.floatConstants.data(), sizeof(constants.floatConstants));
+    std::memcpy(data + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
 
     m_context->Unmap(m_buffer.ptr(), 0);
   }
