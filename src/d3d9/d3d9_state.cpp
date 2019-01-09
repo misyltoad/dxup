@@ -373,6 +373,8 @@ namespace dxup {
   }
 
   HRESULT D3D9State::GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) {
+    InitReturnPtr(ppStreamData);
+
     if (StreamNumber >= 16 || ppStreamData == nullptr || pOffsetInBytes == nullptr)
       return D3DERR_INVALIDCALL;
 
