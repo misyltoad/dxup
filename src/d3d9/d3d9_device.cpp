@@ -1799,16 +1799,55 @@ namespace dxup {
     m_context->VSSetShaderResources(0, 4, &srvs[16]);
   }
 
+  void Direct3DDevice9Ex::UpdateVertexBuffer() {
+    std::array<ID3D11Buffer*, 16> buffers;
+    for (uint32_t i = 0; i < 16; i++) {
+      Direct3DVertexBuffer9* buffer = m_state->vertexBuffers[i].ptr();
+      if (buffer != nullptr)
+        buffers[i] = buffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
+      else
+        buffers[i] = nullptr;
+    }
+    m_context->IASetVertexBuffers(0, 16, buffers.data(), m_state->vertexStrides.data(), m_state->vertexOffsets.data());
+    m_state->dirtyFlags &= ~dirtyFlags::vertexBuffers;
+  }
+  void Direct3DDevice9Ex::UpdateIndexBuffer() {
+    DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
+
+    ID3D11Buffer* buffer = nullptr;
+    if (m_state->indexBuffer != nullptr) {
+      if (m_state->indexBuffer->GetD3D9Desc().Format == D3DFMT_INDEX32)
+        format = DXGI_FORMAT_R32_UINT;
+
+      buffer = m_state->indexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
+    }
+
+    m_context->IASetIndexBuffer(buffer, format, 0);
+    m_state->dirtyFlags &= ~dirtyFlags::indexBuffer;
+  }
+  void Direct3DDevice9Ex::UpdateConstants(bool pixel) {
+    if (pixel) {
+      m_psConstants.update(m_state->psConstants);
+      m_state->dirtyFlags &= ~dirtyFlags::psConstants;
+      return;
+    }
+
+    m_psConstants.update(m_state->vsConstants);
+    m_state->dirtyFlags &= ~dirtyFlags::vsConstants;
+  }
+
   bool Direct3DDevice9Ex::PrepareDraw() {
-    if (m_state->dirtyFlags & dirtyFlags::vertexBuffer)
+    if (m_state->dirtyFlags & dirtyFlags::vertexBuffers)
       UpdateVertexBuffer();
 
     if (m_state->dirtyFlags & dirtyFlags::indexBuffer)
       UpdateIndexBuffer();
 
-    if (m_state->dirtyFlags & dirtyFlags::constants)
-      UpdateConstants();
-      //m_context->IASetVertexBuffers(StreamNumber, 1, &buffer, &Stride, &OffsetInBytes);
+    if (m_state->dirtyFlags & dirtyFlags::vsConstants)
+      UpdateConstants(false);
+
+    if (m_state->dirtyFlags & dirtyFlags::psConstants)
+      UpdateConstants(true);
 
     if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
       UpdateVertexShaderAndInputLayout();

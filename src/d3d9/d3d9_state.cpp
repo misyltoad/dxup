@@ -69,6 +69,7 @@ namespace dxup {
 
     textures[Stage] = pTexture;
     dirtyFlags |= dirtyFlags::textures;
+    return D3D_OK;
   }
 
   HRESULT D3D9State::GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) {
@@ -312,7 +313,7 @@ namespace dxup {
     if (Vector4fCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::vsConstants;
 
     arrayCopyT(&vsConstants.floatConstants[StartRegister], pConstantData, Vector4fCount);
     return D3D_OK;
@@ -335,7 +336,7 @@ namespace dxup {
     if (Vector4iCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::vsConstants;
     arrayCopyT(&vsConstants.intConstants[StartRegister], pConstantData, Vector4iCount);
     return D3D_OK;
   }
@@ -357,7 +358,7 @@ namespace dxup {
     if (BoolCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::vsConstants;
     arrayCopyT(&vsConstants.boolConstants[StartRegister], pConstantData, BoolCount);
     return D3D_OK;
   }
@@ -397,7 +398,7 @@ namespace dxup {
     vertexOffsets[StreamNumber] = OffsetInBytes;
     vertexStrides[StreamNumber] = Stride;
 
-    dirtyFlags |= dirtyFlags::vertexBuffer;
+    dirtyFlags |= dirtyFlags::vertexBuffers;
 
     return D3D_OK;
   }
@@ -418,15 +419,8 @@ namespace dxup {
   HRESULT D3D9State::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
     Direct3DIndexBuffer9* indices = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
 
-    DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
-
-    ID3D11Buffer* buffer = nullptr;
-    if (indices != nullptr) {
-      if (indices->GetD3D9Desc().Format == D3DFMT_INDEX32)
-        format = DXGI_FORMAT_R32_UINT;
-
-      buffer = indices->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-    }
+    if (indexBuffer == indices)
+      return D3D_OK;
 
     indexBuffer = indices;
     dirtyFlags |= dirtyFlags::indexBuffer;
@@ -477,7 +471,7 @@ namespace dxup {
     if (Vector4fCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::psConstants;
     arrayCopyT(&psConstants.floatConstants[StartRegister], pConstantData, Vector4fCount);
     return D3D_OK;
   }
@@ -499,7 +493,7 @@ namespace dxup {
     if (Vector4iCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::psConstants;
     arrayCopyT(&psConstants.intConstants[StartRegister], pConstantData, Vector4iCount);
     return D3D_OK;
   }
@@ -521,7 +515,7 @@ namespace dxup {
     if (BoolCount == 0)
       return D3D_OK;
 
-    dirtyFlags |= dirtyFlags::constants;
+    dirtyFlags |= dirtyFlags::psConstants;
     arrayCopyT(&psConstants.boolConstants[StartRegister], pConstantData, BoolCount);
     return D3D_OK;
   }

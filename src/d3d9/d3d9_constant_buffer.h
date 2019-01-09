@@ -16,7 +16,7 @@ namespace dxup {
     Count,
   };
 
-  class D3D9ShaderConstants;
+  struct D3D9ShaderConstants;
 
   class D3D9ConstantBuffer {
 
@@ -36,7 +36,7 @@ namespace dxup {
 
     D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context, bool pixelShader);
 
-    void update(D3D9ShaderConstants* constants);
+    void update(const D3D9ShaderConstants& constants);
     void bind();
 
   private:

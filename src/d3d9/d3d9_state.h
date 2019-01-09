@@ -18,9 +18,10 @@ namespace dxup {
     const uint32_t rasterizer = 1 << 5;
     const uint32_t blendState = 1 << 6;
     const uint32_t textures = 1 << 7;
-    const uint32_t constants = 1 << 8;
-    const uint32_t vertexBuffer = 1 << 9;
-    const uint32_t indexBuffer = 1 << 10;
+    const uint32_t vsConstants = 1 << 8;
+    const uint32_t psConstants = 1 << 9;
+    const uint32_t vertexBuffers = 1 << 10;
+    const uint32_t indexBuffer = 1 << 11;
   }
 
   struct D3D9ShaderConstants {
@@ -29,114 +30,60 @@ namespace dxup {
     std::array<int, 16> boolConstants;
   };
 
-  class ID3D9State {
-  public:
-    virtual HRESULT SetTexture(DWORD sampler, IDirect3DBaseTexture9* texture) = 0;
-    virtual HRESULT GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) = 0;
-
-    virtual HRESULT GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) = 0;
-    virtual HRESULT SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) = 0;
-
-    virtual HRESULT GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) = 0;
-    virtual HRESULT SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) = 0;
-
-    virtual HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) = 0;
-    virtual HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) = 0;
-
-    virtual HRESULT GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) = 0;
-    virtual HRESULT SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) = 0;
-
-    virtual HRESULT GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) = 0;
-    virtual HRESULT SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) = 0;
-
-    virtual HRESULT GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) = 0;
-    virtual HRESULT SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) = 0;
-
-    virtual HRESULT GetVertexShader(IDirect3DVertexShader9** ppShader) = 0;
-    virtual HRESULT SetVertexShader(IDirect3DVertexShader9* pShader) = 0;
-
-    virtual HRESULT GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) = 0;
-    virtual HRESULT SetVertexShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) = 0;
-
-    virtual HRESULT GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) = 0;
-    virtual HRESULT SetVertexShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) = 0;
-
-    virtual HRESULT GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) = 0;
-    virtual HRESULT SetVertexShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) = 0;
-
-    virtual HRESULT GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) = 0;
-    virtual HRESULT SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) = 0;
-
-    virtual HRESULT GetIndices(IDirect3DIndexBuffer9** ppIndexData) = 0;
-    virtual HRESULT SetIndices(IDirect3DIndexBuffer9* pIndexData) = 0;
-
-    virtual HRESULT GetPixelShader(IDirect3DPixelShader9** ppShader) = 0;
-    virtual HRESULT SetPixelShader(IDirect3DPixelShader9* pShader) = 0;
-
-    virtual HRESULT GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) = 0;
-    virtual HRESULT SetPixelShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) = 0;
-
-    virtual HRESULT GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) = 0;
-    virtual HRESULT SetPixelShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) = 0;
-
-    virtual HRESULT GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) = 0;
-    virtual HRESULT SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) = 0;
-  };
-
-  class D3D9State : public ID3D9State {
+  class D3D9State {
   public:
     D3D9State();
 
-    HRESULT GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) override;
-    HRESULT SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) override;
+    HRESULT GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture);
+    HRESULT SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture);
 
-    HRESULT GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget) override;
-    HRESULT SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) override;
+    HRESULT GetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9** ppRenderTarget);
+    HRESULT SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget);
 
-    HRESULT GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) override;
-    HRESULT SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) override;
+    HRESULT GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface);
+    HRESULT SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil);
 
-    HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) override;
-    HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) override;
+    HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue);
+    HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value);
 
-    HRESULT GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) override;
-    HRESULT SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) override;
+    HRESULT GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue);
+    HRESULT SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value);
 
-    HRESULT GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) override;
-    HRESULT SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) override;
+    HRESULT GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue);
+    HRESULT SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value);
 
-    HRESULT GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) override;
-    HRESULT SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) override;
+    HRESULT GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl);
+    HRESULT SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl);
 
-    HRESULT GetVertexShader(IDirect3DVertexShader9** ppShader) override;
-    HRESULT SetVertexShader(IDirect3DVertexShader9* pShader) override;
+    HRESULT GetVertexShader(IDirect3DVertexShader9** ppShader);
+    HRESULT SetVertexShader(IDirect3DVertexShader9* pShader);
 
-    HRESULT GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) override;
-    HRESULT SetVertexShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) override;
+    HRESULT GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount);
+    HRESULT SetVertexShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount);
 
-    HRESULT GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) override;
-    HRESULT SetVertexShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) override;
+    HRESULT GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount);
+    HRESULT SetVertexShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount);
 
-    HRESULT GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) override;
-    HRESULT SetVertexShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) override;
+    HRESULT GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount);
+    HRESULT SetVertexShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
 
-    HRESULT GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) override;
-    HRESULT SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) override;
+    HRESULT GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride);
+    HRESULT SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride);
 
-    HRESULT GetIndices(IDirect3DIndexBuffer9** ppIndexData) override;
-    HRESULT SetIndices(IDirect3DIndexBuffer9* pIndexData) override;
+    HRESULT GetIndices(IDirect3DIndexBuffer9** ppIndexData);
+    HRESULT SetIndices(IDirect3DIndexBuffer9* pIndexData);
 
-    HRESULT GetPixelShader(IDirect3DPixelShader9** ppShader) override;
-    HRESULT SetPixelShader(IDirect3DPixelShader9* pShader) override;
+    HRESULT GetPixelShader(IDirect3DPixelShader9** ppShader);
+    HRESULT SetPixelShader(IDirect3DPixelShader9* pShader);
 
-    HRESULT GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) override;
-    HRESULT SetPixelShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) override;
+    HRESULT GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount);
+    HRESULT SetPixelShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount);
 
-    HRESULT GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) override;
-    HRESULT SetPixelShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) override;
+    HRESULT GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount);
+    HRESULT SetPixelShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount);
 
-    HRESULT GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) override;
-    HRESULT SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) override;
+    HRESULT GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount);
+    HRESULT SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
 
   protected:
 

@@ -2,6 +2,7 @@
 
 #include "d3d9_d3d11_resource.h"
 #include "d3d9_resource.h"
+#include "d3d9_surface.h"
 #include <vector>
 
 namespace dxup {

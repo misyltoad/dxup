@@ -30,14 +30,14 @@ namespace dxup {
       m_context->PSSetConstantBuffers(0, 1, &buffer);
   }
 
-  void D3D9ConstantBuffer::update(D3D9ShaderConstants* constants) {
+  void D3D9ConstantBuffer::update(const D3D9ShaderConstants& constants) {
     D3D11_MAPPED_SUBRESOURCE res;
     m_context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 
     // This can probably be consolidated into a single one.
     uint8_t* data = (uint8_t*)res.pData;
-    std::memcpy(data, constants->floatConstants.data(), floatElementsSize);
-    std::memcpy(data + floatElementsSize, constants->intConstants.data(), intElementsSize);
+    std::memcpy(data, constants.floatConstants.data(), floatElementsSize);
+    std::memcpy(data + floatElementsSize, constants.intConstants.data(), intElementsSize);
 
     m_context->Unmap(m_buffer.ptr(), 0);
   }
