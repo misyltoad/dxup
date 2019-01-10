@@ -37,6 +37,8 @@ namespace dxup {
     ID3D11DepthStencilView* GetD3D11DepthStencil();
 
     DXUPResource* GetDXUPResource();
+    void ClearDXUPResource();
+    void SetDXUPResource(DXUPResource* resource);
 
   private:
 

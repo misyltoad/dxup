@@ -1,72 +1,35 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_surface.h"
+#include <algorithm>
 
 namespace dxup {
 
   Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain)
     : Direct3DSwapChain9ExBase(device)
-    , m_swapchain(swapchain)
-    , m_presentationParameters(*presentationParameters) {
-
-    DXGI_SWAP_CHAIN_DESC1 desc;
-    m_swapchain->GetDesc1(&desc);
-
-    UINT buffers = desc.BufferCount;
-
-    if (buffers > D3DPRESENT_BACK_BUFFERS_MAX_EX)
-      buffers = D3DPRESENT_BACK_BUFFERS_MAX_EX;
-
-    if (desc.SwapEffect == DXGI_SWAP_EFFECT_DISCARD)
-      buffers = 1;
-
-    for (size_t i = 0; i < buffers; i++)
-    {
-      Com<ID3D11Texture2D> texture;
-
-      HRESULT result = m_swapchain->GetBuffer(i, __uuidof(ID3D11Texture2D), (void**)&texture);
-      if (FAILED(result)) {
-        log::warn("Failed to get swapchain buffer as ID3D11Texture2D.");
-        return;
-      }
-
-      DXUPResource* resource = DXUPResource::Create(device, texture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
-      if (resource == nullptr) {
-        log::warn("Failed to create DXUPResource for backbuffer.");
-        return;
-      }
-      
-      D3D9ResourceDesc d3d9Desc;
-      d3d9Desc.Discard = false;
-      d3d9Desc.Format = convert::format(desc.Format);
-      d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
-      
-      m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
-    }
-
-    Com<IDXGIOutput> output;
-    HRESULT result = m_swapchain->GetContainingOutput(&output);
-    if (FAILED(result)) {
-      log::warn("Failed to get Swapchain IDXGIOutput");
-      return;
-    }
-
-    result = output->QueryInterface(__uuidof(IDXGIOutput1), (void**) &m_output);
-
-    if (FAILED(result))
-      log::warn("Failed to get Swapchain IDXGIOutput1");
+    , m_swapchain(swapchain) {
+    Reset(presentationParameters);
   }
 
   HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
     CriticalSection cs(m_device);
 
+    // Get info and crap!
+    UINT bufferCount = std::min(1u, parameters->BackBufferCount);
+
+    // Free crap!
+    m_output = nullptr;
+
+    for (size_t i = 0; i < bufferCount; i++) {
+      if (m_buffers[i] != nullptr)
+        m_buffers[i]->ClearDXUPResource();
+    }
+
+    // Set crap!
+
     m_presentationParameters = *parameters;
 
-    UINT BackBufferCount = parameters->BackBufferCount;
-    if (BackBufferCount == 0)
-      BackBufferCount = 1;
-
     HRESULT result = m_swapchain->ResizeBuffers(
-      BackBufferCount,
+      bufferCount,
       parameters->BackBufferWidth,
       parameters->BackBufferHeight,
       convert::makeUntypeless(convert::format(parameters->BackBufferFormat), false),
@@ -74,6 +37,48 @@ namespace dxup {
 
     if (FAILED(result)) {
       log::fail("ResizeBuffers failed in swapchain reset.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    // Make crap!
+
+    for (UINT i = 0; i < bufferCount; i++) {
+      Com<ID3D11Texture2D> texture;
+
+      HRESULT result = m_swapchain->GetBuffer(i, __uuidof(ID3D11Texture2D), (void**)&texture);
+      if (FAILED(result)) {
+        log::warn("Failed to get swapchain buffer as ID3D11Texture2D.");
+        continue;
+      }
+
+      DXUPResource* resource = DXUPResource::Create(m_device, texture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
+      if (resource == nullptr) {
+        log::warn("Failed to create DXUPResource for backbuffer.");
+        continue;
+      }
+
+      D3D9ResourceDesc d3d9Desc;
+      d3d9Desc.Discard = false;
+      d3d9Desc.Format = parameters->BackBufferFormat;
+      d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
+
+      if (m_buffers[i] != nullptr)
+        m_buffers[i]->SetDXUPResource(resource);
+      else
+        m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
+    }
+
+    Com<IDXGIOutput> output;
+    result = m_swapchain->GetContainingOutput(&output);
+    if (FAILED(result)) {
+      log::warn("Failed to get Swapchain IDXGIOutput");
+      return D3DERR_INVALIDCALL;
+    }
+
+    result = output->QueryInterface(__uuidof(IDXGIOutput1), (void**)&m_output);
+
+    if (FAILED(result)) {
+      log::warn("Failed to get Swapchain IDXGIOutput1");
       return D3DERR_INVALIDCALL;
     }
 

@@ -201,31 +201,6 @@ namespace dxup {
 
     HRESULT result = D3D_OK;
 
-    if (GetInternalSwapchain(0) == nullptr) {
-      result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
-
-      if (FAILED(result)) {
-        log::fail("Couldn't create implicit swapchain.");
-        return D3DERR_INVALIDCALL;
-      }
-    }
-    else {
-      result = GetInternalSwapchain(0)->Reset(pPresentationParameters);
-
-      if (FAILED(result))
-        return D3DERR_INVALIDCALL;
-    }
-
-    Com<IDirect3DSurface9> backbuffer;
-    result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
-
-    if (FAILED(result)) {
-      log::fail("Couldn't get implicit backbuffer.");
-      return D3DERR_INVALIDCALL;
-    }
-
-    SetRenderTarget(0, backbuffer.ptr());
-
     D3DVIEWPORT9 implicitViewport;
     implicitViewport.X = 0;
     implicitViewport.Y = 0;
@@ -383,6 +358,33 @@ namespace dxup {
       float plane[4] = { 0, 0, 0, 0 };
       SetClipPlane(i, plane);
     }
+
+    m_renderer->undirtyContext(); // This should free up the swapchain SRVs on the d3d11 context.
+
+    if (GetInternalSwapchain(0) == nullptr) {
+      result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
+
+      if (FAILED(result)) {
+        log::fail("Couldn't create implicit swapchain.");
+        return D3DERR_INVALIDCALL;
+      }
+    }
+    else {
+      result = GetInternalSwapchain(0)->Reset(pPresentationParameters);
+
+      if (FAILED(result))
+        return D3DERR_INVALIDCALL;
+    }
+
+    Com<IDirect3DSurface9> backbuffer;
+    result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
+
+    if (FAILED(result)) {
+      log::fail("Couldn't get implicit backbuffer.");
+      return D3DERR_INVALIDCALL;
+    }
+
+    SetRenderTarget(0, backbuffer.ptr());
 
     if (pPresentationParameters->EnableAutoDepthStencil) {
       Com<IDirect3DSurface9> autoDepthStencil;

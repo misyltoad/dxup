@@ -159,4 +159,14 @@ namespace dxup {
     return m_resource;
   }
 
+  void Direct3DSurface9::ClearDXUPResource() {
+    if (m_resource != nullptr)
+      delete m_resource;
+
+    m_resource = nullptr;
+  }
+  void Direct3DSurface9::SetDXUPResource(DXUPResource* resource) {
+    m_resource = resource;
+  }
+
 }
