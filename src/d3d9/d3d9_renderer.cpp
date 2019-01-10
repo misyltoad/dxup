@@ -373,8 +373,8 @@ namespace dxup {
     m_state->dirtyFlags &= ~dirtyFlags::vsConstants;
   }
   void D3D9ImmediateRenderer::updatePixelConstants() {
-    m_vsConstants.update(m_state->vsConstants);
-    m_state->dirtyFlags &= ~dirtyFlags::vsConstants;
+    m_psConstants.update(m_state->psConstants);
+    m_state->dirtyFlags &= ~dirtyFlags::psConstants;
   }
 
   //
