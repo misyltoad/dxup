@@ -4,11 +4,24 @@
 
 namespace dxup {
 
-  D3D9State::D3D9State() 
-    : dirtyFlags{ 0 }, dirtySamplers{ 0 } {
+  D3D9State::D3D9State(bool stateBlock)
+    : stateBlock{ stateBlock } {
+    dirtyFlags = 0;
+    dirtySamplers = 0;
+
     std::memset(textures.data(), 0, sizeof(IDirect3DBaseTexture9*) * textures.size());
     std::memset(vertexOffsets.data(), 0, sizeof(UINT) * vertexOffsets.size());
     std::memset(vertexStrides.data(), 0, sizeof(UINT) * vertexStrides.size());
+
+    if (stateBlock) {
+      // Using 0x80000000 to denote uncaptured as it'll never be a value for any of our constant types.
+      for (uint32_t i = 0; i < 2; i++) {
+        D3D9ShaderConstants& constants = i == 0 ? vsConstants : psConstants;
+        std::memset(constants.floatConstants.data(), 0x80000000, sizeof(constants.floatConstants));
+        std::memset(constants.intConstants.data(), 0x80000000, sizeof(constants.intConstants));
+        std::memset(constants.boolConstants.data(), 0x80000000, sizeof(constants.boolConstants));
+      }
+    }
   }
 
   HRESULT D3D9State::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
@@ -67,6 +80,7 @@ namespace dxup {
       }
     }
 
+    textureCaptured[Stage] = true;
     textures[Stage] = pTexture;
     dirtyFlags |= dirtyFlags::textures;
     return D3D_OK;
@@ -144,6 +158,7 @@ namespace dxup {
     if (renderState[State] == Value)
       return D3D_OK;
 
+    renderStateCaptures[State] = true;
     renderState[State] = Value;
 
     if (State == D3DRS_CULLMODE ||
@@ -218,6 +233,7 @@ namespace dxup {
     if (textureStageStates[Stage][Type] == Value)
       return D3D_OK;
 
+    textureStageStateCaptures[Stage][Type] = true;
     textureStageStates[Stage][Type] = Value;
     //dirtyTextureStage |= 1 << Stage;
 
@@ -248,6 +264,7 @@ namespace dxup {
     if (samplerStates[Sampler][Type] == Value)
       return D3D_OK;
 
+    samplerStateCaptures[Sampler][Type] = true;
     samplerStates[Sampler][Type] = Value;
     dirtySamplers |= 1 << Sampler;
 
@@ -261,6 +278,7 @@ namespace dxup {
       return D3D_OK;
 
     vertexDecl = newDecl;
+    vertexDeclCaptured = true;
     dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
@@ -300,6 +318,7 @@ namespace dxup {
       return D3D_OK;
     }
 
+    vertexShaderCaptured = true;
     vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
 
     return D3D_OK;
@@ -388,6 +407,7 @@ namespace dxup {
     if (vertexBuffers[StreamNumber] == nullptr)
       return D3DERR_NOTFOUND;
 
+    vertexBufferCaptures[StreamNumber] = true;
     *ppStreamData = ref(vertexBuffers[StreamNumber]);
     *pOffsetInBytes = vertexOffsets[StreamNumber];
     *pStride = vertexStrides[StreamNumber];
@@ -433,6 +453,7 @@ namespace dxup {
     if (indexBuffer == indices)
       return D3D_OK;
 
+    indexBufferCaptured = true;
     indexBuffer = indices;
     dirtyFlags |= dirtyFlags::indexBuffer;
 
@@ -460,6 +481,7 @@ namespace dxup {
       return D3D_OK;
     }
 
+    pixelShaderCaptured = true;
     pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
     return D3D_OK;

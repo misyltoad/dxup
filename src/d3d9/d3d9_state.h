@@ -26,7 +26,7 @@ namespace dxup {
 
   class D3D9State {
   public:
-    D3D9State();
+    D3D9State(bool stateBlock);
 
     HRESULT GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture);
     HRESULT SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture);
@@ -81,29 +81,46 @@ namespace dxup {
 
   protected:
 
+    bool stateBlock;
+
     friend class D3D9ImmediateRenderer;
 
     uint32_t dirtyFlags;
     uint32_t dirtySamplers;
 
+    // Replace this with bitvec sometime...
+    std::array<bool, D3DRS_BLENDOPALPHA + 1> textureCaptured;
     // Manual COM
     std::array<IDirect3DBaseTexture9*, 20> textures;
 
+    bool vertexShaderCaptured = false;
     ComPrivate<Direct3DVertexShader9> vertexShader;
+
+    bool pixelShaderCaptured = false;
     ComPrivate<Direct3DPixelShader9> pixelShader;
+
+    bool vertexDeclCaptured = false;
     ComPrivate<Direct3DVertexDeclaration9> vertexDecl;
+
     ComPrivate<Direct3DSurface9> depthStencil;
+
     std::array<ComPrivate<Direct3DSurface9>, 4> renderTargets;
 
+    std::array<bool, 16> vertexBufferCaptures;
     std::array<ComPrivate<Direct3DVertexBuffer9>, 16> vertexBuffers;
-
     std::array<UINT, 16> vertexOffsets;
     std::array<UINT, 16> vertexStrides;
 
+    std::array<bool, D3DRS_BLENDOPALPHA + 1> renderStateCaptures;
     std::array<DWORD, D3DRS_BLENDOPALPHA + 1> renderState;
+
+    std::array<std::array<bool, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStateCaptures;
     std::array<std::array<DWORD, D3DSAMP_DMAPOFFSET + 1>, 20> samplerStates;
+
+    std::array<std::array<bool, D3DTSS_CONSTANT + 1>, 8> textureStageStateCaptures;
     std::array<std::array<DWORD, D3DTSS_CONSTANT + 1>, 8> textureStageStates;
 
+    bool indexBufferCaptured = false;
     ComPrivate<Direct3DIndexBuffer9> indexBuffer;
 
     D3D9ShaderConstants vsConstants;
