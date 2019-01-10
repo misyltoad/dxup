@@ -81,9 +81,7 @@ namespace dxup {
 
   protected:
 
-    // Coming soon :)
-    //friend class D3D9Renderer;
-    friend class Direct3DDevice9Ex;
+    friend class D3D9ImmediateRenderer;
 
     uint32_t dirtyFlags;
     uint32_t dirtySamplers;

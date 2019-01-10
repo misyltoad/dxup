@@ -15,17 +15,10 @@
 #include "../util/hash.h"
 #include "d3d9_query.h"
 #include "d3d9_state.h"
+#include "d3d9_renderer.h"
 #include <d3d11_4.h>
 
 namespace dxup {
-
-  float dwordToFloat(DWORD val) {
-    return *((float*)(&val));
-  }
-
-  DWORD floatToDword(float val) {
-    return *((DWORD*)(&val));
-  }
 
   Direct3DDevice9Ex::Direct3DDevice9Ex(
     UINT adapterNum,
@@ -48,9 +41,8 @@ namespace dxup {
     , m_flags(flags)
     , m_deviceType(deviceType)
     , m_state{ new D3D9State }
-    , m_stateBlock{ nullptr }
-    , m_vsConstants{ device, context }
-    , m_psConstants{ device, context }{
+    , m_stateBlock{ nullptr } {
+    m_renderer = new D3D9ImmediateRenderer{ device, context, m_state };
     InitializeCriticalSection(&m_criticalSection);
   }
 
@@ -263,9 +255,9 @@ namespace dxup {
     //	SetRenderState(D3DRS_ZVISIBLE, 0);
     SetRenderState(D3DRS_FOGCOLOR, 0);
     SetRenderState(D3DRS_FOGTABLEMODE, D3DFOG_NONE);
-    SetRenderState(D3DRS_FOGSTART, floatToDword(0.0f));
-    SetRenderState(D3DRS_FOGEND, floatToDword(1.0f));
-    SetRenderState(D3DRS_FOGDENSITY, floatToDword(1.0f));
+    SetRenderState(D3DRS_FOGSTART, reinterpret::floatToDword(0.0f));
+    SetRenderState(D3DRS_FOGEND, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_FOGDENSITY, reinterpret::floatToDword(1.0f));
     SetRenderState(D3DRS_RANGEFOGENABLE, FALSE);
     SetRenderState(D3DRS_STENCILENABLE, FALSE);
     SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
@@ -297,33 +289,33 @@ namespace dxup {
     SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, D3DMCS_MATERIAL);
     SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_DISABLE);
     SetRenderState(D3DRS_CLIPPLANEENABLE, 0);
-    SetRenderState(D3DRS_POINTSIZE, floatToDword(1.0f));
-    SetRenderState(D3DRS_POINTSIZE_MIN, floatToDword(1.0f));
+    SetRenderState(D3DRS_POINTSIZE, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_POINTSIZE_MIN, reinterpret::floatToDword(1.0f));
     SetRenderState(D3DRS_POINTSPRITEENABLE, FALSE);
     SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);
-    SetRenderState(D3DRS_POINTSCALE_A, floatToDword(1.0f));
-    SetRenderState(D3DRS_POINTSCALE_B, floatToDword(0.0f));
-    SetRenderState(D3DRS_POINTSCALE_C, floatToDword(0.0f));
+    SetRenderState(D3DRS_POINTSCALE_A, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_POINTSCALE_B, reinterpret::floatToDword(0.0f));
+    SetRenderState(D3DRS_POINTSCALE_C, reinterpret::floatToDword(0.0f));
     SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
     SetRenderState(D3DRS_MULTISAMPLEMASK, 0xFFFFFFFF);
     SetRenderState(D3DRS_PATCHEDGESTYLE, D3DPATCHEDGE_DISCRETE);
     SetRenderState(D3DRS_DEBUGMONITORTOKEN, D3DDMT_ENABLE);
-    SetRenderState(D3DRS_POINTSIZE_MAX, floatToDword(64.0f));
+    SetRenderState(D3DRS_POINTSIZE_MAX, reinterpret::floatToDword(64.0f));
     SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
     SetRenderState(D3DRS_COLORWRITEENABLE, 0x0000000F);
-    SetRenderState(D3DRS_TWEENFACTOR, floatToDword(0.0f));
+    SetRenderState(D3DRS_TWEENFACTOR, reinterpret::floatToDword(0.0f));
     SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
     SetRenderState(D3DRS_POSITIONDEGREE, D3DDEGREE_CUBIC);
     SetRenderState(D3DRS_NORMALDEGREE, D3DDEGREE_LINEAR);
     SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-    SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, floatToDword(0.0f));
+    SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, reinterpret::floatToDword(0.0f));
     SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, FALSE);
-    SetRenderState(D3DRS_MINTESSELLATIONLEVEL, floatToDword(1.0f));
-    SetRenderState(D3DRS_MAXTESSELLATIONLEVEL, floatToDword(1.0f));
-    SetRenderState(D3DRS_ADAPTIVETESS_X, floatToDword(0.0f));
-    SetRenderState(D3DRS_ADAPTIVETESS_Y, floatToDword(0.0f));
-    SetRenderState(D3DRS_ADAPTIVETESS_Z, floatToDword(1.0f));
-    SetRenderState(D3DRS_ADAPTIVETESS_W, floatToDword(0.0f));
+    SetRenderState(D3DRS_MINTESSELLATIONLEVEL, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_MAXTESSELLATIONLEVEL, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_ADAPTIVETESS_X, reinterpret::floatToDword(0.0f));
+    SetRenderState(D3DRS_ADAPTIVETESS_Y, reinterpret::floatToDword(0.0f));
+    SetRenderState(D3DRS_ADAPTIVETESS_Z, reinterpret::floatToDword(1.0f));
+    SetRenderState(D3DRS_ADAPTIVETESS_W, reinterpret::floatToDword(0.0f));
     SetRenderState(D3DRS_ENABLEADAPTIVETESSELLATION, FALSE);
     SetRenderState(D3DRS_TWOSIDEDSTENCILMODE, FALSE);
     SetRenderState(D3DRS_CCW_STENCILFAIL, D3DSTENCILOP_KEEP);
@@ -335,7 +327,7 @@ namespace dxup {
     SetRenderState(D3DRS_COLORWRITEENABLE3, 0x0000000F);
     SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
     SetRenderState(D3DRS_SRGBWRITEENABLE, 0);
-    SetRenderState(D3DRS_DEPTHBIAS, floatToDword(0.0f));
+    SetRenderState(D3DRS_DEPTHBIAS, reinterpret::floatToDword(0.0f));
     SetRenderState(D3DRS_WRAP8, 0);
     SetRenderState(D3DRS_WRAP9, 0);
     SetRenderState(D3DRS_WRAP10, 0);
@@ -356,13 +348,13 @@ namespace dxup {
       SetTextureStageState(i, D3DTSS_ALPHAOP, i == 0 ? D3DTOP_SELECTARG1 : D3DTOP_DISABLE);
       SetTextureStageState(i, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
       SetTextureStageState(i, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-      SetTextureStageState(i, D3DTSS_BUMPENVMAT00, floatToDword(0.0f));
-      SetTextureStageState(i, D3DTSS_BUMPENVMAT01, floatToDword(0.0f));
-      SetTextureStageState(i, D3DTSS_BUMPENVMAT10, floatToDword(0.0f));
-      SetTextureStageState(i, D3DTSS_BUMPENVMAT11, floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVMAT00, reinterpret::floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVMAT01, reinterpret::floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVMAT10, reinterpret::floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVMAT11, reinterpret::floatToDword(0.0f));
       SetTextureStageState(i, D3DTSS_TEXCOORDINDEX, i);
-      SetTextureStageState(i, D3DTSS_BUMPENVLSCALE, floatToDword(0.0f));
-      SetTextureStageState(i, D3DTSS_BUMPENVLOFFSET, floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVLSCALE, reinterpret::floatToDword(0.0f));
+      SetTextureStageState(i, D3DTSS_BUMPENVLOFFSET, reinterpret::floatToDword(0.0f));
       SetTextureStageState(i, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
       SetTextureStageState(i, D3DTSS_COLORARG0, D3DTA_CURRENT);
       SetTextureStageState(i, D3DTSS_ALPHAARG0, D3DTA_CURRENT);
@@ -1013,322 +1005,6 @@ namespace dxup {
     return CreateRenderTarget(Width, Height, Format, D3DMULTISAMPLE_NONE, 0, D3DPOOL_DEFAULT, ppSurface, pSharedHandle);
   }
 
-  namespace convert {
-    D3D11_CULL_MODE cullMode(DWORD mode) {
-      switch (mode) {
-      case D3DCULL_NONE: return D3D11_CULL_NONE;
-      case D3DCULL_CW: return D3D11_CULL_FRONT;
-      default:
-      case D3DCULL_CCW: return D3D11_CULL_BACK;
-      }
-    }
-
-    D3D11_FILL_MODE fillMode(DWORD mode) {
-      switch (mode) {
-      case D3DFILL_POINT: return D3D11_FILL_WIREFRAME;
-      case D3DFILL_WIREFRAME: return D3D11_FILL_WIREFRAME;
-      default:
-      case D3DFILL_SOLID: return D3D11_FILL_SOLID;
-      }
-    }
-
-    D3D11_STENCIL_OP stencilOp(DWORD op) {
-      switch (op) {
-      default:
-      case D3DSTENCILOP_KEEP: return D3D11_STENCIL_OP_KEEP;
-      case D3DSTENCILOP_ZERO: return D3D11_STENCIL_OP_ZERO;
-      case D3DSTENCILOP_REPLACE: return D3D11_STENCIL_OP_REPLACE;
-      case D3DSTENCILOP_INCRSAT: return D3D11_STENCIL_OP_INCR_SAT;
-      case D3DSTENCILOP_DECRSAT: return D3D11_STENCIL_OP_DECR_SAT;
-      case D3DSTENCILOP_INVERT: return D3D11_STENCIL_OP_INVERT;
-      case D3DSTENCILOP_INCR: return D3D11_STENCIL_OP_INCR;
-      case D3DSTENCILOP_DECR: return D3D11_STENCIL_OP_DECR;
-      }
-    }
-
-    D3D11_COMPARISON_FUNC func(DWORD op) {
-      switch (op) {
-      case D3DCMP_NEVER: return D3D11_COMPARISON_NEVER;
-      case D3DCMP_LESS: return D3D11_COMPARISON_LESS;
-      case D3DCMP_EQUAL: return D3D11_COMPARISON_EQUAL;
-      case D3DCMP_LESSEQUAL: return D3D11_COMPARISON_LESS_EQUAL;
-      case D3DCMP_GREATER: return D3D11_COMPARISON_GREATER;
-      case D3DCMP_NOTEQUAL: return D3D11_COMPARISON_NOT_EQUAL;
-      case D3DCMP_GREATEREQUAL: return D3D11_COMPARISON_GREATER_EQUAL;
-      default:
-      case D3DCMP_ALWAYS: return D3D11_COMPARISON_ALWAYS;
-      }
-    }
-
-    D3D11_TEXTURE_ADDRESS_MODE textureAddressMode(DWORD mode) {
-      switch (mode) {
-      default:
-      case D3DTADDRESS_WRAP: return D3D11_TEXTURE_ADDRESS_WRAP;
-      case D3DTADDRESS_MIRROR: return D3D11_TEXTURE_ADDRESS_MIRROR;
-      case D3DTADDRESS_CLAMP: return D3D11_TEXTURE_ADDRESS_CLAMP;
-      case D3DTADDRESS_BORDER: return D3D11_TEXTURE_ADDRESS_BORDER;
-      case D3DTADDRESS_MIRRORONCE: return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
-      }
-    }
-
-    D3D11_BLEND_OP blendOp(DWORD op) {
-      switch (op) {
-      default:
-      case D3DBLENDOP_ADD: return D3D11_BLEND_OP_ADD;
-      case D3DBLENDOP_SUBTRACT: return D3D11_BLEND_OP_SUBTRACT;
-      case D3DBLENDOP_REVSUBTRACT: return D3D11_BLEND_OP_REV_SUBTRACT;
-      case D3DBLENDOP_MIN: return D3D11_BLEND_OP_MIN;
-      case D3DBLENDOP_MAX: return D3D11_BLEND_OP_MAX;
-      }
-    }
-
-    D3D11_BLEND blend(DWORD blend) {
-      switch (blend) {
-      case D3DBLEND_ZERO: return D3D11_BLEND_ZERO;
-      default:
-      case D3DBLEND_ONE: return D3D11_BLEND_ONE;
-      case D3DBLEND_SRCCOLOR: return D3D11_BLEND_SRC_COLOR;
-      case D3DBLEND_INVSRCCOLOR: return D3D11_BLEND_INV_SRC_COLOR;
-      case D3DBLEND_SRCALPHA: return D3D11_BLEND_SRC_ALPHA;
-      case D3DBLEND_INVSRCALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
-      case D3DBLEND_DESTALPHA: return D3D11_BLEND_DEST_ALPHA;
-      case D3DBLEND_INVDESTALPHA: return D3D11_BLEND_INV_DEST_ALPHA;
-      case D3DBLEND_DESTCOLOR: return D3D11_BLEND_DEST_COLOR;
-      case D3DBLEND_INVDESTCOLOR: return D3D11_BLEND_INV_DEST_COLOR;
-      case D3DBLEND_SRCALPHASAT: return D3D11_BLEND_SRC_ALPHA_SAT;
-        // TODO(Josh): Look into the both variants.
-      case D3DBLEND_BOTHSRCALPHA: return D3D11_BLEND_SRC_ALPHA;
-      case D3DBLEND_BOTHINVSRCALPHA: return D3D11_BLEND_INV_SRC_ALPHA;
-
-      case D3DBLEND_BLENDFACTOR: return D3D11_BLEND_BLEND_FACTOR;
-      case D3DBLEND_INVBLENDFACTOR: return D3D11_BLEND_INV_BLEND_FACTOR;
-
-      case D3DBLEND_SRCCOLOR2: return D3D11_BLEND_SRC1_COLOR;
-      case D3DBLEND_INVSRCCOLOR2: return D3D11_BLEND_INV_SRC1_COLOR;
-      }
-    }
-
-    D3D11_FILTER_TYPE filterType(DWORD filter, bool& anisotropic) {
-      switch (filter) {
-      case D3DTEXF_NONE:
-      case D3DTEXF_POINT: return D3D11_FILTER_TYPE_POINT;
-      default:
-      case D3DTEXF_LINEAR: return D3D11_FILTER_TYPE_LINEAR;
-      case D3DTEXF_ANISOTROPIC: anisotropic = true; return D3D11_FILTER_TYPE_LINEAR;
-      }
-    }
-
-    D3D11_FILTER filter(DWORD magFilter, DWORD minFilter, DWORD mipFilter) {
-      bool anisotropic = false;
-      D3D11_FILTER_TYPE magType = filterType(magFilter, anisotropic);
-      D3D11_FILTER_TYPE minType = filterType(minFilter, anisotropic);
-      D3D11_FILTER_TYPE mipType = filterType(mipFilter, anisotropic);
-
-      if (anisotropic)
-        return D3D11_ENCODE_ANISOTROPIC_FILTER(D3D11_FILTER_REDUCTION_TYPE_STANDARD);
-      else
-        return D3D11_ENCODE_BASIC_FILTER(minType, magType, mipType, D3D11_FILTER_REDUCTION_TYPE_STANDARD);
-    }
-  }
-
-  void Direct3DDevice9Ex::UpdateDepthStencilState() {
-    D3D11_DEPTH_STENCIL_DESC desc;
-    desc.BackFace.StencilDepthFailOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILZFAIL]);
-    desc.BackFace.StencilFailOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILFAIL]);
-    desc.BackFace.StencilPassOp = convert::stencilOp(m_state->renderState[D3DRS_CCW_STENCILPASS]);
-    desc.BackFace.StencilFunc = convert::func(m_state->renderState[D3DRS_CCW_STENCILFUNC]);
-
-    desc.DepthEnable = (m_state->renderState[D3DRS_ZENABLE] == D3DZB_FALSE) ? FALSE : TRUE;
-    desc.DepthFunc = convert::func(m_state->renderState[D3DRS_ZFUNC]);
-    desc.DepthWriteMask = m_state->renderState[D3DRS_ZWRITEENABLE] == TRUE ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-
-    desc.FrontFace.StencilDepthFailOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILZFAIL]);
-    desc.FrontFace.StencilFailOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILFAIL]);
-    desc.FrontFace.StencilPassOp = convert::stencilOp(m_state->renderState[D3DRS_STENCILPASS]);
-    desc.FrontFace.StencilFunc = convert::func(m_state->renderState[D3DRS_STENCILFUNC]);
-   
-    desc.StencilEnable = m_state->renderState[D3DRS_STENCILENABLE] == TRUE ? TRUE : FALSE;
-    desc.StencilReadMask = (UINT8)(m_state->renderState[D3DRS_STENCILMASK] & 0x000000FF); // I think we can do this.
-    desc.StencilWriteMask = (UINT8)(m_state->renderState[D3DRS_STENCILWRITEMASK] & 0x000000FF);
-
-    ID3D11DepthStencilState* state = m_caches.depthStencil.lookupObject(desc);
-
-    if (state == nullptr) {
-      Com<ID3D11DepthStencilState> comState;
-
-      HRESULT result = m_device->CreateDepthStencilState(&desc, &comState);
-      if (FAILED(result)) {
-        log::fail("Failed to create depth stencil state.");
-        return;
-      }
-
-      m_caches.depthStencil.pushState(desc, comState.ptr());
-      state = comState.ptr();
-    }
-
-    m_context->OMSetDepthStencilState(state, (UINT)m_state->renderState[D3DRS_STENCILREF]);
-
-    m_state->dirtyFlags &= ~dirtyFlags::depthStencilState;
-  }
-
-  void Direct3DDevice9Ex::UpdateRasterizer() {
-    D3D11_RASTERIZER_DESC1 desc;
-    desc.AntialiasedLineEnable = false;
-    desc.CullMode = convert::cullMode(m_state->renderState[D3DRS_CULLMODE]);
-    desc.DepthBias = (INT)dwordToFloat(m_state->renderState[D3DRS_DEPTHBIAS]);
-    desc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-    desc.DepthClipEnable = true;
-    desc.FillMode = convert::fillMode(m_state->renderState[D3DRS_FILLMODE]);
-    desc.ForcedSampleCount = 0;
-    desc.FrontCounterClockwise = false;
-    desc.MultisampleEnable = false;
-    desc.ScissorEnable = m_state->renderState[D3DRS_SCISSORTESTENABLE] == TRUE ? TRUE : FALSE;
-    desc.SlopeScaledDepthBias = dwordToFloat(m_state->renderState[D3DRS_SLOPESCALEDEPTHBIAS]);
-
-    ID3D11RasterizerState1* state = m_caches.rasterizer.lookupObject(desc);
-
-    if (state == nullptr) {
-      Com<ID3D11RasterizerState1> comState;
-
-      HRESULT result = m_device->CreateRasterizerState1(&desc, &comState);
-      if (FAILED(result)) {
-        log::fail("Failed to create rasterizer state.");
-        return;
-      }
-
-      m_caches.rasterizer.pushState(desc, comState.ptr());
-      state = comState.ptr();
-    }
-
-    m_context->RSSetState(state);
-
-    m_state->dirtyFlags &= ~dirtyFlags::rasterizer;
-  }
-
-  void Direct3DDevice9Ex::UpdateBlendState() {
-    D3D11_BLEND_DESC1 desc;
-    desc.AlphaToCoverageEnable = false;
-    desc.IndependentBlendEnable = false;
-
-    bool separateAlpha = m_state->renderState[D3DRS_SEPARATEALPHABLENDENABLE] == TRUE;
-
-    // Change me if we do independent blending at some point.
-    for (uint32_t i = 0; i < 1; i++) {
-      desc.RenderTarget[i].BlendEnable = m_state->renderState[D3DRS_ALPHABLENDENABLE] == TRUE;
-
-      desc.RenderTarget[i].BlendOp = convert::blendOp(m_state->renderState[D3DRS_BLENDOP]);
-      desc.RenderTarget[i].BlendOpAlpha = convert::blendOp(separateAlpha ? m_state->renderState[D3DRS_BLENDOPALPHA] : m_state->renderState[D3DRS_BLENDOP]);
-
-      desc.RenderTarget[i].DestBlend = convert::blend(m_state->renderState[D3DRS_DESTBLEND]);
-      desc.RenderTarget[i].DestBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_DESTBLENDALPHA] : m_state->renderState[D3DRS_DESTBLEND]);
-
-      desc.RenderTarget[i].LogicOp = D3D11_LOGIC_OP_NOOP;
-      desc.RenderTarget[i].LogicOpEnable = false;
-
-      uint32_t writeIndex;
-      switch (i) {
-      default:
-      case 0: writeIndex = D3DRS_COLORWRITEENABLE; break;
-      case 1: writeIndex = D3DRS_COLORWRITEENABLE1; break;
-      case 2: writeIndex = D3DRS_COLORWRITEENABLE2; break;
-      case 3: writeIndex = D3DRS_COLORWRITEENABLE3; break;
-      }
-
-      desc.RenderTarget[i].RenderTargetWriteMask = m_state->renderState[writeIndex];
-
-      desc.RenderTarget[i].SrcBlend = convert::blend(m_state->renderState[D3DRS_SRCBLEND]);
-      desc.RenderTarget[i].SrcBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_SRCBLENDALPHA] : m_state->renderState[D3DRS_SRCBLEND]);
-    }
-
-    ID3D11BlendState1* state = m_caches.blendState.lookupObject(desc);
-
-    if (state == nullptr) {
-      Com<ID3D11BlendState1> comState;
-
-      HRESULT result = m_device->CreateBlendState1(&desc, &comState);
-      if (FAILED(result)) {
-        log::fail("Failed to create blend state.");
-        return;
-      }
-
-      m_caches.blendState.pushState(desc, comState.ptr());
-      state = comState.ptr();
-    }
-
-    float blendFactor[4];
-    convert::color((D3DCOLOR)m_state->renderState[D3DRS_BLENDFACTOR], blendFactor);
-    m_context->OMSetBlendState(state, blendFactor, 0xFFFFFFFF);
-  }
-
-  void Direct3DDevice9Ex::UpdateSampler(uint32_t sampler) {
-    auto& samplerState = m_state->samplerStates[sampler];
-
-    D3D11_SAMPLER_DESC desc;
-    desc.AddressU = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSU]);
-    desc.AddressV = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSV]);
-    desc.AddressW = convert::textureAddressMode(samplerState[D3DSAMP_ADDRESSW]);
-    convert::color(samplerState[D3DSAMP_BORDERCOLOR], desc.BorderColor);
-    desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    desc.Filter = convert::filter(samplerState[D3DSAMP_MAGFILTER], samplerState[D3DSAMP_MINFILTER], samplerState[D3DSAMP_MIPFILTER]);
-    desc.MaxAnisotropy = std::clamp((UINT)samplerState[D3DSAMP_MAXANISOTROPY], 0u, 16u);
-    desc.MipLODBias = std::clamp(dwordToFloat(samplerState[D3DSAMP_MIPMAPLODBIAS]), -16.0f, 15.99f);
-    desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
-    desc.MinLOD = -FLT_MAX;
-
-    ID3D11SamplerState* state = m_caches.sampler.lookupObject(desc);
-
-    if (state == nullptr) {
-      Com<ID3D11SamplerState> comState;
-
-      HRESULT result = m_device->CreateSamplerState(&desc, &comState);
-      if (FAILED(result)) {
-        log::fail("Failed to create sampler state.");
-        return;
-      }
-
-      m_caches.sampler.pushState(desc, comState.ptr());
-      state = comState.ptr();
-    }
-
-    if (sampler < 16)
-      m_context->PSSetSamplers(sampler, 1, &state);
-    else {
-      sampler -= 16;
-      m_context->VSSetSamplers(sampler, 1, &state);
-    }
-
-    m_state->dirtySamplers &= ~(1ull << sampler);
-  }
-  void Direct3DDevice9Ex::UpdateSamplers() {
-    for (uint32_t i = 0; i < 20; i++) {
-      if (m_state->dirtySamplers & (1ull << i))
-        UpdateSampler(i);
-    }
-  }
-
-  void Direct3DDevice9Ex::UpdateRenderTargets() {
-    std::array<ID3D11RenderTargetView*, 4> rtvs = { nullptr, nullptr, nullptr, nullptr };
-    for (uint32_t i = 0; i < 4; i++)
-    {
-      if (m_state->renderTargets[i] != nullptr) {
-        rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget(m_state->renderState[D3DRS_SRGBWRITEENABLE] == TRUE);
-        if (rtvs[i] == nullptr)
-          log::warn("No render target view for bound render target surface.");
-      }
-    }
-
-    ID3D11DepthStencilView* dsv = nullptr;
-    if (m_state->depthStencil != nullptr) {
-      dsv = m_state->depthStencil->GetD3D11DepthStencil();
-      if (dsv == nullptr)
-        log::warn("No depth stencil view for bound depth stencil surface.");
-    }
-
-    m_context->OMSetRenderTargets(4, &rtvs[0], dsv);
-
-    m_state->dirtyFlags &= ~dirtyFlags::renderTargets;
-  }
-
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
     CriticalSection cs(this);
     return GetEditState()->SetRenderTarget(RenderTargetIndex, pRenderTarget);
@@ -1339,7 +1015,7 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
     CriticalSection cs(this);
-    DoDepthDiscardCheck(); // TODO! Does this only get done in d3d9 if it gets set.
+    m_renderer->handleDepthStencilDiscard(); // TODO! Does this only get done in d3d9 if it gets set.
     return GetEditState()->SetDepthStencilSurface(pNewZStencil);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
@@ -1357,39 +1033,7 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Clear(DWORD Count, CONST D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     CriticalSection cs(this);
-
-    FLOAT color[4];
-    convert::color(Color, color);
-
-    if (config::getBool(config::RandomClearColour)) {
-      for (uint32_t i = 0; i < 4; i++)
-        color[i] = ((float)(rand() % 255)) / 255.0f;
-    }
-    
-    if (Flags & D3DCLEAR_TARGET) {
-      for (uint32_t i = 0; i < 4; i++)
-      {
-        if (m_state->renderTargets[i] == nullptr)
-          continue;
-
-        ID3D11RenderTargetView* rtv = m_state->renderTargets[i]->GetD3D11RenderTarget(m_state->renderState[D3DRS_SRGBWRITEENABLE] == TRUE);
-        if (rtv)
-          m_context->ClearRenderTargetView(rtv, color);
-      }
-    }
-
-    ID3D11DepthStencilView* dsv = nullptr;
-    if (m_state->depthStencil != nullptr)
-      dsv = m_state->depthStencil->GetD3D11DepthStencil();
-
-    if ((Flags & D3DCLEAR_STENCIL || Flags & D3DCLEAR_ZBUFFER) && dsv != nullptr) {
-      uint32_t clearFlags = Flags & D3DCLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0;
-      clearFlags |= Flags & D3DCLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0;
-
-      m_context->ClearDepthStencilView(dsv, clearFlags, Z, Stencil);
-    }
-
-    return D3D_OK;
+    return m_renderer->Clear(Count, pRects, Flags, Color, Z, Stencil);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetTransform(D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX* pMatrix) {
     CriticalSection cs(this);
@@ -1647,41 +1291,11 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
     CriticalSection cs(this);
-
-    if (!PrepareDraw()) {
-      log::warn("Invalid internal render state achieved.");
-      FinishDraw();
-      return D3D_OK; // Lies!
-    }
-
-    D3D_PRIMITIVE_TOPOLOGY topology;
-    UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
-
-    m_context->IASetPrimitiveTopology(topology);
-    m_context->Draw(drawCount, StartVertex);
-
-    FinishDraw();
-
-    return D3D_OK;
+    return m_renderer->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
     CriticalSection cs(this);
-
-    if (!PrepareDraw()) {
-      log::warn("Invalid internal render state achieved.");
-      FinishDraw();
-      return D3D_OK; // Lies!
-    }
-
-    D3D_PRIMITIVE_TOPOLOGY topology;
-    UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
-
-    m_context->IASetPrimitiveTopology(topology);
-    m_context->DrawIndexed(drawCount, startIndex, BaseVertexIndex);
-
-    FinishDraw();
-
-    return D3D_OK;
+    return m_renderer->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
     CriticalSection cs(this);
@@ -1754,163 +1368,6 @@ namespace dxup {
     *ppDecl = ref(new Direct3DVertexDeclaration9(this, inputElements, d3d9Elements));
 
     return D3D_OK;
-  }
-
-  bool Direct3DDevice9Ex::CanDraw() {
-    return !(m_state->dirtyFlags & dirtyFlags::vertexDecl ||
-             m_state->dirtyFlags & dirtyFlags::vertexShader);
-  }
-
-  void Direct3DDevice9Ex::UpdatePixelShader() {
-    if (m_state->pixelShader != nullptr)
-      m_context->PSSetShader(m_state->pixelShader->GetD3D11Shader(), nullptr, 0);
-    else
-      m_context->PSSetShader(nullptr, nullptr, 0);
-
-    m_state->dirtyFlags &= ~dirtyFlags::pixelShader;
-  }
-
-  void Direct3DDevice9Ex::UpdateTextures() {
-    std::array<ID3D11ShaderResourceView*, 20> srvs;
-
-    for (uint32_t i = 0; i < 20; i++) {
-      IDirect3DBaseTexture9* pTexture = m_state->textures[i];
-      bool srgb = m_state->samplerStates[i][D3DSAMP_SRGBTEXTURE] == TRUE;
-
-      if (pTexture != nullptr) {
-        switch (pTexture->GetType()) {
-
-        case D3DRTYPE_TEXTURE: {
-          Direct3DTexture9* tex = reinterpret_cast<Direct3DTexture9*>(pTexture);
-          srvs[i] = tex->GetDXUPResource()->GetSRV(srgb);
-          break;
-        }
-
-        case D3DRTYPE_CUBETEXTURE: {
-          Direct3DCubeTexture9* tex = reinterpret_cast<Direct3DCubeTexture9*>(pTexture);
-          srvs[i] = tex->GetDXUPResource()->GetSRV(srgb);
-          break;
-        }
-
-        }
-      }
-      else
-        srvs[i] = nullptr;
-    }
-
-    m_context->PSSetShaderResources(0, 16, &srvs[0]);
-    m_context->VSSetShaderResources(0, 4, &srvs[16]);
-  }
-
-  void Direct3DDevice9Ex::UpdateVertexBuffer() {
-    std::array<ID3D11Buffer*, 16> buffers;
-    for (uint32_t i = 0; i < 16; i++) {
-      Direct3DVertexBuffer9* buffer = m_state->vertexBuffers[i].ptr();
-      if (buffer != nullptr)
-        buffers[i] = buffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-      else
-        buffers[i] = nullptr;
-    }
-    m_context->IASetVertexBuffers(0, 16, buffers.data(), m_state->vertexStrides.data(), m_state->vertexOffsets.data());
-    m_state->dirtyFlags &= ~dirtyFlags::vertexBuffers;
-  }
-  void Direct3DDevice9Ex::UpdateIndexBuffer() {
-    DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
-
-    ID3D11Buffer* buffer = nullptr;
-    if (m_state->indexBuffer != nullptr) {
-      if (m_state->indexBuffer->GetD3D9Desc().Format == D3DFMT_INDEX32)
-        format = DXGI_FORMAT_R32_UINT;
-
-      buffer = m_state->indexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-    }
-
-    m_context->IASetIndexBuffer(buffer, format, 0);
-    m_state->dirtyFlags &= ~dirtyFlags::indexBuffer;
-  }
-  void Direct3DDevice9Ex::UpdateConstants(bool pixel) {
-    if (pixel) {
-      m_psConstants.update(m_state->psConstants);
-      m_state->dirtyFlags &= ~dirtyFlags::psConstants;
-      return;
-    }
-
-    m_vsConstants.update(m_state->vsConstants);
-    m_state->dirtyFlags &= ~dirtyFlags::vsConstants;
-  }
-
-  bool Direct3DDevice9Ex::PrepareDraw() {
-    if (m_state->dirtyFlags & dirtyFlags::vertexBuffers)
-      UpdateVertexBuffer();
-
-    if (m_state->dirtyFlags & dirtyFlags::indexBuffer)
-      UpdateIndexBuffer();
-
-    if (m_state->dirtyFlags & dirtyFlags::vsConstants)
-      UpdateConstants(false);
-
-    if (m_state->dirtyFlags & dirtyFlags::psConstants)
-      UpdateConstants(true);
-
-    if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
-      UpdateVertexShaderAndInputLayout();
-
-    if (m_state->dirtySamplers != 0)
-      UpdateSamplers();
-
-    if (m_state->dirtyFlags & dirtyFlags::textures)
-      UpdateTextures();
-
-    if (m_state->dirtyFlags & dirtyFlags::renderTargets)
-      UpdateRenderTargets();
-
-    if (m_state->dirtyFlags & dirtyFlags::rasterizer)
-      UpdateRasterizer();
-
-    if (m_state->dirtyFlags & dirtyFlags::blendState)
-      UpdateBlendState();
-
-    if (m_state->dirtyFlags & dirtyFlags::depthStencilState)
-      UpdateDepthStencilState();
-
-    if (m_state->dirtyFlags & dirtyFlags::pixelShader)
-      UpdatePixelShader();
-
-    return CanDraw();
-  }
-
-  void Direct3DDevice9Ex::UpdateVertexShaderAndInputLayout() {
-    if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
-      return;
-
-    auto& elements = m_state->vertexDecl->GetD3D11Descs();
-    auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
-
-    ID3D11InputLayout* layout = m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr());
-
-    bool created = false;
-    if (layout == nullptr) {
-      HRESULT result = m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
-
-      if (!FAILED(result)) {
-        m_state->vertexShader->LinkInput(layout, m_state->vertexDecl.ptr());
-
-        layout->Release();
-      }
-    }
-
-    if (layout == nullptr)
-      return;
-
-    m_state->dirtyFlags &= ~dirtyFlags::vertexDecl;
-    m_state->dirtyFlags &= ~dirtyFlags::vertexShader;
-
-    m_context->IASetInputLayout(layout);
-
-    m_context->VSSetShader(m_state->vertexShader->GetD3D11Shader(), nullptr, 0);
-  }
-
-  void Direct3DDevice9Ex::FinishDraw() {
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
@@ -2257,21 +1714,13 @@ namespace dxup {
     return swapchain->TestSwapchain(hDestinationWindow, true);
   }
 
-  void Direct3DDevice9Ex::DoDepthDiscardCheck() {
-    if (m_state->depthStencil != nullptr && m_state->depthStencil->GetD3D9Desc().Discard) {
-      ID3D11DepthStencilView* dsv = m_state->depthStencil->GetD3D11DepthStencil();
-      if (dsv)
-        m_context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 0.0f, 0);
-    }
-  }
-
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::PresentEx(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion, DWORD dwFlags) {
     CriticalSection cs(this);
 
     // Not sure what swapchain to use here, going with this one ~ Josh
     HRESULT result = GetInternalSwapchain(0)->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
 
-    DoDepthDiscardCheck();
+    m_renderer->handleDepthStencilDiscard();
 
     if (m_pendingCursorUpdate.update)
       SetCursorPosition(m_pendingCursorUpdate.x, m_pendingCursorUpdate.y, D3DCURSOR_IMMEDIATE_UPDATE);

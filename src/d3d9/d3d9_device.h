@@ -8,6 +8,7 @@
 namespace dxup {
 
   class D3D9State;
+  class D3D9ImmediateRenderer;
 
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
@@ -154,8 +155,6 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode) override;
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
-    void DoDepthDiscardCheck();
-
     HRESULT CreateTextureInternal(
       D3DRESOURCETYPE Type,
       bool FakeSurface,
@@ -174,23 +173,6 @@ namespace dxup {
     void GetParent(Direct3D9Ex** parent);
     ID3D11DeviceContext* GetContext();
     ID3D11Device* GetD3D11Device();
-
-    void UpdateVertexShaderAndInputLayout();
-    void UpdateDepthStencilState();
-    void UpdateRasterizer();
-    void UpdateBlendState();
-    void UpdateSampler(uint32_t sampler);
-    void UpdateSamplers();
-    void UpdateTextures();
-    void UpdateRenderTargets();
-    void UpdatePixelShader();
-    void UpdateVertexBuffer();
-    void UpdateIndexBuffer();
-    void UpdateConstants(bool pixel);
-
-    bool CanDraw();
-    bool PrepareDraw();
-    void FinishDraw();
 
     static HRESULT Create(
       UINT adapter,
@@ -247,10 +229,6 @@ namespace dxup {
     HWND m_window;
 
     Com<ID3D11DeviceContext1> m_context;
-    D3D9ConstantBuffer<false> m_vsConstants;
-    D3D9ConstantBuffer<true> m_psConstants;
-
-    D3D9StateCaches m_caches;
 
     static const uint8_t DeviceFlag_Ex = 0x01;
     uint8_t m_flags;
@@ -266,6 +244,8 @@ namespace dxup {
     PendingCursorUpdate m_pendingCursorUpdate = { 0 };
     DWORD m_fvf = 0;
     BOOL m_softwareVertexProcessing = 0;
+
+    D3D9ImmediateRenderer* m_renderer;
   };
 
   class CriticalSection {
