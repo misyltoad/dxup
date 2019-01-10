@@ -40,6 +40,11 @@ namespace dxup {
       return D3DERR_INVALIDCALL;
     }
 
+    result = m_swapchain->SetFullscreenState(!parameters->Windowed, nullptr);
+
+    if (FAILED(result))
+      log::warn("Failed to change fullscreen state.");
+
     // Make crap!
 
     for (UINT i = 0; i < bufferCount; i++) {
