@@ -36,14 +36,12 @@ namespace dxup {
     ID3D11RenderTargetView* GetD3D11RenderTarget(bool srgb);
     ID3D11DepthStencilView* GetD3D11DepthStencil();
 
-    DXUPResource* GetDXUPResource();
-    void ClearDXUPResource();
-    void SetDXUPResource(DXUPResource* resource);
+    void ClearResource();
+    void SetResource(DXUPResource* resource);
 
   private:
 
     IUnknown* m_container;
-    DXUPResource* m_resource;
 
     Com<IDXGISurface1> m_surface;
     Com<ID3D11RenderTargetView> m_rtView;

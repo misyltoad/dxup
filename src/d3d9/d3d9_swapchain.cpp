@@ -21,7 +21,7 @@ namespace dxup {
 
     for (size_t i = 0; i < bufferCount; i++) {
       if (m_buffers[i] != nullptr)
-        m_buffers[i]->ClearDXUPResource();
+        m_buffers[i]->ClearResource();
     }
 
     // Set crap!
@@ -63,7 +63,7 @@ namespace dxup {
       d3d9Desc.Usage = D3DUSAGE_RENDERTARGET;
 
       if (m_buffers[i] != nullptr)
-        m_buffers[i]->SetDXUPResource(resource);
+        m_buffers[i]->SetResource(resource);
       else
         m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
     }
