@@ -108,6 +108,7 @@ namespace dxup {
         }
       } break;
 
+      case D3DSPR_CONSTBOOL:
       case D3DSPR_CONSTINT:
       case D3DSPR_CONST: {
 
@@ -115,6 +116,8 @@ namespace dxup {
         uint32_t constId = newMapping.dx9Id;
         if (regType == D3DSPR_CONSTINT)
           constId += 256;
+        else if (regType == D3DSPR_CONSTBOOL)
+          constId += 256 + 16;
 
         uint32_t dataWithDummyId[2] = { constantBufferIndex, constId };
         newMapping.dxbcOperand.setData(dataWithDummyId, 2);
@@ -192,7 +195,6 @@ namespace dxup {
       case D3DSPR_CONST2:
       case D3DSPR_CONST3:
       case D3DSPR_CONST4:
-      case D3DSPR_CONSTBOOL:
       case D3DSPR_LOOP:
       case D3DSPR_TEMPFLOAT16:
       case D3DSPR_MISCTYPE:

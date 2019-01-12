@@ -119,6 +119,8 @@ namespace dxup {
       bool handleDef(DX9Operation& operation);
       bool handleDefi(DX9Operation& operation);
 
+      bool handleIfc(DX9Operation& operation);
+
       bool handleScomp(bool lt, DX9Operation& operation);
 
       inline std::vector<uint32_t>& getCode() {

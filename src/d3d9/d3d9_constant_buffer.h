@@ -29,7 +29,7 @@ namespace dxup {
       : m_device{ device }
       , m_context{ context } {
       D3D11_BUFFER_DESC cbDesc;
-      cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants); //+ sizeof(uint32_t); // bool elements are encoded as a bitfield but not impl yet.
+      cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants) + sizeof(D3D9ShaderConstants::boolConstants); // TODO make bool constants a bitfield.
       cbDesc.Usage = D3D11_USAGE_DYNAMIC;
       cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
       cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -51,6 +51,7 @@ namespace dxup {
       uint8_t* data = (uint8_t*)res.pData;
       std::memcpy(data, constants.floatConstants.data(), sizeof(constants.floatConstants));
       std::memcpy(data + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
+      std::memcpy(data + sizeof(constants.floatConstants) + sizeof(constants.intConstants), constants.boolConstants.data(), sizeof(constants.boolConstants));
 
       m_context->Unmap(m_buffer.ptr(), 0);
     }

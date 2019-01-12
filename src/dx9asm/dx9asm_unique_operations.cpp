@@ -2,6 +2,7 @@
 #include "dx9asm_modifiers.h"
 #include "../util/fourcc.h"
 #include "../util/config.h"
+#include <array>
 
 namespace dxup {
 
@@ -439,6 +440,55 @@ namespace dxup {
         nextToken(); // int1
         nextToken(); // int1
       }
+
+      return true;
+    }
+
+    struct CompareMode {
+      uint32_t opcode;
+      bool swap;
+    };
+
+    // Should match DXBC code gen.
+    std::array<CompareMode, 7> compareModes = {
+      CompareMode{D3D10_SB_OPCODE_ADD, false}, // Invalid
+      CompareMode{D3D10_SB_OPCODE_LT, true}, // >
+      CompareMode{D3D10_SB_OPCODE_EQ, false}, // ==
+      CompareMode{D3D10_SB_OPCODE_GE, false}, // >=
+      CompareMode{D3D10_SB_OPCODE_LT, false}, // <
+      CompareMode{D3D10_SB_OPCODE_NE, false}, // !=
+      CompareMode{D3D10_SB_OPCODE_GE, true} // <=
+    };
+
+    bool ShaderCodeTranslator::handleIfc(DX9Operation& operation) {
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      const DX9Operand* src1 = operation.getOperandByType(optype::Src1);
+
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+      DXBCOperand src1Op = { *this, operation, *src1, 0 };
+
+      uint32_t compare = operation.getOpcodeSpecificData();
+      if (compare < 1 || compare > 6) {
+        log::fail("Invalid comparemode in ifc.");
+        return false;
+      }
+
+      CompareMode compareMode = compareModes[compare];
+
+      DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
+      DXBCOperand tempOpDst = tempOpSrc;
+      tempOpSrc.setComponents(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SELECT_1_MODE) | ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECT_1(D3D10_SB_4_COMPONENT_X));
+      tempOpDst.setSwizzleOrWritemask(writeAll);
+
+      DXBCOperation{ compareMode.opcode, false }
+        .appendOperand(tempOpDst)
+        .appendOperand(compareMode.swap ? src1Op : src0Op)
+        .appendOperand(compareMode.swap ? src0Op : src1Op)
+        .push(*this);
+
+      DXBCOperation{ D3D10_SB_OPCODE_IF, false }
+        .appendOperand(tempOpSrc)
+        .push(*this);
 
       return true;
     }

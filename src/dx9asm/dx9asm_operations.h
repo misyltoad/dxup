@@ -73,6 +73,10 @@ namespace dxup {
         return m_info != nullptr;
       }
 
+      inline uint32_t getOpcodeSpecificData() const {
+        return ((m_dx9token & D3DSP_OPCODESPECIFICCONTROL_MASK) >> D3DSP_OPCODESPECIFICCONTROL_SHIFT);
+      }
+
       inline uint32_t getToken() const {
         return m_dx9token;
       }

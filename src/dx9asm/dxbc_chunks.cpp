@@ -78,8 +78,8 @@ namespace dxup {
       struct VariableInfo {
         uint32_t nameOffset;
         uint32_t startOffset;
-        uint32_t size = 4 * sizeof(float);
-        uint32_t flags = D3D_SVF_USED;
+        uint32_t size;
+        uint32_t flags;
         uint32_t typeOffset;
         uint32_t defaultValueOffset;
 
@@ -251,7 +251,18 @@ namespace dxup {
             uint32_t unknown3 = 0;
             uint32_t parentNameOffset = 0;
           } variableType;
-          uint32_t variableTypeOffset = getChunkSize(bytecode);
+          uint32_t floatTypeOffset = getChunkSize(bytecode);
+          pushObject(obj, variableType);
+
+          variableType.varClass = D3D_SVC_SCALAR;
+          variableType.varType = D3D_SVT_INT;
+
+          uint32_t intVecTypeOffset = getChunkSize(bytecode);
+          pushObject(obj, variableType);
+
+          variableType.columns = 1;
+
+          uint32_t boolTypeOffset = getChunkSize(bytecode);
           pushObject(obj, variableType);
 
           // Push and Fixup Strings
@@ -262,7 +273,22 @@ namespace dxup {
             VariableInfo& info = variables[i];
             //info.defaultValueOffset = defaultValueOffset;
             info.defaultValueOffset = 0;
-            info.typeOffset = variableTypeOffset;
+
+            if (i < 256) {
+              // float constants
+              info.size = 4 * sizeof(float);
+              info.typeOffset = floatTypeOffset;
+            }
+            else if (i < 256 + 16) {
+              // int constants
+              info.size = 4 * sizeof(int);
+              info.typeOffset = intVecTypeOffset;
+            }
+            else {
+              // bool constants
+              info.size = sizeof(int);
+              info.typeOffset = boolTypeOffset;
+            }
 
             char name[6];
             snprintf(name, 6, "c%d", i);
