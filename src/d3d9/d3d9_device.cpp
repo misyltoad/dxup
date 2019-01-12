@@ -1351,19 +1351,10 @@ namespace dxup {
     std::vector<D3D11_INPUT_ELEMENT_DESC> inputElements;
     std::vector<D3DVERTEXELEMENT9> d3d9Elements;
 
-    auto vertexElementEqual = [] (const D3DVERTEXELEMENT9& a, const D3DVERTEXELEMENT9& b) {
-      return  a.Method == b.Method &&
-              a.Offset == b.Offset &&
-              a.Stream == b.Stream &&
-              a.Type == b.Type &&
-              a.Usage == b.Usage &&
-              a.UsageIndex == b.UsageIndex;
-    };
-
     size_t count;
     {
       const D3DVERTEXELEMENT9* counter = pVertexElements;
-      while (!vertexElementEqual(*counter, lastElement))
+      while (counter->Stream != 0xff)
         counter++;
 
       count = counter - pVertexElements;
@@ -1380,7 +1371,7 @@ namespace dxup {
       desc.SemanticName = convert::declUsage(true, false, (D3DDECLUSAGE)pVertexElements[i].Usage).c_str();
       desc.SemanticIndex = pVertexElements[i].UsageIndex;
       desc.Format = convert::declType((D3DDECLTYPE)pVertexElements[i].Type);
-      desc.InputSlot = 0;
+      desc.InputSlot = pVertexElements[i].Stream;
       desc.AlignedByteOffset = pVertexElements[i].Offset;
       desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
       desc.InstanceDataStepRate = 0;
