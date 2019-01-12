@@ -9,6 +9,7 @@ namespace dxup {
 
   class D3D9State;
   class D3D9ImmediateRenderer;
+  class Direct3DStateBlock9;
 
   class Direct3DDevice9Ex final : public Unknown<IDirect3DDevice9Ex> {
     
@@ -211,15 +212,10 @@ namespace dxup {
 
     std::array< Com<IDirect3DSwapChain9Ex>, D3DPRESENT_BACK_BUFFERS_MAX_EX > m_swapchains;
 
-    inline D3D9State* GetEditState() {
-      if (m_stateBlock != nullptr)
-        return m_stateBlock;
-
-      return m_state;
-    }
+    D3D9State* GetEditState();
 
     D3D9State* m_state;
-    D3D9State* m_stateBlock;
+    Direct3DStateBlock9* m_stateBlock;
 
     Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device1> m_device;

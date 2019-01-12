@@ -4,8 +4,16 @@
 
 namespace dxup {
 
-  D3D9State::D3D9State(bool stateBlock)
-    : stateBlock{ stateBlock } {
+  // I hate this whole file. It sucks.
+  // I really want to clean up state capturing sometime but I'm not really sure how.
+  // I thought about having a generic state class, but something like that wouldn't really work
+  // nicely for arrays of constants that like to be memcpy'ed or accessed efficiently.
+  // Feel free to have a stab at cleaning this mess up.
+  // I am sorry. I feel like I let everyone down taking so long to make this piece of crap.
+
+  D3D9State::D3D9State(Direct3DDevice9Ex* device, uint32_t stateBlockType)
+    : stateBlockType{ stateBlockType }
+    , m_device{ device } {
     dirtyFlags = 0;
     dirtySamplers = 0;
 
@@ -13,15 +21,120 @@ namespace dxup {
     std::memset(vertexOffsets.data(), 0, sizeof(UINT) * vertexOffsets.size());
     std::memset(vertexStrides.data(), 0, sizeof(UINT) * vertexStrides.size());
 
-    if (stateBlock) {
-      // Using 0x80000000 to denote uncaptured as it'll never be a value for any of our constant types.
-      for (uint32_t i = 0; i < 2; i++) {
-        D3D9ShaderConstants& constants = i == 0 ? vsConstants : psConstants;
-        std::memset(constants.floatConstants.data(), 0x80000000, sizeof(constants.floatConstants));
-        std::memset(constants.intConstants.data(), 0x80000000, sizeof(constants.intConstants));
-        std::memset(constants.boolConstants.data(), 0x80000000, sizeof(constants.boolConstants));
+    if (stateBlockType != 0)
+      capture(stateBlockType, false);
+  }
+
+  void D3D9State::capture(uint32_t stateBlockType, bool recapture) {
+    // Using 0x80000000 to denote uncaptured as it'll never be a value for any of our constant types. (-0.0 fl)
+    // Idea taken from SwiftShader. May or may not be accurate.
+    for (uint32_t i = 0; i < 2; i++) {
+      D3D9ShaderConstants& constants = i == 0 ? vsConstants : psConstants;
+      std::memset(constants.floatConstants.data(), 0x80000000, sizeof(constants.floatConstants));
+      std::memset(constants.intConstants.data(), 0x80000000, sizeof(constants.intConstants));
+      std::memset(constants.boolConstants.data(), 0x80000000, sizeof(constants.boolConstants));
+    }
+
+    if (stateBlockType == D3DSBT_PIXELSTATE || stateBlockType == D3DSBT_ALL)
+    {
+      capturePixelRenderStates();
+      capturePixelTextureStates();
+      capturePixelSamplerStates();
+      capturePixelShaderStates();
+    }
+    if (stateBlockType == D3DSBT_VERTEXSTATE || stateBlockType == D3DSBT_ALL)
+    {
+      captureVertexRenderStates();
+      captureVertexSamplerStates();
+      captureVertexTextureStates();
+      captureVertexShaderStates();
+      captureVertexDeclaration();
+    }
+    if (stateBlockType == D3DSBT_ALL)   // Capture remaining states
+    {
+      captureTextures();
+      captureVertexStreams();
+      captureIndexBuffer();
+      //captureViewport(); // TODO Migrate this to state! I am too tired right now :((((((
+      //captureScissor();
+      //captureClipPlanes();
+
+      // There is more crap here too!
+    }
+  }
+  void D3D9State::apply() {
+    if (vertexShaderCaptured)
+      m_device->SetVertexShader(vertexShader.ptr());
+
+    if (pixelShaderCaptured)
+      m_device->SetPixelShader(pixelShader.ptr());
+
+    if (vertexDeclCaptured)
+      m_device->SetVertexDeclaration(vertexDecl.ptr());
+
+    for (uint32_t i = 0; i < 16; i++) {
+      if (vertexBufferCaptures[i])
+        m_device->SetStreamSource(i, vertexBuffers[i].ptr(), vertexOffsets[i], vertexStrides[i]);
+    }
+
+    for (uint32_t i = 0; i < renderState.size(); i++) {
+      if (renderStateCaptures[i])
+        m_device->SetRenderState((D3DRENDERSTATETYPE)i, renderState[i]);
+    }
+
+    for (uint32_t i = 0; i < samplerStates.size(); i++) {
+      for (uint32_t j = 0; j < D3DSAMP_DMAPOFFSET + 1; j++) {
+        if (samplerStateCaptures[i][j])
+          m_device->SetSamplerState(i, (D3DSAMPLERSTATETYPE)j, renderState[j]);
       }
     }
+
+    for (uint32_t i = 0; i < textureStageStates.size(); i++) {
+      for (uint32_t j = 0; j < D3DTSS_CONSTANT + 1; j++) {
+        if (textureStageStateCaptures[i][j])
+          m_device->SetTextureStageState(i, (D3DTEXTURESTAGESTATETYPE)j, textureStageStates[i][j]);
+      }
+    }
+
+    if (indexBufferCaptured)
+      m_device->SetIndices(indexBuffer.ptr());
+
+    // TODO consolidate this into one code path...
+    // VS
+
+    for (uint32_t i = 0; i < vsConstants.floatConstants.size(); i++) {
+      if (vsConstants.floatConstants[i].data[0] != 0x80000000)
+       m_device->SetVertexShaderConstantF(i, (float*)&vsConstants.floatConstants[i], 1);
+    }
+
+    for (uint32_t i = 0; i < vsConstants.intConstants.size(); i++) {
+      if (vsConstants.intConstants[i].data[0] != 0x80000000)
+        m_device->SetVertexShaderConstantI(i, (int*)&vsConstants.intConstants[i], 1);
+    }
+
+    for (uint32_t i = 0; i < vsConstants.boolConstants.size(); i++) {
+      if (vsConstants.boolConstants[i] != 0x80000000)
+        m_device->SetVertexShaderConstantB(i, (int*)&vsConstants.boolConstants[i], 1);
+    }
+    
+    // PS
+
+    for (uint32_t i = 0; i < psConstants.floatConstants.size(); i++) {
+      if (psConstants.floatConstants[i].data[0] != 0x80000000)
+        m_device->SetPixelShaderConstantF(i, (float*)&psConstants.floatConstants[i], 1);
+    }
+
+    for (uint32_t i = 0; i < psConstants.intConstants.size(); i++) {
+      if (psConstants.intConstants[i].data[0] != 0x80000000)
+        m_device->SetPixelShaderConstantI(i, (int*)&psConstants.intConstants[i], 1);
+    }
+
+    for (uint32_t i = 0; i < psConstants.boolConstants.size(); i++) {
+      if (psConstants.boolConstants[i] != 0x80000000)
+        m_device->SetPixelShaderConstantB(i, (int*)&psConstants.boolConstants[i], 1);
+    }
+
+    // viewport, scissor, clip planes, etc...
   }
 
   HRESULT D3D9State::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
@@ -550,6 +663,300 @@ namespace dxup {
 
     dirtyFlags |= dirtyFlags::psConstants;
     arrayCopyT(&psConstants.boolConstants[StartRegister], pConstantData, BoolCount);
+    return D3D_OK;
+  }
+
+  void D3D9State::captureRenderState(D3DRENDERSTATETYPE state, bool recapture) {
+    if (recapture && renderStateCaptures[state] == false)
+      return;
+
+    m_device->GetRenderState(state, &renderState[state]);
+    renderStateCaptures[state] = true;
+  }
+
+  void D3D9State::captureTextureStageState(uint32_t stage, D3DTEXTURESTAGESTATETYPE type, bool recapture) {
+    if (recapture && textureStageStateCaptures[stage][type] == false)
+      return;
+
+    m_device->GetTextureStageState(stage, type, &textureStageStates[stage][type]);
+    textureStageStateCaptures[stage][type] = true;
+  }
+  void D3D9State::captureSamplerState(uint32_t sampler, D3DSAMPLERSTATETYPE type, bool recapture) {
+    if (recapture && samplerStateCaptures[sampler][type] == false)
+      return;
+
+    convert::mapStageToSampler(sampler, &sampler);
+    m_device->GetSamplerState(sampler, type, &samplerStates[sampler][type]);
+    samplerStateCaptures[sampler][type] = true;
+  }
+
+  void D3D9State::capturePixelRenderStates(bool recapture) {
+    captureRenderState(D3DRS_ZENABLE, recapture);
+    captureRenderState(D3DRS_FILLMODE, recapture);
+    captureRenderState(D3DRS_SHADEMODE, recapture);
+    captureRenderState(D3DRS_ZWRITEENABLE, recapture);
+    captureRenderState(D3DRS_ALPHATESTENABLE, recapture);
+    captureRenderState(D3DRS_LASTPIXEL, recapture);
+    captureRenderState(D3DRS_SRCBLEND, recapture);
+    captureRenderState(D3DRS_DESTBLEND, recapture);
+    captureRenderState(D3DRS_ZFUNC, recapture);
+    captureRenderState(D3DRS_ALPHAREF, recapture);
+    captureRenderState(D3DRS_ALPHAFUNC, recapture);
+    captureRenderState(D3DRS_DITHERENABLE, recapture);
+    captureRenderState(D3DRS_FOGSTART, recapture);
+    captureRenderState(D3DRS_FOGEND, recapture);
+    captureRenderState(D3DRS_FOGDENSITY, recapture);
+    captureRenderState(D3DRS_ALPHABLENDENABLE, recapture);
+    captureRenderState(D3DRS_DEPTHBIAS, recapture);
+    captureRenderState(D3DRS_STENCILENABLE, recapture);
+    captureRenderState(D3DRS_STENCILFAIL, recapture);
+    captureRenderState(D3DRS_STENCILZFAIL, recapture);
+    captureRenderState(D3DRS_STENCILPASS, recapture);
+    captureRenderState(D3DRS_STENCILFUNC, recapture);
+    captureRenderState(D3DRS_STENCILREF, recapture);
+    captureRenderState(D3DRS_STENCILMASK, recapture);
+    captureRenderState(D3DRS_STENCILWRITEMASK, recapture);
+    captureRenderState(D3DRS_TEXTUREFACTOR, recapture);
+    captureRenderState(D3DRS_WRAP0, recapture);
+    captureRenderState(D3DRS_WRAP1, recapture);
+    captureRenderState(D3DRS_WRAP2, recapture);
+    captureRenderState(D3DRS_WRAP3, recapture);
+    captureRenderState(D3DRS_WRAP4, recapture);
+    captureRenderState(D3DRS_WRAP5, recapture);
+    captureRenderState(D3DRS_WRAP6, recapture);
+    captureRenderState(D3DRS_WRAP7, recapture);
+    captureRenderState(D3DRS_WRAP8, recapture);
+    captureRenderState(D3DRS_WRAP9, recapture);
+    captureRenderState(D3DRS_WRAP10, recapture);
+    captureRenderState(D3DRS_WRAP11, recapture);
+    captureRenderState(D3DRS_WRAP12, recapture);
+    captureRenderState(D3DRS_WRAP13, recapture);
+    captureRenderState(D3DRS_WRAP14, recapture);
+    captureRenderState(D3DRS_WRAP15, recapture);
+    captureRenderState(D3DRS_COLORWRITEENABLE, recapture);
+    captureRenderState(D3DRS_BLENDOP, recapture);
+    captureRenderState(D3DRS_SCISSORTESTENABLE, recapture);
+    captureRenderState(D3DRS_SLOPESCALEDEPTHBIAS, recapture);
+    captureRenderState(D3DRS_ANTIALIASEDLINEENABLE, recapture);
+    captureRenderState(D3DRS_TWOSIDEDSTENCILMODE, recapture);
+    captureRenderState(D3DRS_CCW_STENCILFAIL, recapture);
+    captureRenderState(D3DRS_CCW_STENCILZFAIL, recapture);
+    captureRenderState(D3DRS_CCW_STENCILPASS, recapture);
+    captureRenderState(D3DRS_CCW_STENCILFUNC, recapture);
+    captureRenderState(D3DRS_COLORWRITEENABLE1, recapture);
+    captureRenderState(D3DRS_COLORWRITEENABLE2, recapture);
+    captureRenderState(D3DRS_COLORWRITEENABLE3, recapture);
+    captureRenderState(D3DRS_BLENDFACTOR, recapture);
+    captureRenderState(D3DRS_SRGBWRITEENABLE, recapture);
+    captureRenderState(D3DRS_SEPARATEALPHABLENDENABLE, recapture);
+    captureRenderState(D3DRS_SRCBLENDALPHA, recapture);
+    captureRenderState(D3DRS_DESTBLENDALPHA, recapture);
+    captureRenderState(D3DRS_BLENDOPALPHA, recapture);
+  }
+  void D3D9State::capturePixelTextureStates(bool recapture) {
+    for(uint32_t i = 0; i < 8; i++)
+    {
+      captureTextureStageState(i, D3DTSS_COLOROP, recapture);
+      captureTextureStageState(i, D3DTSS_COLORARG1, recapture);
+      captureTextureStageState(i, D3DTSS_COLORARG2, recapture);
+      captureTextureStageState(i, D3DTSS_ALPHAOP, recapture);
+      captureTextureStageState(i, D3DTSS_ALPHAARG1, recapture);
+      captureTextureStageState(i, D3DTSS_ALPHAARG2, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVMAT00, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVMAT01, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVMAT10, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVMAT11, recapture);
+      captureTextureStageState(i, D3DTSS_TEXCOORDINDEX, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVLSCALE, recapture);
+      captureTextureStageState(i, D3DTSS_BUMPENVLOFFSET, recapture);
+      captureTextureStageState(i, D3DTSS_TEXTURETRANSFORMFLAGS, recapture);
+      captureTextureStageState(i, D3DTSS_COLORARG0, recapture);
+      captureTextureStageState(i, D3DTSS_ALPHAARG0, recapture);
+      captureTextureStageState(i, D3DTSS_RESULTARG, recapture);
+    }
+  }
+  void D3D9State::capturePixelSamplerStates(bool recapture) {
+    forEachSampler([&](uint32_t i) {
+      captureSamplerState(i, D3DSAMP_ADDRESSU, recapture);
+      captureSamplerState(i, D3DSAMP_ADDRESSV, recapture);
+      captureSamplerState(i, D3DSAMP_ADDRESSW, recapture);
+      captureSamplerState(i, D3DSAMP_BORDERCOLOR, recapture);
+      captureSamplerState(i, D3DSAMP_MAGFILTER, recapture);
+      captureSamplerState(i, D3DSAMP_MINFILTER, recapture);
+      captureSamplerState(i, D3DSAMP_MIPFILTER, recapture);
+      captureSamplerState(i, D3DSAMP_MIPMAPLODBIAS, recapture);
+      captureSamplerState(i, D3DSAMP_MAXMIPLEVEL, recapture);
+      captureSamplerState(i, D3DSAMP_MAXANISOTROPY, recapture);
+      captureSamplerState(i, D3DSAMP_SRGBTEXTURE, recapture);
+      captureSamplerState(i, D3DSAMP_ELEMENTINDEX, recapture);
+    });
+  }
+  void D3D9State::capturePixelShaderStates(bool recapture) {
+    if (recapture && pixelShaderCaptured == false)
+      return;
+
+    pixelShaderCaptured = true;
+
+    Com<IDirect3DPixelShader9> tempShader;
+    m_device->GetPixelShader(&tempShader);
+    SetPixelShader(tempShader.ptr());
+
+    m_device->GetPixelShaderConstantF(0, (float*)&psConstants.floatConstants[0], 256);
+    m_device->GetPixelShaderConstantI(0, (int*)&psConstants.intConstants, 16);
+    m_device->GetPixelShaderConstantB(0, (int*)&psConstants.boolConstants, 16);
+  }
+  void D3D9State::captureVertexRenderStates(bool recapture) {
+    captureRenderState(D3DRS_CULLMODE, recapture);
+    captureRenderState(D3DRS_FOGENABLE, recapture);
+    captureRenderState(D3DRS_FOGCOLOR, recapture);
+    captureRenderState(D3DRS_FOGTABLEMODE, recapture);
+    captureRenderState(D3DRS_FOGSTART, recapture);
+    captureRenderState(D3DRS_FOGEND, recapture);
+    captureRenderState(D3DRS_FOGDENSITY, recapture);
+    captureRenderState(D3DRS_RANGEFOGENABLE, recapture);
+    captureRenderState(D3DRS_AMBIENT, recapture);
+    captureRenderState(D3DRS_COLORVERTEX, recapture);
+    captureRenderState(D3DRS_FOGVERTEXMODE, recapture);
+    captureRenderState(D3DRS_CLIPPING, recapture);
+    captureRenderState(D3DRS_LIGHTING, recapture);
+    captureRenderState(D3DRS_LOCALVIEWER, recapture);
+    captureRenderState(D3DRS_EMISSIVEMATERIALSOURCE, recapture);
+    captureRenderState(D3DRS_AMBIENTMATERIALSOURCE, recapture);
+    captureRenderState(D3DRS_DIFFUSEMATERIALSOURCE, recapture);
+    captureRenderState(D3DRS_SPECULARMATERIALSOURCE, recapture);
+    captureRenderState(D3DRS_VERTEXBLEND, recapture);
+    captureRenderState(D3DRS_CLIPPLANEENABLE, recapture);
+    captureRenderState(D3DRS_POINTSIZE, recapture);
+    captureRenderState(D3DRS_POINTSIZE_MIN, recapture);
+    captureRenderState(D3DRS_POINTSPRITEENABLE, recapture);
+    captureRenderState(D3DRS_POINTSCALEENABLE, recapture);
+    captureRenderState(D3DRS_POINTSCALE_A, recapture);
+    captureRenderState(D3DRS_POINTSCALE_B, recapture);
+    captureRenderState(D3DRS_POINTSCALE_C, recapture);
+    captureRenderState(D3DRS_MULTISAMPLEANTIALIAS, recapture);
+    captureRenderState(D3DRS_MULTISAMPLEMASK, recapture);
+    captureRenderState(D3DRS_PATCHEDGESTYLE, recapture);
+    captureRenderState(D3DRS_POINTSIZE_MAX, recapture);
+    captureRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, recapture);
+    captureRenderState(D3DRS_TWEENFACTOR, recapture);
+    captureRenderState(D3DRS_POSITIONDEGREE, recapture);
+    captureRenderState(D3DRS_NORMALDEGREE, recapture);
+    captureRenderState(D3DRS_MINTESSELLATIONLEVEL, recapture);
+    captureRenderState(D3DRS_MAXTESSELLATIONLEVEL, recapture);
+    captureRenderState(D3DRS_ADAPTIVETESS_X, recapture);
+    captureRenderState(D3DRS_ADAPTIVETESS_Y, recapture);
+    captureRenderState(D3DRS_ADAPTIVETESS_Z, recapture);
+    captureRenderState(D3DRS_ADAPTIVETESS_W, recapture);
+    captureRenderState(D3DRS_ENABLEADAPTIVETESSELLATION, recapture);
+    captureRenderState(D3DRS_NORMALIZENORMALS, recapture);
+    captureRenderState(D3DRS_SPECULARENABLE, recapture);
+    captureRenderState(D3DRS_SHADEMODE, recapture);
+  }
+  void D3D9State::captureVertexSamplerStates(bool recapture) {
+    forEachSampler([&](uint32_t i) {
+      captureSamplerState(i, D3DSAMP_DMAPOFFSET, recapture);
+    });
+  }
+  void D3D9State::captureVertexTextureStates(bool recapture) {
+    for(uint32_t i = 0; i < 8; i++) {
+      captureTextureStageState(i, D3DTSS_TEXCOORDINDEX, recapture);
+      captureTextureStageState(i, D3DTSS_TEXTURETRANSFORMFLAGS, recapture);
+    }
+  }
+  void D3D9State::captureVertexShaderStates(bool recapture) {
+    if (recapture && vertexShaderCaptured == false)
+      return;
+
+    vertexShaderCaptured = true;
+    
+    Com<IDirect3DVertexShader9> tempShader;
+    m_device->GetVertexShader(&tempShader);
+    SetVertexShader(tempShader.ptr());
+
+    m_device->GetVertexShaderConstantF(0, (float*)&vsConstants.floatConstants[0], 256);
+    m_device->GetVertexShaderConstantI(0, (int*)&vsConstants.intConstants, 16);
+    m_device->GetVertexShaderConstantB(0, (int*)&vsConstants.boolConstants, 16);
+  }
+  void D3D9State::captureVertexDeclaration(bool recapture) {
+    if (recapture && vertexDeclCaptured == false)
+      return;
+
+    vertexDeclCaptured = true;
+
+    Com<IDirect3DVertexDeclaration9> tempDecl;
+    m_device->GetVertexDeclaration(&tempDecl);
+    SetVertexDeclaration(tempDecl.ptr());
+  }
+  void D3D9State::captureTextures(bool recapture) {
+    forEachSampler([&](DWORD i) {
+      DWORD sampler;
+      convert::mapStageToSampler(i, &sampler);
+
+      if (recapture && textureCaptured[sampler] == false)
+        return;
+
+      textureCaptured[sampler] = true;
+
+      Com<IDirect3DBaseTexture9> tempTexture;
+      m_device->GetTexture(i, &tempTexture);
+      SetTexture(i, tempTexture.ptr());
+    });
+  }
+
+  void D3D9State::captureVertexStreams(bool recapture) {
+    for(uint32_t i = 0; i < vertexBuffers.size(); i++) {
+      if (recapture && vertexBufferCaptures[i] == false)
+        continue;
+      vertexBufferCaptures[i] = true;
+
+      Com<IDirect3DVertexBuffer9> tempBuffer;
+      UINT offset;
+      UINT stride;
+      m_device->GetStreamSource(i, &tempBuffer, &offset, &stride);
+      SetStreamSource(i, tempBuffer.ptr(), offset, stride);
+    }
+  }
+
+  void D3D9State::captureIndexBuffer(bool recapture) {
+    if (recapture && indexBufferCaptured == false)
+      return;
+
+    indexBufferCaptured = true;
+
+    Com<IDirect3DIndexBuffer9> tempBuffer;
+    m_device->GetIndices(&tempBuffer);
+    SetIndices(tempBuffer.ptr());
+  }
+
+  // StateBlock
+
+  Direct3DStateBlock9::Direct3DStateBlock9(Direct3DDevice9Ex* device, uint32_t stateBlockState)
+    : D3D9DeviceUnknown<IDirect3DStateBlock9>(device)
+    , m_state{ device, stateBlockState } {}
+
+  HRESULT STDMETHODCALLTYPE Direct3DStateBlock9::QueryInterface(REFIID riid, LPVOID* ppv) {
+    InitReturnPtr(ppv);
+
+    if (!ppv)
+      return E_POINTER;
+
+    if (riid == __uuidof(IDirect3DStateBlock9) || riid == __uuidof(IUnknown)) {
+      *ppv = ref(this);
+      return D3D_OK;
+    }
+
+    return E_NOINTERFACE;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DStateBlock9::Capture() {
+    CriticalSection cs(m_device);
+    m_state.capture(D3DSBT_ALL, true);
+    return D3D_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE Direct3DStateBlock9::Apply() {
+    CriticalSection cs(m_device);
+    m_state.apply();
     return D3D_OK;
   }
 }

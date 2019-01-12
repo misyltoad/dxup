@@ -40,7 +40,7 @@ namespace dxup {
     , m_behaviourFlags{ behaviourFlags }
     , m_flags(flags)
     , m_deviceType(deviceType)
-    , m_state{ new D3D9State }
+    , m_state{ new D3D9State(this, 0) }
     , m_stateBlock{ nullptr } {
     m_renderer = new D3D9ImmediateRenderer{ device, context, m_state };
     InitializeCriticalSection(&m_criticalSection);
@@ -336,7 +336,8 @@ namespace dxup {
       SetTextureStageState(i, D3DTSS_RESULTARG, D3DTA_CURRENT);
       SetTextureStageState(i, D3DTSS_CONSTANT, 0x00000000);
     }
-    for (uint32_t i = 0; i < 20; i++)
+
+    forEachSampler([&](uint32_t i)
     {
       SetTexture(i, 0);
       SetSamplerState(i, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
@@ -352,7 +353,7 @@ namespace dxup {
       SetSamplerState(i, D3DSAMP_SRGBTEXTURE, 0);
       SetSamplerState(i, D3DSAMP_ELEMENTINDEX, 0);
       SetSamplerState(i, D3DSAMP_DMAPOFFSET, 0);
-    }
+    });
 
     for (uint32_t i = 0; i < 6; i++) {
       float plane[4] = { 0, 0, 0, 0 };
@@ -1151,20 +1152,39 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateStateBlock(D3DSTATEBLOCKTYPE Type, IDirect3DStateBlock9** ppSB) {
     CriticalSection cs(this);
+    InitReturnPtr(ppSB);
+    if (ppSB == nullptr)
+      return D3DERR_INVALIDCALL;
 
-    log::stub("Direct3DDevice9Ex::CreateStateBlock");
+    *ppSB = ref(new Direct3DStateBlock9(this, Type));
+    
     return D3D_OK;
+  }
+  D3D9State* Direct3DDevice9Ex::GetEditState() {
+    if (m_stateBlock != nullptr)
+      return m_stateBlock->GetState();
+
+    return m_state;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::BeginStateBlock() {
     CriticalSection cs(this);
 
-    log::stub("Direct3DDevice9Ex::BeginStateBlock");
+    if (m_stateBlock)
+      delete m_stateBlock;
+
+    m_stateBlock = new Direct3DStateBlock9(this, 0);
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::EndStateBlock(IDirect3DStateBlock9** ppSB) {
     CriticalSection cs(this);
+    InitReturnPtr(ppSB);
 
-    log::stub("Direct3DDevice9Ex::EndStateBlock");
+    if (ppSB == nullptr || m_stateBlock == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *ppSB = ref(m_stateBlock);
+    m_stateBlock = nullptr;
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetClipStatus(CONST D3DCLIPSTATUS9* pClipStatus) {

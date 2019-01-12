@@ -25,8 +25,6 @@ namespace dxup {
 
     void color(D3DCOLOR color, FLOAT* d3d11Color);
 
-    HRESULT mapStageToSampler(DWORD Stage, DWORD* Sampler);
-
     inline D3D11_CULL_MODE cullMode(DWORD mode) {
       switch (mode) {
       case D3DCULL_NONE: return D3D11_CULL_NONE;
@@ -142,6 +140,20 @@ namespace dxup {
       else
         return D3D11_ENCODE_BASIC_FILTER(minType, magType, mipType, D3D11_FILTER_REDUCTION_TYPE_STANDARD);
     }
+
+    template <typename T>
+    HRESULT mapStageToSampler(T Stage, T* Sampler) {
+      if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
+        return D3DERR_INVALIDCALL;
+
+      // For vertex samplers.
+      if (Stage >= D3DVERTEXTEXTURESAMPLER0)
+        Stage = 16 + (Stage - D3DVERTEXTEXTURESAMPLER0);
+
+      *Sampler = Stage;
+
+      return D3D_OK;
+    }
   }
 
   namespace reinterpret {
@@ -171,6 +183,12 @@ namespace dxup {
   template <typename T, typename J>
   T* useAs(J* obj) {
     return reinterpret_cast<T*>(obj);
+  }
+
+  template <typename T>
+  inline void forEachSampler(T func) {
+    for (uint32_t i = 0; i <= D3DVERTEXTEXTURESAMPLER3; i = (i != 15) ? (i + 1) : D3DVERTEXTEXTURESAMPLER0)
+      func(i);
   }
 
 }

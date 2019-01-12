@@ -2,6 +2,7 @@
 
 #include "d3d9_base.h"
 #include "d3d9_device.h"
+#include "d3d9_device_unknown.h"
 #include "d3d9_shaders.h"
 #include "d3d9_vertexdeclaration.h"
 #include "d3d9_buffer.h"
@@ -26,7 +27,7 @@ namespace dxup {
 
   class D3D9State {
   public:
-    D3D9State(bool stateBlock);
+    D3D9State(Direct3DDevice9Ex* device, uint32_t stateBlockType);
 
     HRESULT GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture);
     HRESULT SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture);
@@ -79,9 +80,12 @@ namespace dxup {
     HRESULT GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount);
     HRESULT SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
 
+    void capture(uint32_t stateBlockType, bool recapture);
+    void apply();
+
   protected:
 
-    bool stateBlock;
+    uint32_t stateBlockType;
 
     friend class D3D9ImmediateRenderer;
 
@@ -125,6 +129,43 @@ namespace dxup {
 
     D3D9ShaderConstants vsConstants;
     D3D9ShaderConstants psConstants;
+
+    void captureRenderState(D3DRENDERSTATETYPE state, bool recapture = false);
+    void captureTextureStageState(uint32_t stage, D3DTEXTURESTAGESTATETYPE type, bool recapture = false);
+    void captureSamplerState(uint32_t sampler, D3DSAMPLERSTATETYPE type, bool recapture = false);
+
+    void capturePixelRenderStates(bool recapture = false);
+    void capturePixelTextureStates(bool recapture = false);
+    void capturePixelSamplerStates(bool recapture = false);
+    void capturePixelShaderStates(bool recapture = false);
+    void captureVertexRenderStates(bool recapture = false);
+    void captureVertexSamplerStates(bool recapture = false);
+    void captureVertexTextureStates(bool recapture = false);
+    void captureVertexShaderStates(bool recapture = false);
+    void captureVertexDeclaration(bool recapture = false);
+    void captureTextures(bool recapture = false);
+    void captureVertexStreams(bool recapture = false);
+    void captureIndexBuffer(bool recapture = false);
+
+    Direct3DDevice9Ex* m_device;
+  };
+
+  class Direct3DStateBlock9 : public D3D9DeviceUnknown<IDirect3DStateBlock9> {
+  public:
+
+    Direct3DStateBlock9(Direct3DDevice9Ex* device, uint32_t stateBlockType);
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppv) override;
+    HRESULT STDMETHODCALLTYPE Capture() override;
+    HRESULT STDMETHODCALLTYPE Apply() override;
+
+    inline D3D9State* GetState() {
+      return &m_state;
+    }
+
+  private:
+
+    D3D9State m_state;
   };
 
 }
