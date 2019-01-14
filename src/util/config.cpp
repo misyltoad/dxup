@@ -29,6 +29,7 @@ namespace dxup {
 #else
           initVar(var::Debug, "DXUP_DEBUG", "0");
 #endif
+          initVar(var::ForceWindowed, "DXUP_FORCEWINDOWED", "0");
           initVar(var::RandomClearColour, "DXUP_RANDOMCLEARCOLOUR", "0");
           initVar(var::ShaderSpew, "DXUP_SHADERSPEW", "0");
           initVar(var::ShaderDump, "DXUP_SHADERDUMP", "0");

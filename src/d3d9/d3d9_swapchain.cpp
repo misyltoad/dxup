@@ -38,10 +38,12 @@ namespace dxup {
     if (FAILED(result))
       return log::d3derr(D3DERR_INVALIDCALL, "Reset: D3D11 ResizeBuffers failed in swapchain reset.");
 
-    result = m_swapchain->SetFullscreenState(!parameters->Windowed, nullptr);
+    if (!config::getBool(config::ForceWindowed)) {
+      result = m_swapchain->SetFullscreenState(!parameters->Windowed, nullptr);
 
-    if (FAILED(result))
-      log::warn("Failed to change fullscreen state!");
+      if (FAILED(result))
+        log::warn("Failed to change fullscreen state!");
+    }
 
     // Make crap!
 
