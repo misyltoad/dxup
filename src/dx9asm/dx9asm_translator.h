@@ -78,7 +78,7 @@ namespace dxup {
           if (desc.index == i)
             return true;
         }
-        
+
         return false;
       }
 
@@ -116,8 +116,10 @@ namespace dxup {
       bool handleSge(DX9Operation& operation);
       bool handleNrm(DX9Operation& operation);
       bool handlePow(DX9Operation& operation);
+      bool handleGenericDef(DX9Operation& operation, bool boolean);
       bool handleDef(DX9Operation& operation);
       bool handleDefi(DX9Operation& operation);
+      bool handleDefB(DX9Operation& operation);
 
       bool handleIfc(DX9Operation& operation);
 

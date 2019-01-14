@@ -102,7 +102,7 @@ namespace dxup {
       bool generateId = shouldGenerateId(transient);
 
       getRegisterMap().addRegisterMapping(transient, generateId, mapping);
-      
+
       return true;
     }
 
@@ -130,7 +130,7 @@ namespace dxup {
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
-      
+
       DXBCOperand tempOpSrc = getRegisterMap().getNextInternalTemp();
       DXBCOperand tempOpDst = tempOpSrc;
       tempOpSrc.setSwizzleOrWritemask(noSwizzle);
@@ -409,15 +409,20 @@ namespace dxup {
       return true;
     }
 
-    bool ShaderCodeTranslator::handleDef(DX9Operation& operation) {
+    bool ShaderCodeTranslator::handleGenericDef(DX9Operation& operation, bool boolean) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
-      const DX9Operand* vec4 = operation.getOperandByType(optype::Vec4);
+      const DX9Operand* vec4 = operation.getOperandByType(boolean ? optype::Bool : optype::Vec4);
 
       RegisterMapping mapping;
       mapping.dx9Id = dst->getRegNumber();
       mapping.dx9Type = dst->getRegType();
       uint32_t data[4];
       vec4->getValues(data);
+      if (boolean) {
+        data[1]  = data[0];
+        data[2]  = data[0];
+        data[3]  = data[0];
+      }
       mapping.dxbcOperand.setData(data, 4);
       mapping.dxbcOperand.setupLiteral(4);
 
@@ -428,20 +433,16 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleDef(DX9Operation& operation) {
+      return handleGenericDef(operation, false);
+    }
+
     bool ShaderCodeTranslator::handleDefi(DX9Operation& operation) {
-      log::warn("Unimplemented operation defi.");
+      return handleGenericDef(operation, false);
+    }
 
-      nextToken(); // dst
-
-       nextToken(); // int0
-
-      if (getShaderType() == ShaderType::Vertex) {
-        nextToken(); // int1
-        nextToken(); // int1
-        nextToken(); // int1
-      }
-
-      return true;
+    bool ShaderCodeTranslator::handleDefB(DX9Operation& operation) {
+      return handleGenericDef(operation, true);
     }
 
     struct CompareMode {
