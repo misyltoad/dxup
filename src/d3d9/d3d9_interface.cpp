@@ -870,7 +870,7 @@ namespace dxup {
     pMode->Format = Format;
     pMode->Width = RequestedMode.Width;
     pMode->Height = RequestedMode.Height;
-    pMode->RefreshRate = RequestedMode.RefreshRate.Denominator;
+    pMode->RefreshRate = RequestedMode.RefreshRate.Numerator / RequestedMode.RefreshRate.Denominator;
     pMode->ScanLineOrdering = convert::scanlineOrdering(RequestedMode.ScanlineOrdering);
     pMode->Size = sizeof(D3DDISPLAYMODEEX);
 
