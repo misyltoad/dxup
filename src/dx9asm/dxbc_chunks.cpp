@@ -34,7 +34,7 @@ namespace dxup {
     void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t num = 0;
       if (shdrCode.isIndirectMarked())
-        num = 256 + 16; // Do all 256 if we use indirect addressing.
+        num = 1 + 256 + 16 + 4; // Do all 256 if we use indirect addressing.
       else
         num = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
@@ -254,12 +254,18 @@ namespace dxup {
           uint32_t floatTypeOffset = getChunkSize(bytecode);
           pushObject(obj, variableType);
 
-          variableType.varClass = D3D_SVC_SCALAR;
           variableType.varType = D3D_SVT_INT;
 
           uint32_t intVecTypeOffset = getChunkSize(bytecode);
           pushObject(obj, variableType);
 
+          variableType.varType = D3D_SVT_UINT;
+
+          uint32_t uintVecTypeOffset = getChunkSize(bytecode);
+          pushObject(obj, variableType);
+
+          variableType.varType = D3D_SVT_INT;
+          variableType.varClass = D3D_SVC_SCALAR;
           variableType.columns = 1;
 
           uint32_t boolTypeOffset = getChunkSize(bytecode);
@@ -274,12 +280,17 @@ namespace dxup {
             //info.defaultValueOffset = defaultValueOffset;
             info.defaultValueOffset = 0;
 
-            if (i < 256) {
+            if (i < 1) {
+              // bitfields
+              info.size = 4 * sizeof(int);
+              info.typeOffset = uintVecTypeOffset;
+            }
+            else if (i < 256 + 1) {
               // float constants
               info.size = 4 * sizeof(float);
               info.typeOffset = floatTypeOffset;
             }
-            else if (i < 256 + 16) {
+            else if (i < 256 + 16 + 1) {
               // int constants
               info.size = 4 * sizeof(int);
               info.typeOffset = intVecTypeOffset;
