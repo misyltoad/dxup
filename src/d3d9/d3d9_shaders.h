@@ -55,8 +55,10 @@ namespace dxup {
       if (ppv == nullptr)
         return E_POINTER;
 
-      if (riid == __uuidof(Base) || riid == __uuidof(IUnknown))
+      if (riid == __uuidof(Base) || riid == __uuidof(IUnknown)) {
         *ppv = ref(this);
+        return D3D_OK;
+      }
 
       return E_NOINTERFACE;
     }
