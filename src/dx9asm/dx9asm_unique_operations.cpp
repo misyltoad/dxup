@@ -373,6 +373,59 @@ namespace dxup {
       return true;
     }
 
+    bool ShaderCodeTranslator::handleGenericTexReg2XX(DX9Operation& operation, uint32_t swizzle) {
+      const DX9Operand* dst = operation.getOperandByType(optype::Dst);
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+
+      DXBCOperand dstOp = { *this, operation, *dst, 0 };
+      DXBCOperand srcOp = { *this, operation, *src0, 0 };
+
+      uint32_t samplerRegNum = dstOp.getRegNumber();
+
+      DXBCOperand texCoordOp = srcOp;
+      texCoordOp.setSwizzleOrWritemask(swizzle);
+
+      DXBCOperand textureOp{ D3D10_SB_OPERAND_TYPE_RESOURCE, 1 };
+      textureOp.setData(&samplerRegNum, 1);
+      textureOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+      textureOp.setSwizzleOrWritemask(noSwizzle);
+
+      DXBCOperand samplerOp{ D3D10_SB_OPERAND_TYPE_SAMPLER, 1 };
+      samplerOp.setData(&samplerRegNum, 1);
+      samplerOp.setComponents(0);
+      samplerOp.setRepresentation(0, D3D10_SB_OPERAND_INDEX_IMMEDIATE32);
+
+      if (!isSamplerUsed(samplerRegNum)) {
+        log::warn("Adding an implicit 2D sampler.");
+
+        SamplerDesc desc;
+        desc.index = samplerRegNum;
+        desc.dimension = D3D10_SB_RESOURCE_DIMENSION_TEXTURE2D;
+
+        m_samplers.push_back(desc);
+      }
+
+      DXBCOperation{ D3D10_SB_OPCODE_SAMPLE, operation.saturate() }
+        .setSampler(true)
+        .appendOperand(dstOp)
+        .appendOperand(texCoordOp)
+        .appendOperand(textureOp)
+        .appendOperand(samplerOp)
+        .push(*this);
+
+      return true;
+    }
+
+    bool ShaderCodeTranslator::handleTexReg2Ar(DX9Operation& operation) {
+      return handleGenericTexReg2XX(operation, ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_W, D3D10_SB_4_COMPONENT_R, D3D10_SB_4_COMPONENT_R, D3D10_SB_4_COMPONENT_R));
+    }
+
+    bool ShaderCodeTranslator::handleTexReg2Gb(DX9Operation& operation) {
+      return handleGenericTexReg2XX(operation, ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+        ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_G, D3D10_SB_4_COMPONENT_B, D3D10_SB_4_COMPONENT_B, D3D10_SB_4_COMPONENT_B));
+    }
+
     bool ShaderCodeTranslator::handleLrp(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);

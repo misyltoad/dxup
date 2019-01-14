@@ -108,6 +108,9 @@ namespace dxup {
       bool handleComment(DX9Operation& operation);
       bool handleDcl(DX9Operation& operation);
       bool handleTex(DX9Operation& operation);
+      bool handleGenericTexReg2XX(DX9Operation& operation, uint32_t swizzle);
+      bool handleTexReg2Ar(DX9Operation& operation);
+      bool handleTexReg2Gb(DX9Operation& operation);
       bool handleLrp(DX9Operation& operation);
       bool handleMov(DX9Operation& operation);
       bool handleMova(DX9Operation& operation);
