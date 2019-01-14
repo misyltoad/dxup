@@ -82,12 +82,15 @@ namespace dxup {
         m_device->SetRenderState((D3DRENDERSTATETYPE)i, renderState[i]);
     }
 
-    for (uint32_t i = 0; i < samplerStates.size(); i++) {
+    forEachSampler([&](uint32_t i) {
       for (uint32_t j = 0; j < D3DSAMP_DMAPOFFSET + 1; j++) {
-        if (samplerStateCaptures[i][j])
+        uint32_t internalSampler;
+        convert::mapStageToSampler(i, &internalSampler);
+
+        if (samplerStateCaptures[internalSampler][j])
           m_device->SetSamplerState(i, (D3DSAMPLERSTATETYPE)j, renderState[j]);
       }
-    }
+    });
 
     for (uint32_t i = 0; i < textureStageStates.size(); i++) {
       for (uint32_t j = 0; j < D3DTSS_CONSTANT + 1; j++) {
@@ -697,9 +700,10 @@ namespace dxup {
     if (recapture && samplerStateCaptures[sampler][type] == false)
       return;
 
-    convert::mapStageToSampler(sampler, &sampler);
-    m_device->GetSamplerState(sampler, type, &samplerStates[sampler][type]);
-    samplerStateCaptures[sampler][type] = true;
+    uint32_t internalSampler;
+    convert::mapStageToSampler(sampler, &internalSampler);
+    m_device->GetSamplerState(sampler, type, &samplerStates[internalSampler][type]);
+    samplerStateCaptures[internalSampler][type] = true;
   }
 
   void D3D9State::capturePixelRenderStates(bool recapture) {
