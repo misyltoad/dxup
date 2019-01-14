@@ -10,11 +10,13 @@ namespace dxup {
 
   struct D3D9ShaderConstants {
     D3D9ShaderConstants() {
+      mask = 0;
       std::memset(floatConstants.data(), 0, floatConstants.size() * sizeof(floatConstants[0]));
       std::memset(intConstants.data(), 0, intConstants.size() * sizeof(intConstants[0]));
       std::memset(boolConstants.data(), 0, boolConstants.size() * sizeof(boolConstants[0]));
     }
 
+    uint32_t mask;
     std::array<Vector<float, 4>, 256> floatConstants;
     std::array<Vector<int, 4>, 16> intConstants;
     std::array<int, 16> boolConstants;
@@ -47,11 +49,19 @@ namespace dxup {
       D3D11_MAPPED_SUBRESOURCE res;
       m_context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 
-      // This can probably be consolidated into a single one.
+      // Constant mask for UINT/UBYTE integral float conversion.
       uint8_t* data = (uint8_t*)res.pData;
-      std::memcpy(data, constants.floatConstants.data(), sizeof(constants.floatConstants));
-      std::memcpy(data + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
-      std::memcpy(data + sizeof(constants.floatConstants) + sizeof(constants.intConstants), constants.boolConstants.data(), sizeof(constants.boolConstants));
+
+      uint32_t* bitfield = (uint32_t*)data;
+      bitfield[0] = constants.mask; // [vs] format conv bitfield [iuiuiuiuiuiu...]
+      bitfield[1] = 0; // [ps] reserved (probably will be alphatest enable)
+      bitfield[2] = 0; // [ps] reserved (probably will be alphatest reference)
+      bitfield[3] = 0; // reserved
+
+      // This can probably be consolidated into a single one.
+      std::memcpy(data + 16, constants.floatConstants.data(), sizeof(constants.floatConstants));
+      std::memcpy(data + 16 + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
+      std::memcpy(data + 16 + sizeof(constants.floatConstants) + sizeof(constants.intConstants), constants.boolConstants.data(), sizeof(constants.boolConstants));
 
       m_context->Unmap(m_buffer.ptr(), 0);
     }

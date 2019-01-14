@@ -28,6 +28,7 @@ namespace dxup {
 
       DXBCOperand relativeOperand;
       bool hasRelativeOperand = false;
+      bool inputTemp = false;
 
       uint32_t readMask = 0;
       uint32_t writeMask = 0;

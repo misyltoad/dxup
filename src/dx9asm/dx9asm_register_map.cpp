@@ -99,7 +99,12 @@ namespace dxup {
         dxbcType = D3D10_SB_OPERAND_TYPE_TEMP; break;
 
       case D3DSPR_INPUT: {
-        dxbcType = D3D10_SB_OPERAND_TYPE_INPUT;
+        if (translator.getShaderType() == ShaderType::Vertex) {
+          dxbcType = D3D10_SB_OPERAND_TYPE_TEMP;
+          newMapping.inputTemp = true;
+        }
+        else
+          dxbcType = D3D10_SB_OPERAND_TYPE_INPUT;
 
         if (translator.getMajorVersion() != 3 && translator.getShaderType() == ShaderType::Pixel) {
           newMapping.dclInfo.type = UsageType::Input;
@@ -114,6 +119,7 @@ namespace dxup {
 
         const uint32_t constantBufferIndex = 0;
         uint32_t constId = newMapping.dx9Id;
+        constId += 1; // Our first constant is reserved for UBYTE/UINT integral float masks.
         if (regType == D3DSPR_CONSTINT)
           constId += 256;
         else if (regType == D3DSPR_CONSTBOOL)
@@ -209,6 +215,9 @@ namespace dxup {
       bool io = newMapping.dclInfo.type != UsageType::None;
       bool transient = io && translator.isTransient(newMapping.dclInfo.type == UsageType::Input);
       bool generateId = translator.shouldGenerateId(transient);
+
+      if (newMapping.inputTemp) // We deal with this later in dcl territory.
+        transient = false;
 
       if (dxbcType == D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER)
         generateId = false;

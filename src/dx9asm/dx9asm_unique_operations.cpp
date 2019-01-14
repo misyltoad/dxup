@@ -46,6 +46,10 @@ namespace dxup {
       mapping.dclInfo.usageIndex = usageToken->getUsageIndex();
 
       if (dst->getRegType() == D3DSPR_INPUT) {
+        if (getShaderType() == ShaderType::Vertex) {
+          mapping.dxbcOperand.setRegisterType(D3D10_SB_OPERAND_TYPE_TEMP);
+          mapping.inputTemp = true;
+        }
         mapping.dclInfo.type = UsageType::Input;
 
         if (getMajorVersion() != 3 && getShaderType() == ShaderType::Pixel)
@@ -100,6 +104,9 @@ namespace dxup {
       bool io = mapping.dclInfo.type != UsageType::None;
       bool transient = io && isTransient(mapping.dclInfo.type == UsageType::Input);
       bool generateId = shouldGenerateId(transient);
+
+      if (mapping.inputTemp) // We deal with this later in dcl territory.
+        transient = false;
 
       getRegisterMap().addRegisterMapping(transient, generateId, mapping);
       

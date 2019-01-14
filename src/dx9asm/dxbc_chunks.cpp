@@ -199,7 +199,7 @@ namespace dxup {
           resourceBindingDescOffset = 0;
 
         resourceBindingCount = bindingCount;
-        
+
         // Just one for now...
         constantBufferDescOffset = getChunkSize(bytecode);
         if (constantBufferCount != 0) {
@@ -336,7 +336,7 @@ namespace dxup {
 
           uint32_t opcode = 0;
           uint32_t interpMode = UINT32_MAX;
-          
+
           if (shdrCode.getShaderType() == ShaderType::Vertex) {
             if (Input)
               opcode = hasSiv ? D3D10_SB_OPCODE_DCL_INPUT_SIV : D3D10_SB_OPCODE_DCL_INPUT;
@@ -355,11 +355,15 @@ namespace dxup {
           uint32_t lengthOffset = hasSiv ? 1 : 0;
 
           DXBCOperand operand = mapping.dxbcOperand;
-          
-          if (!Input)
+
+          if (!Input) {
             operand.setSwizzleOrWritemask(mapping.writeMask);
-          else
+            operand.setRegisterType(D3D10_SB_OPERAND_TYPE_OUTPUT);
+          }
+          else {
             operand.setSwizzleOrWritemask(mapping.readMask);
+            operand.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
+          }
 
 
           DXBCOperation{ opcode, false, UINT32_MAX, lengthOffset, interpMode }
@@ -382,12 +386,16 @@ namespace dxup {
 
         // Temps
         uint32_t tempCount = shdrCode.getRegisterMap().getTotalTempCount();
+
+        if (shdrCode.getShaderType() == ShaderType::Vertex)
+          tempCount += 2; // +2 for UINT/UBYTE conversion to integral float internal registers.
+
         if (tempCount > 0)
         {
           DXBCOperation{ D3D10_SB_OPCODE_DCL_TEMPS, false, 2 }.push(obj);
           obj.push_back(tempCount); // Followed by DWORD count of temps. Not an operand!
         }
-        
+
         // Samplers
         {
           for (uint32_t i = 0; i < 16; i++) {
@@ -438,7 +446,7 @@ namespace dxup {
           uint32_t cbufferCount = 0;
 
           if (shdrCode.isIndirectMarked())
-            cbufferCount = 256 + 16;
+            cbufferCount = 1 + 256 + 16 + 4;
           else
             cbufferCount = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
@@ -451,6 +459,104 @@ namespace dxup {
           }
         }
 
+        if (shdrCode.getShaderType() == ShaderType::Vertex) {
+          // Do input -> reg for UINT/UBYTE types to integral float.
+          uint32_t mappingCount = 0;
+          for (auto& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
+            if (mapping.inputTemp) {
+              DXBCOperand rVxSrc = mapping.dxbcOperand;
+              rVxSrc.setSwizzleOrWritemask(noSwizzle);
+              DXBCOperand rVxDst = mapping.dxbcOperand;
+              rVxDst.setSwizzleOrWritemask(writeAll);
+
+              DXBCOperand vXSrc = rVxSrc;
+              vXSrc.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
+              DXBCOperand vXDst = rVxSrc;
+              vXDst.setRegisterType(D3D10_SB_OPERAND_TYPE_INPUT);
+
+              VertexInput input;
+              input.regId = mapping.dxbcOperand.getRegNumber();
+              input.dclInfo = mapping.dclInfo;
+              bytecode.getVertexInputs().push_back(input);
+
+              uint32_t tempCount = shdrCode.getRegisterMap().getTotalTempCount();
+
+              DXBCOperand rFormatSrc = DXBCOperand{D3D10_SB_OPERAND_TYPE_TEMP, 1}
+                .setSwizzleOrWritemask(noSwizzle)
+                .setData(&tempCount, 1);
+              DXBCOperand rFormatDst = rFormatSrc;
+              rFormatDst.setSwizzleOrWritemask(writeAll);
+
+              tempCount++;
+
+              DXBCOperand rConversionTempSrc = DXBCOperand{D3D10_SB_OPERAND_TYPE_TEMP, 1}
+                .setSwizzleOrWritemask(noSwizzle)
+                .setData(&tempCount, 1);
+
+              DXBCOperand rConversionTempDst = rConversionTempSrc;
+              rConversionTempDst.setSwizzleOrWritemask(writeAll);
+
+              if (mappingCount % 2 == 0) {
+                uint32_t doubleCount = mappingCount * 2;
+                uint32_t data[2] = { 0, 0 };
+
+                DXBCOperation{ D3D11_SB_OPCODE_UBFE, false }
+                  .appendOperand(rFormatDst)
+                  .appendOperand(DXBCOperand{1, 1, 1, 1})
+                  .appendOperand(DXBCOperand{doubleCount, doubleCount + 1, doubleCount + 2, doubleCount + 3})
+                  .appendOperand(DXBCOperand{ D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER, 2 }.setSwizzleOrWritemask(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+                    ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X)).setData(data, 2))
+                  .push(obj);
+              }
+
+              // TODO! Consolidate me!
+              // Itof Pass
+              DXBCOperation{ D3D10_SB_OPCODE_ITOF, false }
+                .appendOperand(rConversionTempDst)
+                .appendOperand(vXSrc)
+                .push(obj);
+
+              if (mappingCount % 2 == 0) {
+                rFormatSrc.setSwizzleOrWritemask(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+                                                 ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X, D3D10_SB_4_COMPONENT_X));
+              } else {
+                rFormatSrc.setSwizzleOrWritemask(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+                                                 ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_Z, D3D10_SB_4_COMPONENT_Z, D3D10_SB_4_COMPONENT_Z, D3D10_SB_4_COMPONENT_Z));
+              }
+
+              DXBCOperation{ D3D10_SB_OPCODE_MOVC, false }
+                .appendOperand(rVxDst)
+                .appendOperand(rFormatSrc)
+                .appendOperand(rConversionTempSrc)
+                .appendOperand(vXSrc)
+                .push(obj);
+
+              // Utof Pass
+              DXBCOperation{ D3D10_SB_OPCODE_UTOF, false }
+                .appendOperand(rConversionTempDst)
+                .appendOperand(vXSrc)
+                .push(obj);
+
+              if (mappingCount % 2 == 0) {
+                rFormatSrc.setSwizzleOrWritemask(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+                                                 ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_Y, D3D10_SB_4_COMPONENT_Y));
+              } else {
+                rFormatSrc.setSwizzleOrWritemask(ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SELECTION_MODE(D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE_MODE) |
+                                                 ENCODE_D3D10_SB_OPERAND_4_COMPONENT_SWIZZLE(D3D10_SB_4_COMPONENT_W, D3D10_SB_4_COMPONENT_W, D3D10_SB_4_COMPONENT_W, D3D10_SB_4_COMPONENT_W));
+              }
+
+              DXBCOperation{ D3D10_SB_OPCODE_MOVC, false }
+                .appendOperand(rVxDst)
+                .appendOperand(rFormatSrc)
+                .appendOperand(rConversionTempSrc)
+                .appendOperand(rVxSrc)
+                .push(obj);
+
+              mappingCount++;
+            }
+          }
+        }
+
       }
 
       void pushInternal(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) override {
@@ -458,7 +564,7 @@ namespace dxup {
 
         PlaceholderPtr<uint32_t> headerChunkSize{ "[SHEX] Chunk Header - Chunk Data Size", &((ChunkHeader*)nextPtr(obj))->size };
         ChunkHeader{ fourcc("SHEX") }.push(obj); // [PUSH] Chunk Header
-        
+
         obj.push_back(ENCODE_D3D10_SB_TOKENIZED_PROGRAM_VERSION_TOKEN(shdrCode.getShaderType() == ShaderType::Vertex ? D3D10_SB_VERTEX_SHADER : D3D10_SB_PIXEL_SHADER, 5, 0)); // [PUSH] DXBC Version Token - VerTok
 
         PlaceholderPtr<uint32_t> dwordCount{ "[SHEX] Dword Count", nextPtr(obj) };
@@ -525,7 +631,7 @@ namespace dxup {
               if (mapping.dclInfo.usage == transMapping.d3d9Usage && mapping.dclInfo.usageIndex == transMapping.d3d9UsageIndex)
                 baseMask |= isInput(ChunkType) ? mapping.readMask : mapping.writeMask;
             });
-            
+
             baseMask = DECODE_D3D10_SB_OPERAND_4_COMPONENT_MASK(baseMask);
             element.mask = 0xFFu;
             uint32_t rwMask = baseMask >> D3D10_SB_OPERAND_4_COMPONENT_MASK_SHIFT;

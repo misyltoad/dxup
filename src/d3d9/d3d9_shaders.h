@@ -61,7 +61,7 @@ namespace dxup {
       return E_NOINTERFACE;
     }
 
-    const dx9asm::ShaderBytecode* GetTranslation() const {
+    dx9asm::ShaderBytecode* GetTranslation() {
       return m_translation;
     }
 
@@ -91,7 +91,7 @@ namespace dxup {
     std::vector<InputLink> m_inputLinks;
     std::vector<uint32_t> m_dx9asm;
     Com<D3D11Shader> m_shader;
-    const dx9asm::ShaderBytecode* m_translation;
+    dx9asm::ShaderBytecode* m_translation;
   };
 
   using Direct3DVertexShader9 = Direct3DShader9<ID3D11VertexShader, IDirect3DVertexShader9>;

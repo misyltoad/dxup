@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dxbc_header.h"
+#include "dx9asm_register_mapping.h"
 #include <vector>
 
 namespace dxup {
@@ -8,6 +9,11 @@ namespace dxup {
   namespace dx9asm {
 
     class ShaderCodeTranslator;
+
+    struct VertexInput {
+      uint32_t regId;
+      DclInfo dclInfo;
+    };
 
     class ShaderBytecode {
     public:
@@ -28,8 +34,13 @@ namespace dxup {
       inline std::vector<uint32_t>& getBytecodeVector() {
         return m_bytecode;
       }
+
+      inline std::vector<VertexInput>& getVertexInputs() {
+        return m_vertexInputs;
+      }
     private:
       std::vector<uint32_t> m_bytecode;
+      std::vector<VertexInput> m_vertexInputs;
     };
 
   }

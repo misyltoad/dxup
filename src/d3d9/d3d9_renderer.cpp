@@ -87,6 +87,27 @@ namespace dxup {
     auto& elements = m_state->vertexDecl->GetD3D11Descs();
     auto* vertexShdrBytecode = m_state->vertexShader->GetTranslation();
 
+    auto& vertexInputs = m_state->vertexShader->GetTranslation()->getVertexInputs();
+
+    uint32_t mask = 0;
+    auto& d3d9Descs = m_state->vertexDecl->GetD3D9Descs();
+    for (auto& vertexInput : vertexInputs) {
+      for (auto& d3d9Desc : d3d9Descs) {
+        if (vertexInput.dclInfo.usage != d3d9Desc.Usage || vertexInput.dclInfo.usageIndex != d3d9Desc.UsageIndex)
+          continue;
+
+        if (d3d9Desc.Type == D3DDECLTYPE_SHORT2 || d3d9Desc.Type == D3DDECLTYPE_SHORT4)
+          mask |= 1 << (vertexInput.regId * 2);
+        else if (d3d9Desc.Type == D3DDECLTYPE_UBYTE4)
+          mask |= 1 << (vertexInput.regId * 2 + 1);
+      }
+    }
+
+    if (m_state->vsConstants.mask != mask)
+      m_state->dirtyFlags |= dirtyFlags::vsConstants;
+
+    m_state->vsConstants.mask = mask;
+
     ID3D11InputLayout* layout = m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr());
 
     bool created = false;
@@ -386,14 +407,14 @@ namespace dxup {
     if (m_state->dirtyFlags & dirtyFlags::indexBuffer)
       updateIndexBuffer();
 
+    if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
+      updateVertexShaderAndInputLayout();
+
     if (m_state->dirtyFlags & dirtyFlags::vsConstants)
       updateVertexConstants();
 
     if (m_state->dirtyFlags & dirtyFlags::psConstants)
       updatePixelConstants();
-
-    if (m_state->dirtyFlags & dirtyFlags::vertexDecl || m_state->dirtyFlags & dirtyFlags::vertexShader)
-      updateVertexShaderAndInputLayout();
 
     if (m_state->dirtySamplers != 0)
       updateSamplers();
