@@ -2,6 +2,7 @@
 #include <stdarg.h>
 
 #include "../util/config.h"
+#include <Windows.h>
 
 namespace dxup {
   
@@ -42,6 +43,20 @@ namespace dxup {
       internal_write("FAIL", fmt, list);
       va_end(list);
       #endif
+    }
+
+    inline HRESULT d3derr(HRESULT result, const char* fmt ...) {
+      if (!config::getBool(config::Log))
+        return result;
+
+      #ifndef LOG_STUBS_D3DERR
+      va_list list;
+      va_start(list, fmt);
+      internal_write("D3DE", fmt, list);
+      va_end(list);
+      #endif
+
+      return result;
     }
 
     inline void msg(const char* fmt ...) {
