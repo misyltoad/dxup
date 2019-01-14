@@ -215,7 +215,7 @@ namespace dxup {
     D3D9State* GetEditState();
 
     D3D9State* m_state;
-    Direct3DStateBlock9* m_stateBlock;
+    ComPrivate<Direct3DStateBlock9> m_stateBlock;
 
     Com<IDXGIDevice1> m_dxgiDevice;
     Com<ID3D11Device1> m_device;

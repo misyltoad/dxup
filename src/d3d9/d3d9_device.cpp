@@ -1150,8 +1150,8 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::BeginStateBlock() {
     CriticalSection cs(this);
 
-    if (m_stateBlock)
-      delete m_stateBlock;
+    if (m_stateBlock != nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "BeginStateBlock: attempted to begin a state block when one is already being recorded.");
 
     m_stateBlock = new Direct3DStateBlock9(this, 0);
     return D3D_OK;
