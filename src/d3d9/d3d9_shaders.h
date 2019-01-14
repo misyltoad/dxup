@@ -34,7 +34,7 @@ namespace dxup {
 
     HRESULT STDMETHODCALLTYPE GetFunction(void* pShader, UINT* pSizeOfData) override {
       if (pSizeOfData == nullptr)
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "GetFunction: pSizeOfData was nullptr.");
 
       if (pShader == nullptr) {
         *pSizeOfData = m_dx9asm.size();

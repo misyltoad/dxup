@@ -144,7 +144,7 @@ namespace dxup {
     template <typename T>
     HRESULT mapStageToSampler(T Stage, T* Sampler) {
       if ((Stage >= 16 && Stage <= D3DDMAPSAMPLER) || Stage > D3DVERTEXTEXTURESAMPLER3)
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "mapStageToSampler: sampler index out of bounds: %d", Stage);
 
       // For vertex samplers.
       if (Stage >= D3DVERTEXTEXTURESAMPLER0)

@@ -141,18 +141,20 @@ namespace dxup {
     InitReturnPtr(ppTexture);
 
     if (ppTexture == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetTexture: ppTexture was nullptr.");
 
-    if (FAILED(convert::mapStageToSampler(Stage, &Stage)))
-      return D3DERR_INVALIDCALL;
+    HRESULT result = convert::mapStageToSampler(Stage, &Stage);
+    if (FAILED(result))
+      return result;
 
     *ppTexture = ref(textures[Stage]);
 
     return D3D_OK;
   }
   HRESULT D3D9State::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
-    if (FAILED(convert::mapStageToSampler(Stage, &Stage)))
-      return D3DERR_INVALIDCALL;
+    HRESULT result = convert::mapStageToSampler(Stage, &Stage);
+    if (FAILED(result))
+      return result;
 
     if (textures[Stage] == pTexture)
       return D3D_OK;
@@ -203,10 +205,10 @@ namespace dxup {
     InitReturnPtr(ppRenderTarget);
 
     if (ppRenderTarget == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetRenderTarget: ppRenderTarget was nullptr.");
 
     if (RenderTargetIndex > renderTargets.size())
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetRenderTarget: rendertarget index out of bounds (%d).", RenderTargetIndex);
 
     if (renderTargets[RenderTargetIndex] == nullptr)
       return D3DERR_NOTFOUND;
@@ -217,7 +219,7 @@ namespace dxup {
   }
   HRESULT D3D9State::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
     if (RenderTargetIndex >= 4)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetRenderTarget: rendertarget index out of bounds (%d).", RenderTargetIndex);
 
     renderTargets[RenderTargetIndex] = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
     dirtyFlags |= dirtyFlags::renderTargets;
@@ -229,7 +231,7 @@ namespace dxup {
     InitReturnPtr(ppZStencilSurface);
 
     if (ppZStencilSurface == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDepthStencilSurface: ppZStencilSurface was nullptr.");
 
     if (depthStencil == nullptr)
       return D3DERR_NOTFOUND;
@@ -251,7 +253,7 @@ namespace dxup {
 
   HRESULT D3D9State::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) {
     if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetRenderState: pValue was nullptr.");
 
     if (State < D3DRS_ZENABLE || State > D3DRS_BLENDOPALPHA) {
       *pValue = 0;
@@ -268,10 +270,11 @@ namespace dxup {
     if (State < D3DRS_ZENABLE || State > D3DRS_BLENDOPALPHA)
       return D3D_OK;
 
+    renderStateCaptures[State] = true;
+
     if (renderState[State] == Value)
       return D3D_OK;
 
-    renderStateCaptures[State] = true;
     renderState[State] = Value;
 
     if (State == D3DRS_CULLMODE ||
@@ -324,7 +327,7 @@ namespace dxup {
 
   HRESULT D3D9State::GetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD* pValue) {
     if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetTextureStageState: pValue was nullptr.");
 
     if (Type < D3DTSS_COLOROP || Type > D3DTSS_CONSTANT)
       return D3D_OK;
@@ -343,10 +346,11 @@ namespace dxup {
     if (Stage > 7)
       return D3D_OK;
 
+    textureStageStateCaptures[Stage][Type] = true;
+
     if (textureStageStates[Stage][Type] == Value)
       return D3D_OK;
 
-    textureStageStateCaptures[Stage][Type] = true;
     textureStageStates[Stage][Type] = Value;
     //dirtyTextureStage |= 1 << Stage;
 
@@ -355,10 +359,11 @@ namespace dxup {
 
   HRESULT D3D9State::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) {
     if (pValue == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetSamplerState: pValue was nullptr.");
 
-    if (FAILED(convert::mapStageToSampler(Sampler, &Sampler)))
-      return D3DERR_INVALIDCALL;
+    HRESULT result = convert::mapStageToSampler(Sampler, &Sampler);
+    if (FAILED(result))
+      return result;
 
     if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
       return D3D_OK;
@@ -368,16 +373,18 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT D3D9State::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) {
-    if (FAILED(convert::mapStageToSampler(Sampler, &Sampler)))
+    HRESULT result = convert::mapStageToSampler(Sampler, &Sampler);
+    if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
     if (Type < D3DSAMP_ADDRESSU || Type > D3DSAMP_DMAPOFFSET)
       return D3D_OK;
 
+    samplerStateCaptures[Sampler][Type] = true;
+
     if (samplerStates[Sampler][Type] == Value)
       return D3D_OK;
 
-    samplerStateCaptures[Sampler][Type] = true;
     samplerStates[Sampler][Type] = Value;
     dirtySamplers |= 1 << Sampler;
 
@@ -387,11 +394,12 @@ namespace dxup {
   HRESULT D3D9State::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
     Direct3DVertexDeclaration9* newDecl = reinterpret_cast<Direct3DVertexDeclaration9*>(pDecl);
 
+    vertexDeclCaptured = true;
+
     if (vertexDecl == newDecl)
       return D3D_OK;
 
     vertexDecl = newDecl;
-    vertexDeclCaptured = true;
     dirtyFlags |= dirtyFlags::vertexDecl;
 
     return D3D_OK;
@@ -400,7 +408,7 @@ namespace dxup {
     InitReturnPtr(ppDecl);
 
     if (ppDecl == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetVertexDeclaration: ppDecl was nullptr.");
 
     if (vertexDecl == nullptr)
       return D3DERR_NOTFOUND;
@@ -414,7 +422,7 @@ namespace dxup {
     InitReturnPtr(ppShader);
 
     if (ppShader == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetVertexShader: ppShader was nullptr.");
 
     if (vertexShader == nullptr)
       return D3DERR_NOTFOUND;
@@ -426,33 +434,34 @@ namespace dxup {
   HRESULT D3D9State::SetVertexShader(IDirect3DVertexShader9* pShader) {
     dirtyFlags |= dirtyFlags::vertexShader;
 
+    vertexShaderCaptured = true;
+
     if (pShader == nullptr) {
       vertexShader = nullptr;
       return D3D_OK;
     }
 
-    vertexShaderCaptured = true;
     vertexShader = reinterpret_cast<Direct3DVertexShader9*>(pShader);
 
     return D3D_OK;
   }
 
   HRESULT D3D9State::GetVertexShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (Vector4fCount == 0)
       return D3D_OK;
+    
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetVertexShaderConstantF: pConstantData was nullptr");
 
     arrayCopyJ(pConstantData, &vsConstants.floatConstants[StartRegister], Vector4fCount);
     return D3D_OK;
   }
   HRESULT D3D9State::SetVertexShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (Vector4fCount == 0)
       return D3D_OK;
+
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "SetVertexShaderConstantF: pConstantData was nullptr");
 
     dirtyFlags |= dirtyFlags::vsConstants;
 
@@ -461,21 +470,21 @@ namespace dxup {
   }
 
   HRESULT D3D9State::GetVertexShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (Vector4iCount == 0)
       return D3D_OK;
+
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetVertexShaderConstantI: pConstantData was nullptr");
 
     arrayCopyJ(pConstantData, &vsConstants.intConstants[StartRegister], Vector4iCount);
     return D3D_OK;
   }
   HRESULT D3D9State::SetVertexShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (Vector4iCount == 0)
       return D3D_OK;
+
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "SetVertexShaderConstantI: pConstantData was nullptr");
 
     dirtyFlags |= dirtyFlags::vsConstants;
     arrayCopyT(&vsConstants.intConstants[StartRegister], pConstantData, Vector4iCount);
@@ -483,21 +492,21 @@ namespace dxup {
   }
 
   HRESULT D3D9State::GetVertexShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (BoolCount == 0)
       return D3D_OK;
+
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetVertexShaderConstantB: pConstantData was nullptr");
 
     arrayCopyJ(pConstantData, &vsConstants.boolConstants[StartRegister], BoolCount);
     return D3D_OK;
   }
   HRESULT D3D9State::SetVertexShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) {
-    if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
-
     if (BoolCount == 0)
       return D3D_OK;
+
+    if (pConstantData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "SetVertexShaderConstantB: pConstantData was nullptr");
 
     dirtyFlags |= dirtyFlags::vsConstants;
     arrayCopyT(&vsConstants.boolConstants[StartRegister], pConstantData, BoolCount);
@@ -507,20 +516,25 @@ namespace dxup {
   HRESULT D3D9State::GetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9** ppStreamData, UINT* pOffsetInBytes, UINT* pStride) {
     InitReturnPtr(ppStreamData);
 
-    if (StreamNumber >= 16 || ppStreamData == nullptr || pOffsetInBytes == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (StreamNumber >= 16)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetStreamSource: stream number was out of bounds (range: 0-15, got: %d).", StreamNumber);
+
+    if (ppStreamData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetStreamSource: ppStreamData was nullptr.");
+
+    if (pOffsetInBytes == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetStreamSource: pOffsetInBytes was nullptr.");
 
     *pOffsetInBytes = 0;
 
     if (pStride == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetStreamSource: pStride was nullptr.");
 
     *pStride = 0;
 
     if (vertexBuffers[StreamNumber] == nullptr)
       return D3DERR_NOTFOUND;
 
-    vertexBufferCaptures[StreamNumber] = true;
     *ppStreamData = ref(vertexBuffers[StreamNumber]);
     *pOffsetInBytes = vertexOffsets[StreamNumber];
     *pStride = vertexStrides[StreamNumber];
@@ -529,15 +543,11 @@ namespace dxup {
   }
   HRESULT D3D9State::SetStreamSource(UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT Stride) {
     if (StreamNumber >= 16)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetStreamSource: stream number was out of bounds (range: 0-15, got: %d).", StreamNumber);
 
     Direct3DVertexBuffer9* vertexBuffer = reinterpret_cast<Direct3DVertexBuffer9*>(pStreamData);
 
-    ID3D11Buffer* buffer = nullptr;
-
-    if (vertexBuffer != nullptr)
-      buffer = vertexBuffer->GetDXUPResource()->GetResourceAs<ID3D11Buffer>();
-
+    vertexBufferCaptures[StreamNumber] = true;
     vertexBuffers[StreamNumber] = vertexBuffer;
     vertexOffsets[StreamNumber] = OffsetInBytes;
     vertexStrides[StreamNumber] = Stride;
@@ -551,7 +561,7 @@ namespace dxup {
     InitReturnPtr(ppIndexData);
 
     if (ppIndexData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetIndices: ppIndexData was nullptr.");
 
     if (indexBuffer == nullptr)
       return D3DERR_NOTFOUND;
@@ -563,10 +573,11 @@ namespace dxup {
   HRESULT D3D9State::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
     Direct3DIndexBuffer9* indices = reinterpret_cast<Direct3DIndexBuffer9*>(pIndexData);
 
+    indexBufferCaptured = true;
+
     if (indexBuffer == indices)
       return D3D_OK;
 
-    indexBufferCaptured = true;
     indexBuffer = indices;
     dirtyFlags |= dirtyFlags::indexBuffer;
 
@@ -577,7 +588,7 @@ namespace dxup {
     InitReturnPtr(ppShader);
 
     if (ppShader == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetPixelShader: ppShader was nullptr.");
 
     if (pixelShader == nullptr)
       return D3DERR_NOTFOUND;
@@ -589,12 +600,13 @@ namespace dxup {
   HRESULT D3D9State::SetPixelShader(IDirect3DPixelShader9* pShader) {
     dirtyFlags |= dirtyFlags::pixelShader;
 
+    pixelShaderCaptured = true;
+
     if (pShader == nullptr) {
       pixelShader = nullptr;
       return D3D_OK;
     }
 
-    pixelShaderCaptured = true;
     pixelShader = reinterpret_cast<Direct3DPixelShader9*>(pShader);
 
     return D3D_OK;
@@ -602,7 +614,7 @@ namespace dxup {
 
   HRESULT D3D9State::GetPixelShaderConstantF(UINT StartRegister, float* pConstantData, UINT Vector4fCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetPixelShaderConstantF: pConstantData was nullptr");
 
     if (Vector4fCount == 0)
       return D3D_OK;
@@ -612,7 +624,7 @@ namespace dxup {
   }
   HRESULT D3D9State::SetPixelShaderConstantF(UINT StartRegister, const float* pConstantData, UINT Vector4fCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetPixelShaderConstantF: pConstantData was nullptr");
 
     if (Vector4fCount == 0)
       return D3D_OK;
@@ -624,7 +636,7 @@ namespace dxup {
 
   HRESULT D3D9State::GetPixelShaderConstantI(UINT StartRegister, int* pConstantData, UINT Vector4iCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetPixelShaderConstantI: pConstantData was nullptr");
 
     if (Vector4iCount == 0)
       return D3D_OK;
@@ -634,7 +646,7 @@ namespace dxup {
   }
   HRESULT D3D9State::SetPixelShaderConstantI(UINT StartRegister, const int* pConstantData, UINT Vector4iCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetPixelShaderConstantI: pConstantData was nullptr");
 
     if (Vector4iCount == 0)
       return D3D_OK;
@@ -646,7 +658,7 @@ namespace dxup {
 
   HRESULT D3D9State::GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetPixelShaderConstantB: pConstantData was nullptr");
 
     if (BoolCount == 0)
       return D3D_OK;
@@ -656,7 +668,7 @@ namespace dxup {
   }
   HRESULT D3D9State::SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount) {
     if (pConstantData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetPixelShaderConstantB: pConstantData was nullptr");
 
     if (BoolCount == 0)
       return D3D_OK;

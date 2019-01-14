@@ -61,7 +61,7 @@ namespace dxup {
 
     HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
       if (Level >= m_surfaces.size())
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "GetLevelDesc: level out of bounds.");
 
       return m_surfaces[Level]->GetDesc(pDesc);
     }
@@ -70,8 +70,12 @@ namespace dxup {
       UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
       InitReturnPtr(ppCubeMapSurface);
-      if (subresource >= m_surfaces.size() || ppCubeMapSurface == nullptr)
-        return D3DERR_INVALIDCALL;
+
+      if (subresource >= m_surfaces.size())
+        return log::d3derr(D3DERR_INVALIDCALL, "GetCubeMapSurface: subresource out of bounds (FaceType = %d, Level = %d).", FaceType, Level);
+
+      if (ppCubeMapSurface == nullptr)
+        return log::d3derr(D3DERR_INVALIDCALL, "GetCubeMapSurface: ppCubeMapSurface was nullptr.");
 
       *ppCubeMapSurface = ref(m_surfaces[subresource]);
 
@@ -86,7 +90,7 @@ namespace dxup {
       UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "LockRect: subresource out of bounds (FaceType = %d, Level = %d).", FaceType, Level);
 
       return m_surfaces[subresource]->LockRect(pLockedRect, pRect, Flags);
     }
@@ -99,7 +103,7 @@ namespace dxup {
       UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "UnlockRect: subresource out of bounds (FaceType = %d, Level = %d).", FaceType, Level);
 
       return m_surfaces[subresource]->UnlockRect();
     }

@@ -14,8 +14,10 @@ namespace dxup {
       : m_device{device} {}
 
     HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) override {
-      if (!ppDevice)
-        return D3DERR_INVALIDCALL;
+      InitReturnPtr(ppDevice);
+
+      if (ppDevice == nullptr)
+        return log::d3derr(D3DERR_INVALIDCALL, "GetDevice: ppDevice was nullptr.");
       
       *ppDevice = ref( static_cast<IDirect3DDevice9Ex*>(m_device) );
       return D3D_OK;

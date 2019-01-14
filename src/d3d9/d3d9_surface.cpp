@@ -27,13 +27,16 @@ namespace dxup {
   }
 
   HRESULT Direct3DSurface9::GetContainer(REFIID riid, void** ppContainer) {
-    if (!ppContainer || m_container == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (ppContainer == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetContainer: ppContainer was nullptr.");
 
     if (riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IDirect3DDevice9Ex)) {
       *ppContainer = (void*)ref(m_device);
       return D3D_OK;
     }
+
+    if (m_container == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetContainer: m_container was nullptr.");
 
     return FAILED(m_container->QueryInterface(riid, ppContainer)) ? D3DERR_INVALIDCALL : D3D_OK;
   }
@@ -54,7 +57,7 @@ namespace dxup {
 
   HRESULT Direct3DSurface9::GetDesc(D3DSURFACE_DESC *pDesc) {
     if (!pDesc)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDesc: pDesc was nullptr.");
 
     D3D11_TEXTURE2D_DESC desc;
     m_resource->GetResourceAs<ID3D11Texture2D>()->GetDesc(&desc);
@@ -84,14 +87,28 @@ namespace dxup {
   HRESULT Direct3DSurface9::GetDC(HDC *phdc) {
     InitReturnPtr(phdc);
 
-    if (m_surface != nullptr && phdc != nullptr)
-      return m_surface->GetDC(FALSE, phdc);
+    if (!config::getBool(config::GDICompatible))
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDC: GDI compatibility not enabled.");
 
-    return D3DERR_INVALIDCALL;
+    HRESULT result = D3DERR_INVALIDCALL;
+    if (m_surface != nullptr && phdc != nullptr)
+      result = m_surface->GetDC(FALSE, phdc);
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDC: failed to get DC.");
+
+    return D3D_OK;
   }
   HRESULT Direct3DSurface9::ReleaseDC(HDC hdc) {
+    if (!config::getBool(config::GDICompatible))
+      return log::d3derr(D3DERR_INVALIDCALL, "ReleaseDC: GDI compatibility not enabled.");
+
+    HRESULT result = D3DERR_INVALIDCALL;
     if (m_surface != nullptr && hdc != nullptr)
-      return m_surface->ReleaseDC(nullptr);
+      result = m_surface->ReleaseDC(nullptr);
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "ReleaseDC: failed to release DC.");
 
     return D3D_OK;
   }

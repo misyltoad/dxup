@@ -35,15 +35,13 @@ namespace dxup {
       convert::makeUntypeless(convert::format(parameters->BackBufferFormat), false),
       0);
 
-    if (FAILED(result)) {
-      log::fail("ResizeBuffers failed in swapchain reset.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Reset: D3D11 ResizeBuffers failed in swapchain reset.");
 
     result = m_swapchain->SetFullscreenState(!parameters->Windowed, nullptr);
 
     if (FAILED(result))
-      log::warn("Failed to change fullscreen state.");
+      log::warn("Failed to change fullscreen state!");
 
     // Make crap!
 
@@ -75,17 +73,13 @@ namespace dxup {
 
     Com<IDXGIOutput> output;
     result = m_swapchain->GetContainingOutput(&output);
-    if (FAILED(result)) {
-      log::warn("Failed to get Swapchain IDXGIOutput");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Reset: failed to get IDXGIOutput for swapchain.");
 
     result = output->QueryInterface(__uuidof(IDXGIOutput1), (void**)&m_output);
 
-    if (FAILED(result)) {
-      log::warn("Failed to get Swapchain IDXGIOutput1");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Reset: failed to upgrade IDXGIOutput to IDXGIOutput1 for swapchain.");
 
     return D3D_OK;
   }
@@ -121,16 +115,13 @@ namespace dxup {
     InitReturnPtr(ppBackBuffer);
 
     if (Type != D3DBACKBUFFER_TYPE_MONO)
-    {
-      log::warn("Attempted to use a stereo backbuffer. This is not supported!");
-      return D3DERR_INVALIDCALL;
-    }
+      return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: stereo backbuffer requested.");
 
     if (!ppBackBuffer || iBackBuffer > D3DPRESENT_BACK_BUFFERS_MAX_EX)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: backbuffer out of bounds.");
 
     if (m_buffers[iBackBuffer] == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: invalid backbuffer requested (%d).", iBackBuffer);
 
     *ppBackBuffer = ref(m_buffers[iBackBuffer]);
 
@@ -146,7 +137,7 @@ namespace dxup {
     CriticalSection cs(m_device);
 
     if (pMode == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDisplayMode: pMode was nullptr.");
 
     pMode->Width = m_presentationParameters.BackBufferWidth;
     pMode->Height = m_presentationParameters.BackBufferHeight;
@@ -158,8 +149,8 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetPresentParameters(D3DPRESENT_PARAMETERS* pPresentationParameters) {
     CriticalSection cs(m_device);
 
-    if (!pPresentationParameters)
-      return D3DERR_INVALIDCALL;
+    if (pPresentationParameters == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetPresentParameters: pPresentationParameters was nullptr.");
 
     *pPresentationParameters = m_presentationParameters;
 
@@ -186,7 +177,11 @@ namespace dxup {
   }
 
   HRESULT Direct3DSwapChain9Ex::WaitForVBlank() {
-    m_output->WaitForVBlank();
+    HRESULT result = m_output->WaitForVBlank();
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "WaitForVBlank: IDXGIOutput1::WaitForVBlank failed.");
+
     return D3D_OK;
   }
 
@@ -197,10 +192,8 @@ namespace dxup {
   HRESULT Direct3DSwapChain9Ex::PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex) {
     HRESULT result;
 
-    if (hDestWindowOverride != nullptr) {
-      log::warn("Present given with a window override. Not supported yet! Not presenting.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (hDestWindowOverride != nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "PresentD3D11: called with window override. Not presenting.");
 
     if (d3d11Flags != 0) {
       result = m_swapchain->Present(0, d3d11Flags);

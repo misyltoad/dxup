@@ -33,7 +33,7 @@ namespace dxup {
     CriticalSection cs(m_device);
 
     if (!pLockedRect)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "Return value (locked rect) was null in D3D9LockRect.");
 
     pLockedRect->pBits = nullptr;
     pLockedRect->Pitch = 0;
@@ -52,7 +52,7 @@ namespace dxup {
       return D3DERR_WASSTILLDRAWING;
 
     if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "Unknown error mapping subresource.");;
 
     SetMipMapped(slice, mip);
 

@@ -79,25 +79,19 @@ namespace dxup {
       &initialContext
     );
 
-    if (FAILED(result)) {
-      log::fail("Unable to create d3d11 device.");
-      return D3DERR_DEVICELOST;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_DEVICELOST, "Device creation: failed to create D3D11 device.");
 
     result = initialDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)device);
     HRESULT contextResult = initialContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)context);
 
-    if (FAILED(result) || FAILED(contextResult)) {
-      log::fail("Unable to upgrade to d3d11_1.");
-      return D3DERR_DEVICELOST;
-    }
+    if (FAILED(result) || FAILED(contextResult))
+      return log::d3derr(D3DERR_DEVICELOST, "Device creation: unable to upgrade D3D11 device to D3D11_1 device.");
 
     result = initialDevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)dxgiDevice);
 
-    if (FAILED(result)) {
-      log::fail("Couldn't get IDXGIDevice1!");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_DEVICELOST, "Device creation: couldn't obtain IDXGIDevice1 from D3D11 device.");
 
     return D3D_OK;
   }
@@ -114,8 +108,11 @@ namespace dxup {
     ) {
     InitReturnPtr(outDevice);
 
-    if (!outDevice || !presentParameters)
-      return D3DERR_INVALIDCALL;
+    if (outDevice == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Device creation: outDevice as null.");
+
+    if (presentParameters == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Device creation: presentParameters was nullptr.");
 
     Com<ID3D11Device1> device;
     Com<ID3D11DeviceContext1> context;
@@ -136,7 +133,7 @@ namespace dxup {
     }
 
     if (FAILED(result))
-      return D3DERR_DEVICELOST;
+      return result;
 
     uint8_t flags = 0;
 
@@ -172,9 +169,8 @@ namespace dxup {
     result = d3d9Device->Reset(presentParameters);
 
     if (FAILED(result)) {
-      log::fail("Failed to create d3d9 device as Reset to default state failed.");
       delete d3d9Device;
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "Device creation: initial reset failed."); 
     }
 
     *outDevice = ref(d3d9Device);
@@ -186,7 +182,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pPresentationParameters == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "Reset: pPresentationParameters was nullptr.");
 
     // Unbind current state...
 
@@ -365,25 +361,21 @@ namespace dxup {
     if (GetInternalSwapchain(0) == nullptr) {
       result = CreateAdditionalSwapChain(pPresentationParameters, (IDirect3DSwapChain9**)&m_swapchains[0]);
 
-      if (FAILED(result)) {
-        log::fail("Couldn't create implicit swapchain.");
-        return D3DERR_INVALIDCALL;
-      }
+      if (FAILED(result))
+        return log::d3derr(D3DERR_INVALIDCALL, "Reset: implicit swapchain could not be created.");
     }
     else {
       result = GetInternalSwapchain(0)->Reset(pPresentationParameters);
 
       if (FAILED(result))
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "Reset: implicit swapchain failed to be reset.");
     }
 
     Com<IDirect3DSurface9> backbuffer;
     result = m_swapchains[0]->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer);
 
-    if (FAILED(result)) {
-      log::fail("Couldn't get implicit backbuffer.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Reset: swapchain's backbuffer could not be retrieved.");
 
     SetRenderTarget(0, backbuffer.ptr());
 
@@ -452,7 +444,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(0);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "TestCooperativeLevel: swapchain0 was nullptr.");
 
     return swapchain->TestSwapchain(nullptr, 0);
   }
@@ -476,7 +468,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (!ppD3D9)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDirect3D: ppD3D9 was nullptr.");
     *ppD3D9 = ref(m_parent);
 
     return D3D_OK;
@@ -491,7 +483,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (GetInternalSwapchain(iSwapChain) == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDisplayMode: requested swapchain doesn't exist");
 
     return GetInternalSwapchain(iSwapChain)->GetDisplayMode(pMode);
   }
@@ -499,7 +491,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (!pParameters)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetCreationParameters: pParameters was nullptr.");
 
     pParameters->AdapterOrdinal = m_adapterNum;
     pParameters->BehaviorFlags = m_behaviourFlags;
@@ -542,7 +534,7 @@ namespace dxup {
     InitReturnPtr(ppSwapChain);
 
     if (!ppSwapChain)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapChain: ppSwapChain was nullptr.");
 
     DXGI_SWAP_CHAIN_DESC SwapChainDesc;
     memset(&SwapChainDesc, 0, sizeof(SwapChainDesc));
@@ -606,7 +598,7 @@ namespace dxup {
       }
     }
 
-    return D3DERR_INVALIDCALL;
+    return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapchain: no more free swapchain slots.");
   }
 
   Direct3DSwapChain9Ex* Direct3DDevice9Ex::GetInternalSwapchain(UINT i) {
@@ -623,7 +615,7 @@ namespace dxup {
 
     InitReturnPtr(pSwapChain);
     if (!pSwapChain || iSwapChain >= m_swapchains.size() || GetInternalSwapchain(iSwapChain) == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetSwapChain: invalid swapchain requested.");
 
     *pSwapChain = ref(GetInternalSwapchain(iSwapChain));
 
@@ -651,7 +643,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: invalid swapchain requested (%d).", iSwapChain);
 
     return swapchain->GetBackBuffer(iBackBuffer, Type, ppBackBuffer);
   }
@@ -661,7 +653,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetRasterStatus: invalid swapchain requested (%d).", iSwapChain);
 
     return swapchain->GetRasterStatus(pRasterStatus);
   }
@@ -706,7 +698,7 @@ namespace dxup {
     InitReturnPtr(pSharedHandle);
 
     if (!ppTexture)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: ppTexture was nullptr.");
 
     D3D11_USAGE d3d11Usage = convert::usage(Pool, Usage);
 
@@ -747,16 +739,12 @@ namespace dxup {
     Com<ID3D11Texture2D> texture;
     HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
 
-    if (FAILED(result)) {
-      log::fail("Failed to create texture.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: failed to create D3D11 texture. D3DFORMAT: %d, DXGI_FORMAT: %d", Format, desc.Format); // TODO: stringify
 
     DXUPResource* resource = DXUPResource::Create(this, texture.ptr(), Usage, Format);
-    if (resource == nullptr) {
-      log::fail("Failed to create DXUP resource.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: failed to create DXUP resource.");
 
     D3D9ResourceDesc d3d9Desc;
     d3d9Desc.Discard = Discard;
@@ -789,7 +777,7 @@ namespace dxup {
     InitReturnPtr(pSharedHandle);
 
     if (!ppVertexBuffer)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexBuffer: ppVertexBuffer was nullptr.");
 
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = Length;
@@ -802,13 +790,11 @@ namespace dxup {
     Com<ID3D11Buffer> buffer;
     HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
     if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexBuffer: failed to create D3D11 buffer.");
 
     DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage, D3DFMT_VERTEXDATA);
-    if (resource == nullptr) {
-      log::fail("Failed to create DXUP resource.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexBuffer: failed to create DXUP resource.");
 
     D3D9ResourceDesc d3d9Desc;
     d3d9Desc.Pool = Pool;
@@ -826,7 +812,7 @@ namespace dxup {
     InitReturnPtr(pSharedHandle);
 
     if (!ppIndexBuffer)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateIndexBuffer: ppIndexBuffer was nullptr.");
 
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = Length;
@@ -839,13 +825,11 @@ namespace dxup {
     Com<ID3D11Buffer> buffer;
     HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
     if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateIndexBuffer: failed to create D3D11 buffer.");
 
     DXUPResource* resource = DXUPResource::Create(this, buffer.ptr(), Usage, Format);
-    if (resource == nullptr) {
-      log::fail("Failed to create DXUP resource.");
-      return D3DERR_INVALIDCALL;
-    }
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateIndexBuffer: failed to create DXUP resource.");
 
     D3D9ResourceDesc d3d9Desc;
     d3d9Desc.Pool = Pool;
@@ -861,17 +845,15 @@ namespace dxup {
 
     InitReturnPtr(ppSurface);
     if (ppSurface == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateRenderTarget: ppSurface was nullptr.");
 
     Com<IDirect3DTexture9> d3d9Texture;
 
     // NOTE(Josh): May need to handle Lockable in future.
     HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, (void**) &d3d9Texture, pSharedHandle);
 
-    if (FAILED(result)) {
-      log::fail("Failed to create render target.");
-      return result;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateRenderTarget: failed to create rendertarget.");
 
     return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
@@ -880,15 +862,13 @@ namespace dxup {
 
     InitReturnPtr(ppSurface);
     if (ppSurface == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateDepthStencilSurface: ppSurface was nullptr.");
 
     Com<IDirect3DTexture9> d3d9Texture;
     HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, (void**) &d3d9Texture, pSharedHandle);
 
-    if (FAILED(result)) {
-      log::fail("Failed to create depth stencil.");
-      return result;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateDepthStencilSurface: failed to create depth stencil.");
 
     return d3d9Texture->GetSurfaceLevel(0, ppSurface);
   }
@@ -906,19 +886,20 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateTexture(IDirect3DBaseTexture9* pSourceTexture, IDirect3DBaseTexture9* pDestinationTexture) {
     CriticalSection cs(this);
 
-    if (pSourceTexture == nullptr || pDestinationTexture == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (pSourceTexture == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateTexture: pSourceTexture was nullptr");
+      
+    if (pDestinationTexture == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateTexture: pDestinationTexture was nullptr");
 
     switch (pSourceTexture->GetType()) {
 
     case D3DRTYPE_TEXTURE: {
 
-      IDirect3DTexture9* srcTex = (Direct3DTexture9*)pSourceTexture;
-      IDirect3DTexture9* dstTex = (Direct3DTexture9*)pDestinationTexture;
+      IDirect3DTexture9* srcTex = reinterpret_cast<Direct3DTexture9*>(pSourceTexture);
+      IDirect3DTexture9* dstTex = reinterpret_cast<Direct3DTexture9*>(pDestinationTexture);
 
-      if (srcTex == nullptr || dstTex == nullptr)
-        return D3DERR_INVALIDCALL;
-
+      // TODO! Avoid COM here.
       Com<IDirect3DSurface9> srcSurface;
       Com<IDirect3DSurface9> dstSurface;
 
@@ -931,7 +912,7 @@ namespace dxup {
       return D3D_OK;
     }
 
-    default: return D3DERR_INVALIDCALL;
+    default: return log::d3derr(D3DERR_INVALIDCALL, "UpdateTexture: unsupported resource type (%d).", pSourceTexture->GetType());
     }
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface) {
@@ -946,7 +927,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetFrontBufferData: invalid swapchain requested (%d).", iSwapChain);
 
     swapchain->GetFrontBufferData(pDestSurface);  
     return D3D_OK;
@@ -1062,7 +1043,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (!pViewport)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetViewport: pViewport was nullptr.");
 
     D3D11_VIEWPORT viewport;
     viewport.TopLeftX = (FLOAT) pViewport->X;
@@ -1079,7 +1060,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (!pViewport)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetViewport: pViewport was nullptr.");
 
     D3D11_VIEWPORT viewport;
     UINT numViewports = 1;
@@ -1154,7 +1135,7 @@ namespace dxup {
     CriticalSection cs(this);
     InitReturnPtr(ppSB);
     if (ppSB == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateStateBlock: ppSB was nullptr");;
 
     *ppSB = ref(new Direct3DStateBlock9(this, Type));
     
@@ -1179,8 +1160,11 @@ namespace dxup {
     CriticalSection cs(this);
     InitReturnPtr(ppSB);
 
-    if (ppSB == nullptr || m_stateBlock == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (ppSB == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "EndStateBlock: ppSB was nullptrptr.");
+
+    if (m_stateBlock == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "EndStateBlock: no state block bound.");
 
     *ppSB = ref(m_stateBlock);
     m_stateBlock = nullptr;
@@ -1228,7 +1212,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (!pNumPasses)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "ValidateDevice: pNumPasses was nullptr.");
 
     *pNumPasses = 1;
     return D3D_OK;
@@ -1261,7 +1245,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pRect == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetScissorRect: pRect was nullptr.");
 
     D3D11_RECT rect;
     rect.bottom = pRect->bottom;
@@ -1276,7 +1260,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pRect == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetScissorRect: pRect was nullptr.");
 
     D3D11_RECT rect;
     UINT rects = 1;
@@ -1343,8 +1327,11 @@ namespace dxup {
 
     InitReturnPtr(ppDecl);
 
-    if (ppDecl == nullptr || pVertexElements == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (ppDecl == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexDeclaration: ppDecl was nullptr.");
+
+    if (pVertexElements == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexDeclaration: pVertexElements was nullptr.");
 
     D3DVERTEXELEMENT9 lastElement = D3DDECL_END();
 
@@ -1402,7 +1389,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pFVF == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetFVF: pFVF was nullptr");
 
     *pFVF = m_fvf;
     return D3D_OK;
@@ -1457,10 +1444,10 @@ namespace dxup {
     InitReturnPtr(ppShader);
 
     if (pFunction == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader called with null dx9asm bytecode.", Vertex ? "Vertex" : "Pixel");
+      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader: pFunction was nullptr.", Vertex ? "Vertex" : "Pixel");
     
     if (ppShader == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader called with null return ptr for shader.", Vertex ? "Vertex" : "Pixel");
+      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader: ppShader was nullptr.", Vertex ? "Vertex" : "Pixel");
 
     shaderNums[Vertex ? 0 : 1]++;
 
@@ -1486,7 +1473,7 @@ namespace dxup {
     }
 
     if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "Failed to create D3D11 %s shader.", Vertex ? "vertex" : "pixel");
+      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader: failed to create D3D11 shader.", Vertex ? "Vertex" : "Pixel");
 
     *ppShader = ref(new D3D9(shaderNums[Vertex ? 0 : 1], wrapDevice, pFunction, shader.ptr(), bytecode));
 
@@ -1635,8 +1622,7 @@ namespace dxup {
     case D3DQUERYTYPE_PIXELTIMINGS:
     case D3DQUERYTYPE_BANDWIDTHTIMINGS:
     case D3DQUERYTYPE_CACHEUTILIZATION:
-      log::warn("Returned query not available, type: %d", Type);
-      return D3DERR_NOTAVAILABLE;
+      return log::d3derr(D3DERR_NOTAVAILABLE, "CreateQuery: query type not available (%d).", Type);
     }
 
     if (ppQuery == nullptr)
@@ -1664,10 +1650,10 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pPriority == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetGPUThreadPriority: pPriority was nullptr.");
 
     if (FAILED(m_dxgiDevice->GetGPUThreadPriority(pPriority)))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetGPUThreadPriority: IDXGIDevice1::GetGPUThreadPriority failed.");
 
     return D3D_OK;
   }
@@ -1675,7 +1661,7 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (FAILED(m_dxgiDevice->SetGPUThreadPriority(Priority)))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetGPUThreadPriority: IDXGIDevice1::SetGPUThreadPriority failed.");
 
     return D3D_OK;
   }
@@ -1685,7 +1671,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(iSwapChain);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "WaitForVBlank: invalid swapchain requested (%d).", iSwapChain);
 
     swapchain->WaitForVBlank();
     return D3D_OK;
@@ -1703,7 +1689,7 @@ namespace dxup {
       MaxLatency = 16;
 
     if (FAILED(m_dxgiDevice->SetMaximumFrameLatency(MaxLatency)))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "SetMaximumFrameLatency: IDXGIDevice1::SetMaximumFrameLatency failed.");
 
     return D3D_OK;
   }
@@ -1711,10 +1697,10 @@ namespace dxup {
     CriticalSection cs(this);
 
     if (pMaxLatency == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetMaximumFrameLatency: pMaxLatency was nullptr.");
 
     if (FAILED(m_dxgiDevice->GetMaximumFrameLatency(pMaxLatency)))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetMaximumFrameLatency: IDXGIDevice1::GetMaximumFrameLatency failed.");
 
     return D3D_OK;
   }
@@ -1724,7 +1710,7 @@ namespace dxup {
     Direct3DSwapChain9Ex* swapchain = GetInternalSwapchain(0);
 
     if (swapchain == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CheckDeviceState: invalid swapchain to pass test through to (0).");
 
     return swapchain->TestSwapchain(hDestinationWindow, true);
   }

@@ -68,7 +68,7 @@ namespace dxup {
     CriticalSection cs(m_device);
 
     if (dwIssueFlags != D3DISSUE_BEGIN && dwIssueFlags != D3DISSUE_END)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "Issue: dwIssueFlags was not begin or end.");
 
     if (m_query != nullptr) {
       if (dwIssueFlags == D3DISSUE_BEGIN)
@@ -83,10 +83,10 @@ namespace dxup {
     CriticalSection cs(m_device);
 
     if (pData == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetData: pData was nullptr.");
 
     if (dwSize < GetDataSize())
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetData: dwSize was less than the required data size.");
 
     bool flush = dwGetDataFlags & D3DGETDATA_FLUSH;
 
@@ -119,8 +119,7 @@ namespace dxup {
       return D3D_OK;
     }
 
-    log::warn("Query GetData but I don't know how!");
-    return D3DERR_INVALIDCALL;
+    return log::d3derr(D3DERR_INVALIDCALL, "GetData: unimplemented query type (%d).", m_type);
   }
 
 }

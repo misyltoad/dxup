@@ -30,7 +30,7 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE Lock(UINT OffsetToLock, UINT SizeToLock, void** ppbData, DWORD Flags) override {
       InitReturnPtr(ppbData);
       if (ppbData == nullptr)
-        return D3DERR_INVALIDCALL;
+        return log::d3derr(D3DERR_INVALIDCALL, "ReturnPtr for buffer lock was null!");
 
       D3DLOCKED_RECT lockedRect;
 

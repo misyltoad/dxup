@@ -38,17 +38,17 @@ namespace dxup {
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterIdentifier(UINT Adapter, DWORD Flags, D3DADAPTER_IDENTIFIER9* pIdentifier) {
     if (pIdentifier == nullptr)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: pIdentifier was nullptr.");
 
     Com<IDXGIAdapter1> adapter;
     HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
     if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIFactory1::EnumAdapters1 failed (adapter = %d).", Adapter);
 
     Com<IDXGIOutput> output;
     result = adapter->EnumOutputs(0, &output);
     if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIAdapter1::EnumOutputs failed.");
 
     DXGI_ADAPTER_DESC1 desc;
     adapter->GetDesc1(&desc);
@@ -99,7 +99,7 @@ namespace dxup {
 
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceType(UINT Adapter, D3DDEVTYPE DevType, D3DFORMAT AdapterFormat, D3DFORMAT BackBufferFormat, BOOL bWindowed) {
     if (Adapter >= GetAdapterCount())
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CheckDeviceType: invalid adapter requested (%d).", Adapter);
 
     switch (AdapterFormat) {
     case D3DFMT_UNKNOWN:
@@ -610,7 +610,7 @@ namespace dxup {
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDeviceMultiSampleType(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT SurfaceFormat, BOOL Windowed, D3DMULTISAMPLE_TYPE MultiSampleType, DWORD* pQualityLevels) {
     if (Adapter >= GetAdapterCount())
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CheckDeviceMultiSampleType: invalid adapter requested (%d).", Adapter);
 
     if (pQualityLevels) {
       if (MultiSampleType == D3DMULTISAMPLE_NONMASKABLE)
@@ -632,7 +632,7 @@ namespace dxup {
       }
     }
 
-    return D3D_OK;
+    return D3DERR_NOTAVAILABLE;
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::CheckDepthStencilMatch(UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT AdapterFormat, D3DFORMAT RenderTargetFormat, D3DFORMAT DepthStencilFormat) {
     return D3D_OK;
@@ -643,7 +643,7 @@ namespace dxup {
 
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetDeviceCaps(UINT Adapter, D3DDEVTYPE DeviceType, D3DCAPS9* pCaps) {
     if (!pCaps)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetDeviceCaps: pCaps was nullptr.");
 
     std::string shaderModel = config::getString(config::ShaderModel);
 
@@ -777,7 +777,7 @@ namespace dxup {
     InitReturnPtr(ppReturnedDeviceInterface);
 
     if (!pPresentationParameters)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateDevice: pPresentationParameters was null.");
 
     D3DDISPLAYMODEEX displayMode;
     displayMode.Size = sizeof(D3DDISPLAYMODEEX);
@@ -790,8 +790,8 @@ namespace dxup {
     return CreateDeviceEx(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, &displayMode, (IDirect3DDevice9Ex**)ppReturnedDeviceInterface);
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::EnumAdapterModes(UINT Adapter, D3DFORMAT Format, UINT Mode, D3DDISPLAYMODE* pMode) {
-    if (!pMode)
-      return D3DERR_INVALIDCALL;
+    if (pMode == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "EnumAdapterModes: pMode was nullptr.");
 
     D3DDISPLAYMODEEX exMode;
     HRESULT result = EnumAdapterModeFormatEx(Adapter, Format, NULL, Mode, &exMode);
@@ -817,10 +817,15 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT  STDMETHODCALLTYPE Direct3D9Ex::CreateDeviceEx(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pFullscreenDisplayMode, IDirect3DDevice9Ex** ppReturnedDeviceInterface) {
-    if (!ppReturnedDeviceInterface || !pPresentationParameters)
-      return D3DERR_INVALIDCALL;
+    if (ppReturnedDeviceInterface == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateDeviceEx: ppReturnedDeviceInterface was nullptr");
+
+    if (pPresentationParameters == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateDeviceEx: pPresentationParameters was nullptr");
 
     InitReturnPtr(ppReturnedDeviceInterface);
+
+    log::msg("Creating D3D9 device with adapter: %d", Adapter);
 
     return Direct3DDevice9Ex::Create(
       Adapter,
@@ -835,7 +840,7 @@ namespace dxup {
   }
   HRESULT  STDMETHODCALLTYPE Direct3D9Ex::GetAdapterLUID(UINT Adapter, LUID * pLUID) {
     if (!pLUID)
-      return D3DERR_INVALIDCALL;
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterLUID: pLUID was nullptr");
 
     Com<IDXGIAdapter1> adapter = nullptr;
     if (!FAILED(m_dxgiFactory->EnumAdapters1(Adapter, &adapter)))
