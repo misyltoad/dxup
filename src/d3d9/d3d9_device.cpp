@@ -1456,8 +1456,11 @@ namespace dxup {
   HRESULT CreateShader(CONST DWORD* pFunction, ID3D9** ppShader, ID3D11Device* device, Direct3DDevice9Ex* wrapDevice) {
     InitReturnPtr(ppShader);
 
-    if (pFunction == nullptr || ppShader == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (pFunction == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader called with null dx9asm bytecode.", Vertex ? "Vertex" : "Pixel");
+    
+    if (ppShader == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Create%sShader called with null return ptr for shader.", Vertex ? "Vertex" : "Pixel");
 
     shaderNums[Vertex ? 0 : 1]++;
 
@@ -1482,10 +1485,8 @@ namespace dxup {
         result = device->CreatePixelShader(bytecode->getBytecode(), bytecode->getByteSize(), nullptr, (ID3D11PixelShader**)&shader);
     }
 
-    if (FAILED(result)) {
-      log::fail("Shader translation failed!");
-      return D3DERR_INVALIDCALL;
-    }
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Failed to create D3D11 %s shader.", Vertex ? "vertex" : "pixel");
 
     *ppShader = ref(new D3D9(shaderNums[Vertex ? 0 : 1], wrapDevice, pFunction, shader.ptr(), bytecode));
 
