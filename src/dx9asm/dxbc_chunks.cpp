@@ -510,10 +510,11 @@ namespace dxup {
               }
 
               // TODO! Consolidate me!
-              // Itof Pass
-              DXBCOperation{ D3D10_SB_OPCODE_ITOF, false }
+              // SHORT2
+              DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
                 .appendOperand(rConversionTempDst)
                 .appendOperand(vXSrc)
+                .appendOperand(DXBCOperand{ 32767.0f, 32767.0f, 32767.0f, 32767.0f })
                 .push(obj);
 
               if (mappingCount % 2 == 0) {
@@ -531,10 +532,11 @@ namespace dxup {
                 .appendOperand(vXSrc)
                 .push(obj);
 
-              // Utof Pass
-              DXBCOperation{ D3D10_SB_OPCODE_UTOF, false }
+              // UBYTE
+              DXBCOperation{ D3D10_SB_OPCODE_MUL, false }
                 .appendOperand(rConversionTempDst)
                 .appendOperand(vXSrc)
+                .appendOperand(DXBCOperand{ 255.0f, 255.0f, 255.0f, 255.0f })
                 .push(obj);
 
               if (mappingCount % 2 == 0) {

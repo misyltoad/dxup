@@ -25,10 +25,11 @@ namespace dxup {
         m_dimension = dimension;
       }
 
-      DXBCOperand(uint32_t literal0, uint32_t literal1, uint32_t literal2, uint32_t literal3) {
-        uint32_t data[4] = { literal0, literal1, literal2, literal3 };
+      template <typename T>
+      DXBCOperand(T literal0, T literal1, T literal2, T literal3) {
+        T data[4] = { literal0, literal1, literal2, literal3 };
         setupLiteral(4);
-        setData(data, 4);
+        setData((uint32_t*)data, 4);
       }
 
       inline uint32_t getRegisterType() const {
