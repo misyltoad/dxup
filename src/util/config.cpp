@@ -15,6 +15,25 @@ namespace dxup {
       bool boolVal;
     };
 
+    inline bool IsWine() {
+      static bool cachedWine = false;
+      static bool isWine = false;
+
+      if (cachedWine == false) {
+        typedef const char*(*WineGetVersion)(void);
+        WineGetVersion wine_get_version = nullptr;
+
+        HMODULE module = GetModuleHandleA("ntdll.dll");
+
+        wine_get_version = (WineGetVersion)GetProcAddress(module, "wine_get_version");
+        if (wine_get_version)
+          isWine = true;
+        cachedWine = true;
+      }
+
+      return isWine;
+    }
+
     class ConfigMgr {
       
     public:
@@ -29,6 +48,11 @@ namespace dxup {
 #else
           initVar(var::Debug, "DXUP_DEBUG", "0");
 #endif
+          if (IsWine())
+            initVar(var::Wine, "DXUP_WINE", "1");
+          else
+            initVar(var::Wine, "DXUP_WINE", "0");
+
           initVar(var::ForceWindowed, "DXUP_FORCEWINDOWED", "0");
           initVar(var::RandomClearColour, "DXUP_RANDOMCLEARCOLOUR", "0");
           initVar(var::ShaderSpew, "DXUP_SHADERSPEW", "0");

@@ -10,6 +10,7 @@ namespace dxup {
       Log,
       ShaderModel,
       Debug,
+      Wine,
       ForceWindowed,
       ShaderSpew,
       ShaderDump,
