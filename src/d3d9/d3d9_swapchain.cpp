@@ -139,7 +139,11 @@ namespace dxup {
     // However the header for it is DDI and it's not supported under Wine.
     // Just stubbing this for now, but returning something thats should at least make the games happy.
     // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/d3dkmthk/nf-d3dkmthk-d3dkmtgetscanline
-    log::warn("GetRasterStatus: returning vblank.");
+    static bool hasWarned = false;
+    if (!hasWarned) {
+      log::warn("GetRasterStatus: returning vblank.");
+      hasWarned = true;
+    }
 
     pRasterStatus->InVBlank = true;
     pRasterStatus->ScanLine = 0;
