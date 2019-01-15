@@ -706,7 +706,7 @@ namespace dxup {
     if (Usage & D3DUSAGE_AUTOGENMIPMAP && Levels > 1)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: mipmap generation requested with more than 1 level.");
 
-    if (m_parent->CheckDeviceFormat(m_adapterNum, m_deviceType, D3DFMT_X8R8G8B8, Usage, D3DRTYPE_TEXTURE, Format) != D3D_OK)
+    if (m_parent->CheckDeviceFormat(m_adapterNum, m_deviceType, D3DFMT_X8R8G8B8, Usage, Type, Format) != D3D_OK)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: unsupported format (%d).", Format);
 
     if (!ppTexture)
