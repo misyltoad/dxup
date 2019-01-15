@@ -10,7 +10,8 @@ namespace dxup {
     , m_device{ device }
     , m_vsConstants{ device, context }
     , m_psConstants{ device, context }
-    , m_upBufferLength{ 0 } {}
+    , m_upVertexBuffer{ device, false }
+    , m_upIndexBuffer{ device, true } {}
 
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     FLOAT color[4];
@@ -73,20 +74,50 @@ namespace dxup {
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
     UINT length = drawCount * VertexStreamZeroStride;
 
-    reserveUpBuffer(length);
-
-    D3D11_MAPPED_SUBRESOURCE res;
-    m_context->Map(m_upBuffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-    std::memcpy(res.pData, pVertexStreamZeroData, length);
-    m_context->Unmap(m_upBuffer.ptr(), 0);
+    m_upVertexBuffer.reserve(length);
+    m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
 
     const UINT offset = 0;
-    m_context->IASetVertexBuffers(0, 1, &m_upBuffer, &VertexStreamZeroStride, &offset);
+    ID3D11Buffer* buffer = m_upVertexBuffer.getBuffer();
+    m_context->IASetVertexBuffers(0, 1, &buffer, &VertexStreamZeroStride, &offset);
 
     m_context->IASetPrimitiveTopology(topology);
     m_context->Draw(drawCount, 0);
 
     m_state->dirtyFlags |= dirtyFlags::vertexBuffers;
+
+    postDraw();
+
+    return D3D_OK;
+  }
+  HRESULT D3D9ImmediateRenderer::DrawIndexedPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
+    if (!preDraw()) {
+      log::warn("Invalid internal render state achieved.");
+      postDraw();
+      return D3D_OK; // Lies!
+    }
+
+    D3D_PRIMITIVE_TOPOLOGY topology;
+    UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
+    UINT length = (MinVertexIndex + NumVertices) * VertexStreamZeroStride;
+
+    m_upVertexBuffer.reserve(length);
+    m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
+
+    const UINT offset = 0;
+    ID3D11Buffer* buffer = m_upVertexBuffer.getBuffer();
+    m_context->IASetVertexBuffers(0, 1, &buffer, &VertexStreamZeroStride, &offset);
+
+    length *= IndexDataFormat == D3DFMT_INDEX32 ? 4 : 2;
+
+    m_upIndexBuffer.reserve(length);
+    m_upIndexBuffer.update(m_context, pIndexData, length);
+    m_context->IASetIndexBuffer(m_upIndexBuffer.getBuffer(), IndexDataFormat == D3DFMT_INDEX32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT, 0);
+
+    m_context->DrawIndexed(drawCount, 0, 0);
+
+    m_state->dirtyFlags |= dirtyFlags::vertexBuffers;
+    m_state->dirtyFlags |= dirtyFlags::indexBuffer;
 
     postDraw();
 
@@ -107,29 +138,6 @@ namespace dxup {
 
     postDraw();
     return D3D_OK;
-  }
-
-  //
-
-  void D3D9ImmediateRenderer::reserveUpBuffer(uint32_t length) {
-    if (m_upBuffer != nullptr && m_upBufferLength >= length)
-      return;
-
-    m_upBuffer = nullptr;
-
-    D3D11_BUFFER_DESC desc;
-    desc.ByteWidth = length;
-    desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    desc.Usage = D3D11_USAGE_DYNAMIC;
-    desc.MiscFlags = 0;
-    desc.StructureByteStride = 0;
-
-    Com<ID3D11Buffer> buffer;
-    HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
-    m_device->CreateBuffer(&desc, nullptr, &m_upBuffer);
-
-    m_upBufferLength = length;
   }
 
   //
