@@ -37,27 +37,27 @@ namespace dxup {
 
     if (stateBlockType == D3DSBT_PIXELSTATE || stateBlockType == D3DSBT_ALL)
     {
-      capturePixelRenderStates();
-      capturePixelTextureStates();
-      capturePixelSamplerStates();
-      capturePixelShaderStates();
+      capturePixelRenderStates(recapture);
+      capturePixelTextureStates(recapture);
+      capturePixelSamplerStates(recapture);
+      capturePixelShaderStates(recapture);
     }
     if (stateBlockType == D3DSBT_VERTEXSTATE || stateBlockType == D3DSBT_ALL)
     {
-      captureVertexRenderStates();
-      captureVertexSamplerStates();
-      captureVertexTextureStates();
-      captureVertexShaderStates();
-      captureVertexDeclaration();
+      captureVertexRenderStates(recapture);
+      captureVertexSamplerStates(recapture);
+      captureVertexTextureStates(recapture);
+      captureVertexShaderStates(recapture);
+      captureVertexDeclaration(recapture);
     }
     if (stateBlockType == D3DSBT_ALL)   // Capture remaining states
     {
-      captureTextures();
-      captureVertexStreams();
-      captureIndexBuffer();
-      //captureViewport(); // TODO Migrate this to state! I am too tired right now :((((((
-      //captureScissor();
-      //captureClipPlanes();
+      captureTextures(recapture);
+      captureVertexStreams(recapture);
+      captureIndexBuffer(recapture);
+      //captureViewport(recapture); // TODO Migrate this to state! I am too tired right now :((((((
+      //captureScissor(recapture);
+      //captureClipPlanes(recapture);
 
       // There is more crap here too!
     }
