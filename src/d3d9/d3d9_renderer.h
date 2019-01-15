@@ -13,12 +13,15 @@ namespace dxup {
 
     HRESULT Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil);
     HRESULT DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+    HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride);
     HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount);
 
     void undirtyContext();
     void handleDepthStencilDiscard();
 
   private:
+
+    void reserveUpBuffer(uint32_t length);
 
     bool canDraw();
 
@@ -42,6 +45,9 @@ namespace dxup {
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
     D3D9State* m_state;
+
+    Com<ID3D11Buffer> m_upBuffer;
+    UINT m_upBufferLength;
 
     D3D9StateCaches m_caches;
 

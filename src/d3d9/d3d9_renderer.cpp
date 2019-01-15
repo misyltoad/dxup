@@ -9,7 +9,8 @@ namespace dxup {
     , m_state{ state }
     , m_device{ device }
     , m_vsConstants{ device, context }
-    , m_psConstants{ device, context } {}
+    , m_psConstants{ device, context }
+    , m_upBufferLength{ 0 } {}
 
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     FLOAT color[4];
@@ -61,6 +62,36 @@ namespace dxup {
 
     return D3D_OK;
   }
+  HRESULT D3D9ImmediateRenderer::DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
+    if (!preDraw()) {
+      log::warn("Invalid internal render state achieved.");
+      postDraw();
+      return D3D_OK; // Lies!
+    }
+
+    D3D_PRIMITIVE_TOPOLOGY topology;
+    UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
+    UINT length = drawCount * VertexStreamZeroStride;
+
+    reserveUpBuffer(length);
+
+    D3D11_MAPPED_SUBRESOURCE res;
+    m_context->Map(m_upBuffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+    std::memcpy(res.pData, pVertexStreamZeroData, length);
+    m_context->Unmap(m_upBuffer.ptr(), 0);
+
+    const UINT offset = 0;
+    m_context->IASetVertexBuffers(0, 1, &m_upBuffer, &VertexStreamZeroStride, &offset);
+
+    m_context->IASetPrimitiveTopology(topology);
+    m_context->Draw(drawCount, 0);
+
+    m_state->dirtyFlags |= dirtyFlags::vertexBuffers;
+
+    postDraw();
+
+    return D3D_OK;
+  }
   HRESULT D3D9ImmediateRenderer::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
     if (!preDraw()) {
       log::warn("Invalid internal render state achieved.");
@@ -76,6 +107,27 @@ namespace dxup {
 
     postDraw();
     return D3D_OK;
+  }
+
+  //
+
+  void D3D9ImmediateRenderer::reserveUpBuffer(uint32_t length) {
+    if (m_upBuffer != nullptr && m_upBufferLength >= length)
+      return;
+
+    m_upBuffer = nullptr;
+
+    D3D11_BUFFER_DESC desc;
+    desc.ByteWidth = length;
+    desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.MiscFlags = 0;
+    desc.StructureByteStride = 0;
+
+    Com<ID3D11Buffer> buffer;
+    HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
+    m_device->CreateBuffer(&desc, nullptr, &m_upBuffer);
   }
 
   //
