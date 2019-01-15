@@ -132,7 +132,18 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetRasterStatus(D3DRASTER_STATUS* pRasterStatus) {
     CriticalSection cs(m_device);
 
-    log::stub("Direct3DSwapChain9Ex::GetRasterStatus");
+    if (pRasterStatus == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetRasterStatus: pRasterStatus was nullptr.");
+
+    // There exists D3DKMTGetScanLine which could implement this.
+    // However the header for it is DDI and it's not supported under Wine.
+    // Just stubbing this for now, but returning something thats should at least make the games happy.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/d3dkmthk/nf-d3dkmthk-d3dkmtgetscanline
+    log::warn("GetRasterStatus: returning vblank.");
+
+    pRasterStatus->InVBlank = true;
+    pRasterStatus->ScanLine = 0;
+    
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetDisplayMode(D3DDISPLAYMODE* pMode) {
