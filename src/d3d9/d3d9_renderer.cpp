@@ -256,10 +256,10 @@ namespace dxup {
       desc.RenderTarget[i].BlendEnable = m_state->renderState[D3DRS_ALPHABLENDENABLE] == TRUE;
 
       desc.RenderTarget[i].BlendOp = convert::blendOp(m_state->renderState[D3DRS_BLENDOP]);
-      desc.RenderTarget[i].BlendOpAlpha = convert::blendOp(separateAlpha ? m_state->renderState[D3DRS_BLENDOPALPHA] : m_state->renderState[D3DRS_BLENDOP]);
+      desc.RenderTarget[i].BlendOpAlpha = separateAlpha ? convert::blendOp(m_state->renderState[D3DRS_BLENDOPALPHA]) : D3D11_BLEND_OP_ADD;
 
       desc.RenderTarget[i].DestBlend = convert::blend(m_state->renderState[D3DRS_DESTBLEND]);
-      desc.RenderTarget[i].DestBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_DESTBLENDALPHA] : m_state->renderState[D3DRS_DESTBLEND]);
+      desc.RenderTarget[i].DestBlendAlpha = separateAlpha ? convert::blend(m_state->renderState[D3DRS_DESTBLENDALPHA]) : D3D11_BLEND_ZERO;
 
       desc.RenderTarget[i].LogicOp = D3D11_LOGIC_OP_NOOP;
       desc.RenderTarget[i].LogicOpEnable = false;
@@ -276,7 +276,7 @@ namespace dxup {
       desc.RenderTarget[i].RenderTargetWriteMask = m_state->renderState[writeIndex];
 
       desc.RenderTarget[i].SrcBlend = convert::blend(m_state->renderState[D3DRS_SRCBLEND]);
-      desc.RenderTarget[i].SrcBlendAlpha = convert::blend(separateAlpha ? m_state->renderState[D3DRS_SRCBLENDALPHA] : m_state->renderState[D3DRS_SRCBLEND]);
+      desc.RenderTarget[i].SrcBlendAlpha = separateAlpha ? convert::blend(m_state->renderState[D3DRS_SRCBLENDALPHA]) : D3D11_BLEND_ONE;
     }
 
     ID3D11BlendState1* state = m_caches.blendState.lookupObject(desc);
