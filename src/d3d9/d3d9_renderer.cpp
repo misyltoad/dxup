@@ -128,6 +128,8 @@ namespace dxup {
     Com<ID3D11Buffer> buffer;
     HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
     m_device->CreateBuffer(&desc, nullptr, &m_upBuffer);
+
+    m_upBufferLength = length;
   }
 
   //
