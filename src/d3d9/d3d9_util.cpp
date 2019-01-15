@@ -162,7 +162,10 @@ namespace dxup {
     }
 
     D3D11_USAGE usage(D3DPOOL pool, UINT usage) {
-      if (usage & D3DUSAGE_DYNAMIC || pool == D3DPOOL_SCRATCH || pool == D3DPOOL_SYSTEMMEM)
+      if (pool == D3DPOOL_SYSTEMMEM || pool == D3DPOOL_SCRATCH)
+        return D3D11_USAGE_STAGING;
+
+      if (usage & D3DUSAGE_DYNAMIC)
         return D3D11_USAGE_DYNAMIC;
 
       return D3D11_USAGE_DEFAULT;

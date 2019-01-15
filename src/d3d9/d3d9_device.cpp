@@ -697,6 +697,18 @@ namespace dxup {
     InitReturnPtr(ppTexture);
     InitReturnPtr(pSharedHandle);
 
+    if (Width == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: width was 0.");
+
+    if (Height == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: height was 0.");
+
+    if (Usage & D3DUSAGE_AUTOGENMIPMAP && Levels > 1)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: mipmap generation requested with more than 1 level.");
+
+    if (m_parent->CheckDeviceFormat(m_adapterNum, m_deviceType, D3DFMT_X8R8G8B8, Usage, D3DRTYPE_TEXTURE, Format) != D3D_OK)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: unsupported format (%d).", Format);
+
     if (!ppTexture)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: ppTexture was nullptr.");
 
@@ -986,7 +998,9 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateOffscreenPlainSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DPOOL Pool, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    log::warn("CreateOffscreenPlainSurface partial support.");
+    if (Pool == D3DPOOL_MANAGED)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateOffscreenPlainSurface: attempted to make offscreen surface w/ managed pool.");
+
     return CreateRenderTarget(Width, Height, Format, D3DMULTISAMPLE_NONE, 0, D3DPOOL_DEFAULT, ppSurface, pSharedHandle);
   }
 
