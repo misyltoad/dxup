@@ -238,8 +238,8 @@ namespace dxup {
         case D3DFMT_DXT3:			return D3D_OK;
         case D3DFMT_DXT4:			return D3D_OK;
         case D3DFMT_DXT5:			return D3D_OK;
-        //case D3DFMT_ATI1:			return D3D_OK;
-        //case D3DFMT_ATI2:			return D3D_OK;
+        case D3DFMT_ATI1:			return D3D_OK;
+        case D3DFMT_ATI2:			return D3D_OK;
           // Floating-point formats
         case D3DFMT_R16F:			return D3D_OK;
         case D3DFMT_G16R16F:		return D3D_OK;
@@ -297,8 +297,8 @@ namespace dxup {
       case D3DFMT_DXT3:				return D3D_OK;
       case D3DFMT_DXT4:				return D3D_OK;
       case D3DFMT_DXT5:				return D3D_OK;
-      //case D3DFMT_ATI1:				return D3D_OK;
-      //case D3DFMT_ATI2:				return D3D_OK;
+      case D3DFMT_ATI1:				return D3D_OK;
+      case D3DFMT_ATI2:				return D3D_OK;
         // Floating-point formats
       case D3DFMT_R16F:				return D3D_OK;
       case D3DFMT_G16R16F:			return D3D_OK;
@@ -398,8 +398,8 @@ namespace dxup {
         case D3DFMT_DXT3:			return D3D_OK;
         case D3DFMT_DXT4:			return D3D_OK;
         case D3DFMT_DXT5:			return D3D_OK;
-        //case D3DFMT_ATI1:			return D3D_OK;
-        //case D3DFMT_ATI2:			return D3D_OK;
+        case D3DFMT_ATI1:			return D3D_OK;
+        case D3DFMT_ATI2:			return D3D_OK;
           // Floating-point formats
         case D3DFMT_R16F:			return D3D_OK;
         case D3DFMT_G16R16F:		return D3D_OK;
@@ -453,8 +453,8 @@ namespace dxup {
       case D3DFMT_DXT3:				return D3D_OK;
       case D3DFMT_DXT4:				return D3D_OK;
       case D3DFMT_DXT5:				return D3D_OK;
-      //case D3DFMT_ATI1:				return D3D_OK;
-      //case D3DFMT_ATI2:				return D3D_OK;
+      case D3DFMT_ATI1:				return D3D_OK;
+      case D3DFMT_ATI2:				return D3D_OK;
         // Floating-point formats
       case D3DFMT_R16F:				return D3D_OK;
       case D3DFMT_G16R16F:			return D3D_OK;
@@ -555,8 +555,8 @@ namespace dxup {
         case D3DFMT_DXT3:			return D3D_OK;
         case D3DFMT_DXT4:			return D3D_OK;
         case D3DFMT_DXT5:			return D3D_OK;
-        //case D3DFMT_ATI1:			return D3D_OK;
-        //case D3DFMT_ATI2:			return D3D_OK;
+        case D3DFMT_ATI1:			return D3D_OK;
+        case D3DFMT_ATI2:			return D3D_OK;
           // Floating-point formats
         case D3DFMT_R16F:			return D3D_OK;
         case D3DFMT_G16R16F:		return D3D_OK;

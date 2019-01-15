@@ -7,7 +7,7 @@ namespace dxup {
 
   namespace convert {
 
-    using FormatConverter = TypeConverter<D3DFORMAT, DXGI_FORMAT>;
+    using FormatConverter = TypeConverter<uint32_t, DXGI_FORMAT>;
 
     std::vector<FormatConverter::TypeMapping> formats = {
       { D3DFMT_UNKNOWN, DXGI_FORMAT_UNKNOWN },
@@ -61,6 +61,9 @@ namespace dxup {
       { D3DFMT_DXT4, DXGI_FORMAT_BC3_UNORM_SRGB },
       { D3DFMT_DXT5, DXGI_FORMAT_BC3_UNORM_SRGB },
 
+      { D3DFMT_ATI1, DXGI_FORMAT_BC4_UNORM },
+      { D3DFMT_ATI2, DXGI_FORMAT_BC4_UNORM },
+
       { D3DFMT_A8R8G8B8, DXGI_FORMAT_B8G8R8A8_TYPELESS },
       { D3DFMT_A8R8G8B8, DXGI_FORMAT_B8G8R8A8_UNORM },
       { D3DFMT_A8R8G8B8, DXGI_FORMAT_B8G8R8A8_UNORM_SRGB },
@@ -96,7 +99,7 @@ namespace dxup {
       return formatConverter.toJ(Format);
     }
     D3DFORMAT format(DXGI_FORMAT Format) {
-      return formatConverter.toT(Format);
+      return (D3DFORMAT)formatConverter.toT(Format);
     }
 
     DXGI_FORMAT makeUntypeless(DXGI_FORMAT format, bool srgb) {
