@@ -63,6 +63,12 @@ namespace dxup {
     }
   }
   void D3D9State::apply() {
+    if (viewportCaptured)
+      m_device->SetViewport(&viewport);
+
+    if (scissorRectCaptured)
+      m_device->SetScissorRect(&scissorRect);
+
     if (vertexShaderCaptured)
       m_device->SetVertexShader(vertexShader.ptr());
 
