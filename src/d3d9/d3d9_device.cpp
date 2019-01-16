@@ -540,9 +540,7 @@ namespace dxup {
     SwapChainDesc.BufferCount = BackBufferCount;
     SwapChainDesc.BufferDesc.Width = pPresentationParameters->BackBufferWidth;
     SwapChainDesc.BufferDesc.Height = pPresentationParameters->BackBufferHeight;
-    SwapChainDesc.BufferDesc.Format = convert::makeUntypeless(convert::format(pPresentationParameters->BackBufferFormat), false);
-    if (SwapChainDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8X8_UNORM)
-      SwapChainDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    SwapChainDesc.BufferDesc.Format = convert::format(pPresentationParameters->BackBufferFormat, true);
     SwapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
     SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;

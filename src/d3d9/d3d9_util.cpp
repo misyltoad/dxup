@@ -95,8 +95,17 @@ namespace dxup {
 
     FormatConverter formatConverter{ formats };
 
-    DXGI_FORMAT format(D3DFORMAT Format) {
-      return formatConverter.toJ(Format);
+    DXGI_FORMAT format(D3DFORMAT Format, bool swapchain) {
+      DXGI_FORMAT format =  formatConverter.toJ(Format);
+
+      if (swapchain) {
+        format = makeTypeless(format);
+        format = makeUntypeless(format, false);
+        if (format == DXGI_FORMAT_B8G8R8X8_UNORM)
+          format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      }
+
+      return format;
     }
     D3DFORMAT format(DXGI_FORMAT Format) {
       return (D3DFORMAT)formatConverter.toT(Format);

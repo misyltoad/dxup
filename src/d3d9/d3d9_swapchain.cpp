@@ -32,7 +32,7 @@ namespace dxup {
       bufferCount,
       parameters->BackBufferWidth,
       parameters->BackBufferHeight,
-      convert::makeUntypeless(convert::format(parameters->BackBufferFormat), false),
+      convert::format(parameters->BackBufferFormat, true),
       0);
 
     if (FAILED(result))

@@ -899,9 +899,7 @@ namespace dxup {
 
     // This is disgusting, what the fuck MS?! ~ Josh
     UINT ModeCount = 0;
-    DXGI_FORMAT dxgiFormat = convert::makeUntypeless(convert::format(Format), false);
-    if (dxgiFormat == DXGI_FORMAT_B8G8R8X8_UNORM)
-      dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+    DXGI_FORMAT dxgiFormat = convert::format(Format, true);
     result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
     m_displayModes.resize(ModeCount);

@@ -7,7 +7,7 @@
 namespace dxup {
 
   namespace convert {
-    DXGI_FORMAT format(D3DFORMAT Format);
+    DXGI_FORMAT format(D3DFORMAT Format, bool swapchain = false);
     D3DFORMAT format(DXGI_FORMAT Format);
 
     DXGI_FORMAT makeUntypeless(DXGI_FORMAT format, bool srgb);
