@@ -733,7 +733,7 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT D3D9State::SetViewport(CONST D3DVIEWPORT9* pViewport) {
-      if (pViewport == nullptr)
+    if (pViewport == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "SetViewport: pViewport was nullptr.");
 
     viewport = *pViewport;
