@@ -952,8 +952,8 @@ namespace dxup {
       box.right = pSourceRect->right;
       box.top = pSourceRect->top;
       box.bottom = pSourceRect->bottom;
-      box.top = 0;
-      box.back = 0;
+      box.front = 0;
+      box.back = 1;
       m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), x, y, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), &box);
 
       return D3D_OK;
