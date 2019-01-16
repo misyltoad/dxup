@@ -733,7 +733,7 @@ namespace dxup {
     desc.BindFlags = 0;
     desc.MiscFlags = Type == D3DRTYPE_CUBETEXTURE ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
 
-    if (!isDepthStencil)
+    if (!isDepthStencil && d3d11Usage != D3D11_USAGE_STAGING)
       desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
     if (d3d11Usage == D3D11_USAGE_DEFAULT) {

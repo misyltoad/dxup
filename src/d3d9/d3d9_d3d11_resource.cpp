@@ -8,7 +8,19 @@ namespace dxup {
   // We then map this and CopySubresourceRegion on unmapping.
   // If we don't need the staging res. will be nullptr, some logic relies on this.
   bool DXUPResource::NeedsStaging(D3D11_USAGE d3d11Usage, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
-    return d3d9Format == D3DFMT_R8G8B8 || d3d11Usage == D3D11_USAGE_DEFAULT || !(d3d9Usage & D3DUSAGE_WRITEONLY);
+    if (d3d11Usage == D3D11_USAGE_DEFAULT)
+      return true;
+
+    if (d3d9Format == D3DFMT_R8G8B8)
+      return true;
+
+    if (d3d11Usage == D3D11_USAGE_STAGING)
+      return false;
+
+    if (!(d3d9Usage & D3DUSAGE_WRITEONLY))
+      return true;
+
+    return false;
   }
 
   DXUPResource* DXUPResource::CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
