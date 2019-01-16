@@ -40,25 +40,26 @@ namespace dxup {
     if (pIdentifier == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: pIdentifier was nullptr.");
 
-    Com<IDXGIAdapter1> adapter;
-    HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-    if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIFactory1::EnumAdapters1 failed (adapter = %d).", Adapter);
-
-    Com<IDXGIOutput> output;
-    result = adapter->EnumOutputs(0, &output);
-    if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIAdapter1::EnumOutputs failed.");
-
-    DXGI_ADAPTER_DESC1 desc;
-    adapter->GetDesc1(&desc);
-
-    DXGI_OUTPUT_DESC outDesc;
-    output->GetDesc(&outDesc);
-
     bool fake = config::getBool(config::UseFakes);
 
     if (!fake) {
+      Com<IDXGIAdapter1> adapter;
+      HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
+      if (FAILED(result))
+        return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIFactory1::EnumAdapters1 failed (adapter = %d).", Adapter);
+
+      Com<IDXGIOutput> output;
+      result = adapter->EnumOutputs(0, &output);
+      if (FAILED(result))
+        return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIAdapter1::EnumOutputs failed.");
+
+      DXGI_ADAPTER_DESC1 desc;
+      adapter->GetDesc1(&desc);
+
+      DXGI_OUTPUT_DESC outDesc;
+      output->GetDesc(&outDesc);
+
+
       wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
       wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
       strcpy(pIdentifier->Driver, "d3d9.dll");
