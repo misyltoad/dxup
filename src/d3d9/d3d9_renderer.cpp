@@ -142,6 +142,21 @@ namespace dxup {
 
   //
 
+  void D3D9ImmediateRenderer::updateScissorRect() {
+    m_context->RSSetScissorRects(1, (D3D11_RECT*)&m_state->scissorRect);
+  }
+
+  void D3D9ImmediateRenderer::updateViewport() {
+    D3D11_VIEWPORT viewport;
+    viewport.TopLeftX = (FLOAT)m_state->viewport.X;
+    viewport.TopLeftY = (FLOAT)m_state->viewport.Y;
+    viewport.MinDepth = m_state->viewport.MinZ;
+    viewport.MaxDepth = m_state->viewport.MaxZ;
+    viewport.Width = (FLOAT)m_state->viewport.Width;
+    viewport.Height = (FLOAT)m_state->viewport.Height;
+    m_context->RSSetViewports(1, &viewport);
+  }
+
   void D3D9ImmediateRenderer::updateVertexShaderAndInputLayout() {
     if (m_state->vertexDecl == nullptr || m_state->vertexShader == nullptr)
       return;
@@ -442,6 +457,12 @@ namespace dxup {
   //
 
   void D3D9ImmediateRenderer::undirtyContext() {
+    if (m_state->dirtyFlags & dirtyFlags::viewport)
+      updateViewport();
+
+    if (m_state->dirtyFlags & dirtyFlags::scissorRect)
+      updateScissorRect();
+
     if (m_state->dirtyFlags & dirtyFlags::vertexBuffers)
       updateVertexBuffer();
 

@@ -23,6 +23,8 @@ namespace dxup {
     const uint32_t psConstants = 1 << 9;
     const uint32_t vertexBuffers = 1 << 10;
     const uint32_t indexBuffer = 1 << 11;
+    const uint32_t scissorRect = 1 << 12;
+    const uint32_t viewport = 1 << 13;
   }
 
   class D3D9State {
@@ -80,6 +82,12 @@ namespace dxup {
     HRESULT GetPixelShaderConstantB(UINT StartRegister, BOOL* pConstantData, UINT BoolCount);
     HRESULT SetPixelShaderConstantB(UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
 
+    HRESULT GetScissorRect(RECT* pRect);
+    HRESULT SetScissorRect(CONST RECT* pRect);
+
+    HRESULT GetViewport(D3DVIEWPORT9* pViewport);
+    HRESULT SetViewport(CONST D3DVIEWPORT9* pViewport);
+
     void capture(uint32_t stateBlockType, bool recapture);
     void apply();
 
@@ -130,6 +138,12 @@ namespace dxup {
     D3D9ShaderConstants vsConstants;
     D3D9ShaderConstants psConstants;
 
+    D3DVIEWPORT9 viewport;
+    bool viewportCaptured = false;
+
+    RECT scissorRect;
+    bool scissorRectCaptured = false;
+
     void captureRenderState(D3DRENDERSTATETYPE state, bool recapture = false);
     void captureTextureStageState(uint32_t stage, D3DTEXTURESTAGESTATETYPE type, bool recapture = false);
     void captureSamplerState(uint32_t sampler, D3DSAMPLERSTATETYPE type, bool recapture = false);
@@ -146,6 +160,8 @@ namespace dxup {
     void captureTextures(bool recapture = false);
     void captureVertexStreams(bool recapture = false);
     void captureIndexBuffer(bool recapture = false);
+    void captureViewport(bool recapture = false);
+    void captureScissor(bool recapture = false);
 
     Direct3DDevice9Ex* m_device;
   };

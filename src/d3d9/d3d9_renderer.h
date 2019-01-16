@@ -28,6 +28,8 @@ namespace dxup {
     bool preDraw(); // Returns CanDraw
     void postDraw();
 
+    void updateViewport();
+    void updateScissorRect();
     void updateVertexShaderAndInputLayout();
     void updateDepthStencilState();
     void updateRasterizer();

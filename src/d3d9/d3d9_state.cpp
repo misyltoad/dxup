@@ -55,8 +55,8 @@ namespace dxup {
       captureTextures(recapture);
       captureVertexStreams(recapture);
       captureIndexBuffer(recapture);
-      //captureViewport(recapture); // TODO Migrate this to state! I am too tired right now :((((((
-      //captureScissor(recapture);
+      captureViewport(recapture);
+      captureScissor(recapture);
       //captureClipPlanes(recapture);
 
       // There is more crap here too!
@@ -681,6 +681,44 @@ namespace dxup {
     return D3D_OK;
   }
 
+  HRESULT D3D9State::GetScissorRect(RECT* pRect) {
+    if (pRect == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetScissorRect: pRect was nullptr.");
+
+    *pRect = scissorRect;
+    return D3D_OK;
+  }
+  HRESULT D3D9State::SetScissorRect(CONST RECT* pRect) {
+    if (pRect == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "SetScissorRect: pRect was nullptr.");
+
+    scissorRect = *pRect;
+    scissorRectCaptured = true;
+
+    dirtyFlags |= dirtyFlags::scissorRect;
+    return D3D_OK;
+  }
+
+  HRESULT D3D9State::GetViewport(D3DVIEWPORT9* pViewport) {
+    if (pViewport == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetViewport: pViewport was nullptr.");
+
+    *pViewport = viewport;
+    return D3D_OK;
+  }
+  HRESULT D3D9State::SetViewport(CONST D3DVIEWPORT9* pViewport) {
+    if (pViewport == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "SetViewport: pViewport was nullptr.");
+
+    viewport = *pViewport;
+    viewportCaptured = true;
+
+    dirtyFlags |= dirtyFlags::viewport;
+    return D3D_OK;
+  }
+
+  //
+
   void D3D9State::captureRenderState(D3DRENDERSTATETYPE state, bool recapture) {
     if (recapture && renderStateCaptures[state] == false)
       return;
@@ -942,6 +980,22 @@ namespace dxup {
     Com<IDirect3DIndexBuffer9> tempBuffer;
     m_device->GetIndices(&tempBuffer);
     SetIndices(tempBuffer.ptr());
+  }
+
+  void D3D9State::captureViewport(bool recapture) {
+    if (recapture && viewportCaptured == false)
+      return;
+
+    viewportCaptured = true;
+    m_device->GetViewport(&viewport);
+  }
+
+  void D3D9State::captureScissor(bool recapture) {
+    if (recapture && scissorRectCaptured == false)
+      return;
+
+    scissorRectCaptured = true;
+    m_device->GetScissorRect(&scissorRect);
   }
 
   // StateBlock

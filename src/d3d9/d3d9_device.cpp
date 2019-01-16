@@ -1055,39 +1055,11 @@ namespace dxup {
   // TODO! Put viewport in state.
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetViewport(CONST D3DVIEWPORT9* pViewport) {
     CriticalSection cs(this);
-
-    if (!pViewport)
-      return log::d3derr(D3DERR_INVALIDCALL, "SetViewport: pViewport was nullptr.");
-
-    D3D11_VIEWPORT viewport;
-    viewport.TopLeftX = (FLOAT) pViewport->X;
-    viewport.TopLeftY = (FLOAT) pViewport->Y;
-    viewport.MinDepth = pViewport->MinZ;
-    viewport.MaxDepth = pViewport->MaxZ;
-    viewport.Width = (FLOAT)pViewport->Width;
-    viewport.Height = (FLOAT)pViewport->Height;
-    m_context->RSSetViewports(1, &viewport);
-
-    return D3D_OK;
+    return GetEditState()->SetViewport(pViewport);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetViewport(D3DVIEWPORT9* pViewport) {
     CriticalSection cs(this);
-
-    if (!pViewport)
-      return log::d3derr(D3DERR_INVALIDCALL, "GetViewport: pViewport was nullptr.");
-
-    D3D11_VIEWPORT viewport;
-    UINT numViewports = 1;
-    m_context->RSGetViewports(&numViewports, &viewport);
-
-    pViewport->MaxZ = viewport.MaxDepth;
-    pViewport->MinZ = viewport.MinDepth;
-    pViewport->Width = (DWORD) viewport.Width;
-    pViewport->Height = (DWORD) viewport.Height;
-    pViewport->X = (DWORD) viewport.TopLeftX;
-    pViewport->Y = (DWORD) viewport.TopLeftY;
-
-    return D3D_OK;
+    return m_state->GetViewport(pViewport);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetMaterial(CONST D3DMATERIAL9* pMaterial) {
     CriticalSection cs(this);
@@ -1257,35 +1229,11 @@ namespace dxup {
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetScissorRect(CONST RECT* pRect) {
     CriticalSection cs(this);
-
-    if (pRect == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "SetScissorRect: pRect was nullptr.");
-
-    D3D11_RECT rect;
-    rect.bottom = pRect->bottom;
-    rect.left = pRect->left;
-    rect.right = pRect->right;
-    rect.top = pRect->top;
-
-    m_context->RSSetScissorRects(1, &rect);
-    return D3D_OK;
+    return GetEditState()->SetScissorRect(pRect);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetScissorRect(RECT* pRect) {
     CriticalSection cs(this);
-
-    if (pRect == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "GetScissorRect: pRect was nullptr.");
-
-    D3D11_RECT rect;
-    UINT rects = 1;
-    m_context->RSGetScissorRects(&rects, &rect);
-
-    pRect->bottom = rect.bottom;
-    pRect->left = rect.left;
-    pRect->right = rect.right;
-    pRect->top = rect.top;
-
-    return D3D_OK;
+    return m_state->GetScissorRect(pRect);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetSoftwareVertexProcessing(BOOL bSoftware) {
     CriticalSection cs(this);
