@@ -711,7 +711,7 @@ namespace dxup {
       pCaps->PixelShaderVersion = D3DPS_VERSION(1, 4);
     }
     pCaps->MaxVertexShaderConst = 256;
-    pCaps->PixelShader1xMaxValue = 3.40282347e38;
+    pCaps->PixelShader1xMaxValue = FLT_MAX;
     pCaps->DevCaps2 = 113;
     pCaps->MaxNpatchTessellationLevel = 1.0f;
     pCaps->Reserved5 = 0;
