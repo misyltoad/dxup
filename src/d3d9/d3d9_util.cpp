@@ -184,10 +184,11 @@ namespace dxup {
     }
 
     UINT cpuFlags(D3DPOOL pool, UINT usage) {
-      if (convert::usage(pool, usage) == D3D11_USAGE_DYNAMIC) {
+      D3D11_USAGE d3d11Usage = convert::usage(pool, usage);
+      if (d3d11Usage != D3D11_USAGE_DEFAULT) {
         if (usage & D3DUSAGE_WRITEONLY)
           return D3D11_CPU_ACCESS_WRITE;
-        return /*D3D11_CPU_ACCESS_READ |*/ D3D11_CPU_ACCESS_WRITE;
+        return d3d11Usage == D3D11_USAGE_STAGING ? D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_WRITE;
       }
 
       return 0;
