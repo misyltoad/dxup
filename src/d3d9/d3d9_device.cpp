@@ -123,6 +123,10 @@ namespace dxup {
     Com<IDXGIDevice1> dxgiDevice;
 
     HRESULT result = CreateD3D11Device(adapter, parent, &device, &context, &dxgiDevice, &dxgiAdapter);
+
+    if (FAILED(result))
+      return result;
+
     SetupD3D11Debug(device.ptr());
 
     if (behaviourFlags & D3DCREATE_MULTITHREADED) {
