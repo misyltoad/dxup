@@ -827,6 +827,7 @@ namespace dxup {
 
     InitReturnPtr(ppReturnedDeviceInterface);
 
+    cacheAdapters();
     log::msg("Creating D3D9 device with adapter: %d", Adapter);
 
     return Direct3DDevice9Ex::Create(
