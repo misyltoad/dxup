@@ -40,13 +40,19 @@ namespace dxup {
       IDXGIFactory1* GetDXGIFactory();
       HRESULT EnumAdapterModeFormatEx(UINT Adapter, D3DFORMAT Format, const D3DDISPLAYMODEFILTER* pFilter, UINT Mode, D3DDISPLAYMODEEX* pMode);
 
+
       HRESULT UpdateDisplayModes(UINT adapter, D3DFORMAT format);
+      void cacheAdapters();
+      inline const std::vector<Com<IDXGIAdapter1>>& getAdapterList() {
+        return m_adapters;
+      }
 
     private:
 
       UINT m_displayModeAdapter;
       D3DFORMAT m_displayModeFormats;
       std::vector<DXGI_MODE_DESC> m_displayModes;
+      std::vector<Com<IDXGIAdapter1>> m_adapters;
       Com<IDXGIFactory1> m_dxgiFactory;
 
   };

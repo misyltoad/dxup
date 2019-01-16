@@ -29,12 +29,8 @@ namespace dxup {
     return D3D_OK;
   }
   UINT     STDMETHODCALLTYPE Direct3D9Ex::GetAdapterCount() {
-    UINT AdapterCount = 0;
-    Com<IDXGIAdapter> adapter;
-    while (!FAILED(m_dxgiFactory->EnumAdapters(AdapterCount, &adapter)))
-      AdapterCount++;
-
-    return AdapterCount;
+    cacheAdapters();
+    return m_adapters.size();
   }
   HRESULT   STDMETHODCALLTYPE Direct3D9Ex::GetAdapterIdentifier(UINT Adapter, DWORD Flags, D3DADAPTER_IDENTIFIER9* pIdentifier) {
     if (pIdentifier == nullptr)
@@ -42,14 +38,16 @@ namespace dxup {
 
     bool fake = config::getBool(config::UseFakes);
 
+    cacheAdapters();
+
+    if (Adapter >= m_adapters.size())
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: adapter out of bounds (adapter = %d, range: 0-%d).", Adapter, m_adapters.size());
+
     if (!fake) {
-      Com<IDXGIAdapter1> adapter;
-      HRESULT result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-      if (FAILED(result))
-        return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIFactory1::EnumAdapters1 failed (adapter = %d).", Adapter);
+      IDXGIAdapter1* adapter = m_adapters[Adapter].ptr();
 
       Com<IDXGIOutput> output;
-      result = adapter->EnumOutputs(0, &output);
+      HRESULT result = adapter->EnumOutputs(0, &output);
       if (FAILED(result))
         return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterIdentifier: IDXGIAdapter1::EnumOutputs failed.");
 
@@ -58,7 +56,6 @@ namespace dxup {
 
       DXGI_OUTPUT_DESC outDesc;
       output->GetDesc(&outDesc);
-
 
       wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
       wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
@@ -757,19 +754,23 @@ namespace dxup {
   }
 
   HMONITOR STDMETHODCALLTYPE Direct3D9Ex::GetAdapterMonitor(UINT Adapter) {
-    Com<IDXGIAdapter1> adapter;
-    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-    if (FAILED(Result))
-      return NULL;
+    cacheAdapters();
+
+    if (Adapter >= m_adapters.size()) {
+      log::warn("GetAdapterMonitor: adapter out of bounds (adapter = %d, range: 0-%d). Returning null montor.", Adapter, m_adapters.size());
+      return nullptr;
+    }
+
+    IDXGIAdapter1* adapter = m_adapters[Adapter].ptr();
 
     Com<IDXGIOutput> output;
-    Result = adapter->EnumOutputs(0, &output);
-    if (FAILED(Result))
+    HRESULT result = adapter->EnumOutputs(0, &output);
+    if (FAILED(result))
       return NULL;
 
     DXGI_OUTPUT_DESC outputDesc;
-    Result = output->GetDesc(&outputDesc);
-    if (FAILED(Result))
+    result = output->GetDesc(&outputDesc);
+    if (FAILED(result))
       return NULL;
 
     return outputDesc.Monitor;
@@ -843,16 +844,17 @@ namespace dxup {
     if (!pLUID)
       return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterLUID: pLUID was nullptr");
 
-    Com<IDXGIAdapter1> adapter = nullptr;
-    if (!FAILED(m_dxgiFactory->EnumAdapters1(Adapter, &adapter)))
-    {
-      DXGI_ADAPTER_DESC adapterDesc;
+    cacheAdapters();
 
-      if (!FAILED(adapter->GetDesc(&adapterDesc)))
-        *pLUID = adapterDesc.AdapterLuid;
-      else
-        return D3DERR_INVALIDCALL;
-    }
+    if (Adapter >= m_adapters.size())
+      return log::d3derr(D3DERR_INVALIDCALL, "GetAdapterLUID: adapter out of bounds (adapter = %d, range: 0-%d).", Adapter, m_adapters.size());
+
+    IDXGIAdapter1* adapter = m_adapters[Adapter].ptr();
+
+    DXGI_ADAPTER_DESC adapterDesc;
+    adapter->GetDesc(&adapterDesc);
+
+    *pLUID = adapterDesc.AdapterLuid;
 
     return D3D_OK;
   }
@@ -882,18 +884,17 @@ namespace dxup {
     if (m_displayModeAdapter == Adapter && m_displayModeFormats == Format && !m_displayModes.empty())
       return D3D_OK;
 
+    cacheAdapters();
+
     m_displayModeAdapter = Adapter;
     m_displayModeFormats = Format;
     m_displayModes.clear();
 
-    Com<IDXGIAdapter1> adapter;
-    HRESULT Result = m_dxgiFactory->EnumAdapters1(Adapter, &adapter);
-    if (FAILED(Result))
-      return D3DERR_INVALIDCALL;
+    IDXGIAdapter1* adapter = m_adapters[Adapter].ptr();
 
     Com<IDXGIOutput> output;
-    Result = adapter->EnumOutputs(0, &output);
-    if (FAILED(Result))
+    HRESULT result = adapter->EnumOutputs(0, &output);
+    if (FAILED(result))
       return D3DERR_INVALIDCALL;
 
     // This is disgusting, what the fuck MS?! ~ Josh
@@ -901,20 +902,38 @@ namespace dxup {
     DXGI_FORMAT dxgiFormat = convert::makeUntypeless(convert::format(Format), false);
     if (dxgiFormat == DXGI_FORMAT_B8G8R8X8_UNORM)
       dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-    Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
+    result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
     m_displayModes.resize(ModeCount);
 
-    Result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, m_displayModes.data());
-    if (FAILED(Result))
-      return D3DERR_INVALIDCALL;
+    result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, m_displayModes.data());
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateDisplayModes: GetDisplayModeList failed.");
 
     std::reverse(m_displayModes.begin(), m_displayModes.end());
 
     return D3D_OK;
   }
 
-  // dxup
+  void Direct3D9Ex::cacheAdapters() {
+    if (!m_adapters.empty())
+      return;
+
+    UINT i = 0;
+    Com<IDXGIAdapter1> adapter;
+
+    while (!FAILED(m_dxgiFactory->EnumAdapters1(i, &adapter))) {
+      Com<IDXGIOutput> output;
+
+      // Only return adapters with outputs.
+      if (!FAILED(adapter->EnumOutputs(0, &output)))
+        m_adapters.emplace_back(adapter.ptr());
+
+      adapter = nullptr;
+
+      i++;
+    }
+  }
 
   IDXGIFactory1* Direct3D9Ex::GetDXGIFactory() {
     return m_dxgiFactory.ptr();

@@ -47,7 +47,10 @@ namespace dxup {
   }
 
   HRESULT Direct3DDevice9Ex::CreateD3D11Device(UINT adapter, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** dxgiAdapter) {
-    HRESULT result = parent->GetDXGIFactory()->EnumAdapters1(adapter, dxgiAdapter);
+    if (adapter >= parent->getAdapterList().size())
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateD3D11Device: adapter out of bounds (adapter = %d, range: 0-%d).", adapter, parent->getAdapterList().size());
+
+    *dxgiAdapter = ref(parent->getAdapterList()[adapter].ptr());
 
     UINT Flags = D3D11_CREATE_DEVICE_DISABLE_GPU_TIMEOUT | D3D11_CREATE_DEVICE_BGRA_SUPPORT; // Why isn't this a default?! ~ Josh
 
@@ -66,7 +69,7 @@ namespace dxup {
     Com<ID3D11Device> initialDevice;
     Com<ID3D11DeviceContext> initialContext;
 
-    result = D3D11CreateDevice(
+    HRESULT result = D3D11CreateDevice(
       *dxgiAdapter,
       D3D_DRIVER_TYPE_UNKNOWN,
       nullptr,
