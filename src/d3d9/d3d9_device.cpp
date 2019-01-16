@@ -197,15 +197,6 @@ namespace dxup {
 
     HRESULT result = D3D_OK;
 
-    D3DVIEWPORT9 implicitViewport;
-    implicitViewport.X = 0;
-    implicitViewport.Y = 0;
-    implicitViewport.Height = pPresentationParameters->BackBufferHeight;
-    implicitViewport.Width = pPresentationParameters->BackBufferWidth;
-    implicitViewport.MinZ = 0.0f;
-    implicitViewport.MaxZ = 1.0f;
-    SetViewport(&implicitViewport);
-
     // Defaults from SwiftShader.
     SetRenderState(D3DRS_ZENABLE, pPresentationParameters->EnableAutoDepthStencil != FALSE ? D3DZB_TRUE : D3DZB_FALSE);
     SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);

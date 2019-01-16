@@ -225,6 +225,26 @@ namespace dxup {
       return log::d3derr(D3DERR_INVALIDCALL, "SetRenderTarget: rendertarget index out of bounds (%d).", RenderTargetIndex);
 
     renderTargets[RenderTargetIndex] = reinterpret_cast<Direct3DSurface9*>(pRenderTarget);
+
+    if (renderTargets[RenderTargetIndex] != nullptr && RenderTargetIndex == 0) {
+      D3DSURFACE_DESC desc;
+      renderTargets[RenderTargetIndex]->GetDesc(&desc);
+
+      viewport.X = 0;
+      viewport.Y = 0;
+      viewport.Width = desc.Width;
+      viewport.Height = desc.Height;
+      viewport.MinZ = 0;
+      viewport.MaxZ = 1;
+      dirtyFlags |= dirtyFlags::viewport;
+
+      scissorRect.left = 0;
+      scissorRect.top = 0;
+      scissorRect.right = desc.Width;
+      scissorRect.bottom = desc.Height;
+      dirtyFlags |= dirtyFlags::scissorRect;
+    }
+
     dirtyFlags |= dirtyFlags::renderTargets;
 
     return D3D_OK;
