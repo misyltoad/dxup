@@ -42,7 +42,7 @@ namespace dxup {
       uint32_t clearFlags = Flags & D3DCLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0;
       clearFlags |= Flags & D3DCLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0;
 
-      m_context->ClearDepthStencilView(dsv, clearFlags, Z, Stencil);
+      m_context->ClearDepthStencilView(dsv, clearFlags, std::clamp(Z, 0.0f, 1.0f), Stencil);
     }
     return D3D_OK;
   }
