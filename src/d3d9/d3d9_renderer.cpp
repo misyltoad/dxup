@@ -14,6 +14,18 @@ namespace dxup {
     , m_upIndexBuffer{ device, true } {}
 
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
+    if (Count >= 1) {
+      bool fullRectClear = pRects->x1 == 0 &&
+                           pRects->x2 == m_state->viewport.Width &&
+                           pRects->y1 == 0 &&
+                           pRects->y2 == m_state->viewport.Height;
+        
+      if (!fullRectClear) {
+        log::warn("Clear called with rects. Discarding clear.");
+        return D3D_OK;
+      }
+    }
+
     FLOAT color[4];
     convert::color(Color, color);
 
