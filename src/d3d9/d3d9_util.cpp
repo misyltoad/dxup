@@ -96,22 +96,25 @@ namespace dxup {
     FormatConverter formatConverter{ formats };
 
     DXGI_FORMAT format(D3DFORMAT Format, bool swapchain) {
-      DXGI_FORMAT format =  formatConverter.toJ(Format);
+      DXGI_FORMAT dxgiFormat =  formatConverter.toJ(Format);
 
       if (swapchain) {
-        format = makeTypeless(format);
-        format = makeUntypeless(format, false);
-        if (format == DXGI_FORMAT_B8G8R8X8_UNORM) {
+        dxgiFormat = makeTypeless(dxgiFormat);
+        dxgiFormat = makeUntypeless(dxgiFormat, false);
+        if (dxgiFormat == DXGI_FORMAT_B8G8R8X8_UNORM) {
           log::warn("format: swapchain forcing DXGI_FORMAT_B8G8R8X8_UNORM to DXGI_FORMAT_B8G8R8A8_UNORM.");
-          format = DXGI_FORMAT_B8G8R8A8_UNORM;
+          dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
         }
-        else if (format == DXGI_FORMAT_B5G6R5_UNORM) {
+        else if (dxgiFormat == DXGI_FORMAT_B5G6R5_UNORM) {
           log::warn("format: swapchain forcing DXGI_FORMAT_B5G6R5_UNORM to DXGI_FORMAT_B8G8R8A8_UNORM.");
-          format = DXGI_FORMAT_B8G8R8A8_UNORM;
+          dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
         }
       }
 
-      return format;
+      if (Format != D3DFMT_UNKNOWN && dxgiFormat == DXGI_FORMAT_UNKNOWN)
+        log::warn("format: D3DFORMAT %d became DXGI_FORMAT_UNKNOWN.");
+
+      return dxgiFormat;
     }
     D3DFORMAT format(DXGI_FORMAT Format) {
       return (D3DFORMAT)formatConverter.toT(Format);
