@@ -106,8 +106,8 @@ namespace dxup {
           format = DXGI_FORMAT_B8G8R8A8_UNORM;
         }
         else if (format == DXGI_FORMAT_B5G6R5_UNORM) {
-          log::warn("format: swapchain forcing DXGI_FORMAT_B5G6R5_UNORM to DXGI_FORMAT_R8G8B8A8_UNORM.");
-          format = DXGI_FORMAT_R8G8B8A8_UNORM;
+          log::warn("format: swapchain forcing DXGI_FORMAT_B5G6R5_UNORM to DXGI_FORMAT_B8G8R8A8_UNORM.");
+          format = DXGI_FORMAT_B8G8R8A8_UNORM;
         }
       }
 
