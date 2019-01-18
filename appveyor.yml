@@ -6,7 +6,7 @@ image:
   - Ubuntu1804
 
 install:
-  - sudo apt-get install mingw-w64 mingw-w64-tools mingw-w64-common gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64 meson ninja
+  - sudo apt-get install mingw-w64 mingw-w64-tools mingw-w64-common gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64 meson
   
 build_script:
   - ./package-release.sh ${APPVEYOR_REPO_BRANCH}.${APPVEYOR_BUILD_VERSION} build
