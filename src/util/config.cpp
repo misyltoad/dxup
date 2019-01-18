@@ -90,7 +90,7 @@ namespace dxup {
 
         VarValue typedValues;
         typedValues.strVal = value;
-        typedValues.intVal = std::strtoll(value);
+        typedValues.intVal = std::stoll(typedValues.strVal);
         typedValues.boolVal = typedValues.intVal != 0;
         typedValues.floatVal = atof(value);
 
