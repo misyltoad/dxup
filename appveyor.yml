@@ -14,5 +14,4 @@ build_script:
   - ./package-release.sh ${APPVEYOR_REPO_BRANCH}.${APPVEYOR_BUILD_VERSION} build
   
 artifacts:
-  - path: build
-    name: dxup
+  - path: build/*.tar.gz
