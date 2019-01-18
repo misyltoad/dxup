@@ -1,46 +1,16 @@
-clone_folder: C:\Projects\DXUP
 shallow_clone: true
 
 version: 0.00-{build}
 
-environment:
-  parallel: true
-  matrix:
-    - frontend: meson
-      builder: msbuild
-      compiler: cl
-      toolchain: vs2017
-      arch: x86
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-  
-    - frontend: meson
-      builder: msbuild
-      compiler: cl
-      toolchain: vs2017
-      arch: x86_64
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+image:
+  - Ubuntu1804
 
 install:
-  - set PATH=C:\Python35\scripts;%PATH%
-  - pip3 install meson
-  - if "%arch%" == "x86_64" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat")
-  - if "%arch%" == "x86" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat")
-  
-before_build:
-  - cd C:\Projects\DXUP
-  - mkdir build
-  - mkdir out
-  - meson build --backend vs2017 --buildtype release
+  - sudo apt-get install mingw-w64 mingw-w64-tools mingw-w64-common gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64 meson ninja
   
 build_script:
-  - msbuild /m /p:Configuration=Release C:\Projects\DXUP\build\dxup.sln
-  - copy C:\Projects\DXUP\build\src\d3d9\d3d9.dll C:\Projects\DXUP\out
-  - copy C:\Projects\DXUP\build\src\d3d10_1\d3d10_1.dll C:\Projects\DXUP\out
-  - copy C:\Projects\DXUP\build\src\dxgi\dxgi.dll C:\Projects\DXUP\out
-  - copy C:\Projects\DXUP\wine_utils\setup_dxup.in C:\Projects\DXUP\out\setup_dxup.sh
-  - copy C:\Projects\DXUP\wine_utils\readme.txt C:\Projects\DXUP\out
-  - powershell -Command "(gc C:\Projects\DXUP\out\setup_dxup.sh) -replace '@arch@', \"%arch%\" | Out-File C:\Projects\DXUP\out\setup_dxup.sh"
+  - ./package-release.sh ${APPVEYOR_REPO_BRANCH}.${APPVEYOR_BUILD_VERSION} build
   
 artifacts:
-  - path: out
-    name: dxup-%arch%
+  - path: build
+    name: dxup
