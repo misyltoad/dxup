@@ -151,8 +151,6 @@ namespace dxup {
     }
 
     uint32_t calcSwizzle(const DX9Operand& operand) {
-      uint32_t dx9swizzle = operand.getSwizzleData();
-
       if (!operand.isSrc() || !operand.isRegister())
         return 0;
 

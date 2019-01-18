@@ -4,9 +4,7 @@
 #include "../util/config.h"
 #include <algorithm>
 #include <vector>
-#include <rpcdce.h>
-
-#pragma comment(lib, "Rpcrt4.lib")
+#include <cfloat>
 
 namespace dxup {
 
@@ -78,7 +76,8 @@ namespace dxup {
       pIdentifier->SubSysId = config::getInt(config::FakeSubSysId);
       pIdentifier->Revision = config::getInt(config::FakeRevision);
 
-      UuidFromStringA((RPC_CSTR)config::getString(config::FakeDeviceIdentifier).c_str(), &pIdentifier->DeviceIdentifier);
+      // TODO - MINGW - FIXME REIMPLEMENT THIS.
+      //UuidFromStringA((RPC_CSTR)config::getString(config::FakeDeviceIdentifier).c_str(), &pIdentifier->DeviceIdentifier);
     }
 
     pIdentifier->WHQLLevel = 0;
@@ -797,6 +796,8 @@ namespace dxup {
 
     D3DDISPLAYMODEEX exMode;
     HRESULT result = EnumAdapterModeFormatEx(Adapter, Format, NULL, Mode, &exMode);
+    if (FAILED(result))
+      return result;
 
     pMode->Format = Format;
     pMode->Height = exMode.Height;

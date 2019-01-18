@@ -4,6 +4,7 @@
 #include "d3d9_base.h"
 #include <array>
 #include <memory>
+#include <cstring>
 #include "../util/vectypes.h"
 
 namespace dxup {

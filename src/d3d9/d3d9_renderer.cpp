@@ -2,23 +2,25 @@
 #include "d3d9_texture.h"
 #include "d3d9_util.h"
 
+#include <cfloat>
+
 namespace dxup {
 
   D3D9ImmediateRenderer::D3D9ImmediateRenderer(ID3D11Device1* device, ID3D11DeviceContext1* context, D3D9State* state)
-    : m_context{ context }
+    : m_device{ device }
+    , m_context{ context }
     , m_state{ state }
-    , m_device{ device }
-    , m_vsConstants{ device, context }
-    , m_psConstants{ device, context }
     , m_upVertexBuffer{ device, false }
-    , m_upIndexBuffer{ device, true } {}
+    , m_upIndexBuffer{ device, true }
+    , m_vsConstants{ device, context }
+    , m_psConstants{ device, context } {}
 
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     if (Count >= 1) {
       bool fullRectClear = pRects->x1 == 0 &&
-                           pRects->x2 == m_state->viewport.Width &&
+                           pRects->x2 == (LONG) m_state->viewport.Width &&
                            pRects->y1 == 0 &&
-                           pRects->y2 == m_state->viewport.Height;
+                           pRects->y2 == (LONG) m_state->viewport.Height;
         
       if (!fullRectClear) {
         log::warn("Clear called with rects. Discarding clear.");
@@ -178,7 +180,6 @@ namespace dxup {
 
     ID3D11InputLayout* layout = m_state->vertexShader->GetLinkedInput(m_state->vertexDecl.ptr());
 
-    bool created = false;
     if (layout == nullptr) {
       HRESULT result = m_device->CreateInputLayout(&elements[0], elements.size(), vertexShdrBytecode->getBytecode(), vertexShdrBytecode->getByteSize(), &layout);
 
@@ -393,6 +394,8 @@ namespace dxup {
           srvs[i] = tex->GetDXUPResource()->GetSRV(srgb);
           break;
         }
+
+        default: log::warn("updateTextures: unknown resource type as a texture."); break;
 
         }
       }

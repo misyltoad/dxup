@@ -1,5 +1,6 @@
 #include "private_data_d3d.h"
 #include <d3d9.h>
+#include <cstring>
 
 namespace dxup {
 
@@ -89,7 +90,8 @@ namespace dxup {
           unknown->Release();
       }
       
-      delete entry.data;
+      uint8_t* data = reinterpret_cast<uint8_t*>(entry.data);
+      delete data;
     }
 
     return D3D_OK;

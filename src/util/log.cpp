@@ -5,8 +5,7 @@
 #include "windows_includes.h"
 #include "../../version.h"
 
-#include <Shlwapi.h>
-#pragma comment(lib, "Shlwapi.lib")
+#include <shlwapi.h>
 
 namespace dxup {
 

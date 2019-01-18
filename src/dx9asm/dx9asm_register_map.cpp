@@ -88,7 +88,6 @@ namespace dxup {
       newMapping.dxbcOperand.stripModifier();
 
       uint32_t dxbcType = 0;
-      bool addMapping = true;
 
       // This may get set later depending on the following stuff.
       newMapping.dxbcOperand.setData(&newMapping.dx9Id, 1);

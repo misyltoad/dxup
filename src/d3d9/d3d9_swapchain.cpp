@@ -7,7 +7,7 @@ namespace dxup {
   Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain)
     : Direct3DSwapChain9ExBase(device)
     , m_swapchain(swapchain) {
-    Reset(presentationParameters);
+    this->Reset(presentationParameters);
   }
 
   HRESULT Direct3DSwapChain9Ex::Reset(D3DPRESENT_PARAMETERS* parameters) {
@@ -103,7 +103,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::Present(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags) {
     CriticalSection cs(m_device);
 
-    return PresentD3D11(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags, 0, false);
+    return this->PresentD3D11(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags, 0, false);
   }
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::GetFrontBufferData(IDirect3DSurface9* pDestSurface) {
     CriticalSection cs(m_device);
@@ -203,7 +203,7 @@ namespace dxup {
   }
 
   HRESULT Direct3DSwapChain9Ex::TestSwapchain(HWND hDestWindowOverride, bool ex) {
-    return PresentD3D11(nullptr, nullptr, hDestWindowOverride, nullptr, 0, DXGI_PRESENT_TEST, ex);
+    return this->PresentD3D11(nullptr, nullptr, hDestWindowOverride, nullptr, 0, DXGI_PRESENT_TEST, ex);
   }
 
   HRESULT Direct3DSwapChain9Ex::PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex) {

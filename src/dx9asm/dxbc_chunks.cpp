@@ -21,7 +21,7 @@ namespace dxup {
       inline void push(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode) {
         pushInternal(bytecode, shdrCode);
 
-        if (getChunkSize(bytecode) % sizeof(uint32_t))
+        if (this->getChunkSize(bytecode) % sizeof(uint32_t))
           log::warn("Chunk not dword aligned!");
       }
 
@@ -57,8 +57,8 @@ namespace dxup {
     void forEachValidElement(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t i = 0;
       for (const RegisterMapping& mapping : shdrCode.getRegisterMap().getRegisterMappings()) {
-        bool valid = mapping.dclInfo.type == UsageType::Input && Input ||
-                     mapping.dclInfo.type == UsageType::Output && !Input;
+        bool valid = (mapping.dclInfo.type == UsageType::Input && Input) ||
+                     (mapping.dclInfo.type == UsageType::Output && !Input);
 
         if (!valid)
           continue;
@@ -150,7 +150,7 @@ namespace dxup {
         FixedBuffer<16, ResourceBinding*> textureBindings;
 
         if (constantBufferCount != 0 || shdrCode.isAnySamplerUsed()) {
-          resourceBindingDescOffset = getChunkSize(bytecode);
+          resourceBindingDescOffset = this->getChunkSize(bytecode);
 
           if (shdrCode.isAnySamplerUsed()) {
             for (uint32_t i = 0; i < 16; i++) {
@@ -190,7 +190,8 @@ namespace dxup {
           if (constantBufferCount != 0) {
             // Resource Binding
             constantBinding = (ResourceBinding*)nextPtr(obj);
-            pushObject(obj, ResourceBinding{});
+            ResourceBinding blankBinding;
+            pushObject(obj, blankBinding);
             bindingCount++;
           }
 
@@ -201,7 +202,7 @@ namespace dxup {
         resourceBindingCount = bindingCount;
         
         // Just one for now...
-        constantBufferDescOffset = getChunkSize(bytecode);
+        constantBufferDescOffset = this->getChunkSize(bytecode);
         if (constantBufferCount != 0) {
           // Constant Buffer
           PlaceholderPtr<uint32_t> cbufNameOffset{ "[RDEF] Constant Buffer Variable Count", nextPtr(obj) };
@@ -216,7 +217,7 @@ namespace dxup {
           obj.push_back(0); // [PUSH] Constant Buffer Flags (None)
           obj.push_back(0); // [PUSH] Constant Buffer Type (CBuffer)
 
-          cbufVariableOffset = getChunkSize(bytecode);
+          cbufVariableOffset = this->getChunkSize(bytecode);
 
           VariableInfo* variables = (VariableInfo*)nextPtr(obj);
           forEachVariable(bytecode, shdrCode, [&](uint32_t i, bool used) {
@@ -229,7 +230,7 @@ namespace dxup {
           //struct {
           //  float values[4] = { 0 };
           //} defaultValues;
-          //uint32_t defaultValueOffset = getChunkSize(bytecode);
+          //uint32_t defaultValueOffset = this->getChunkSize(bytecode);
           //pushObject(obj, defaultValues); // [PUSH] Default Value for our Constants
 
           // Variable Type (they're all the same for now, no bool yet)
@@ -251,22 +252,22 @@ namespace dxup {
             uint32_t unknown3 = 0;
             uint32_t parentNameOffset = 0;
           } variableType;
-          uint32_t floatTypeOffset = getChunkSize(bytecode);
+          uint32_t floatTypeOffset = this->getChunkSize(bytecode);
           pushObject(obj, variableType);
 
           variableType.varClass = D3D_SVC_SCALAR;
           variableType.varType = D3D_SVT_INT;
 
-          uint32_t intVecTypeOffset = getChunkSize(bytecode);
+          uint32_t intVecTypeOffset = this->getChunkSize(bytecode);
           pushObject(obj, variableType);
 
           variableType.columns = 1;
 
-          uint32_t boolTypeOffset = getChunkSize(bytecode);
+          uint32_t boolTypeOffset = this->getChunkSize(bytecode);
           pushObject(obj, variableType);
 
           // Push and Fixup Strings
-          constantBinding->nameOffset = getChunkSize(bytecode);
+          constantBinding->nameOffset = this->getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_constant_buffer");
 
           forEachVariable(bytecode, shdrCode, [&](uint32_t i, bool used) {
@@ -292,18 +293,18 @@ namespace dxup {
 
             char name[6];
             snprintf(name, 6, "c%d", i);
-            info.nameOffset = getChunkSize(bytecode);
+            info.nameOffset = this->getChunkSize(bytecode);
             pushAlignedString(obj, name, strlen(name));
           });
 
-          cbufNameOffset = getChunkSize(bytecode);
+          cbufNameOffset = this->getChunkSize(bytecode);
           pushAlignedString(obj, "dx9_mapped_constants");
         }
 
         for (size_t i = 0; i < samplerBindings.size(); i++) {
           ResourceBinding* binding = samplerBindings.get(i);
 
-          binding->nameOffset = getChunkSize(bytecode);
+          binding->nameOffset = this->getChunkSize(bytecode);
           char name[64] = "";
           snprintf(name, 64, "sampler%d", binding->bindPoint);
           pushAlignedString(obj, name);
@@ -312,16 +313,16 @@ namespace dxup {
         for (size_t i = 0; i < textureBindings.size(); i++) {
           ResourceBinding* binding = textureBindings.get(i);
 
-          binding->nameOffset = getChunkSize(bytecode);
+          binding->nameOffset = this->getChunkSize(bytecode);
           char name[64] = "";
           snprintf(name, 64, "texture%d", binding->bindPoint);
           pushAlignedString(obj, name);
         }
 
-        creatorOffset = getChunkSize(bytecode);
+        creatorOffset = this->getChunkSize(bytecode);
         pushAlignedString(obj, ":frog:"); // [PUSH] Creator (ribbit.)
 
-        headerChunkSize = getChunkSize(bytecode);
+        headerChunkSize = this->getChunkSize(bytecode);
       }
     };
 
@@ -469,8 +470,8 @@ namespace dxup {
         for (uint32_t token : shdrCode.getCode())
           obj.push_back(token);
 
-        headerChunkSize = getChunkSize(bytecode);
-        dwordCount = getChunkSize(bytecode) / sizeof(uint32_t);
+        headerChunkSize = this->getChunkSize(bytecode);
+        dwordCount = this->getChunkSize(bytecode) / sizeof(uint32_t);
       }
     };
 
@@ -480,10 +481,10 @@ namespace dxup {
 
         PlaceholderPtr<uint32_t> headerChunkSize{ "[STAT] Chunk Header - Chunk Data Size", &((ChunkHeader*)nextPtr(obj))->size };
         ChunkHeader{ fourcc("STAT") }.push(obj); // [PUSH] Chunk Header
-        pushObject(obj, STATData{}); // [PUSH] Dummy Stat Data
-        uint32_t size = sizeof(STATData);
+        STATData statData;
+        pushObject(obj, statData); // [PUSH] Dummy Stat Data
 
-        headerChunkSize = getChunkSize(bytecode);
+        headerChunkSize = this->getChunkSize(bytecode);
       }
     };
 
@@ -541,7 +542,7 @@ namespace dxup {
 
           uint32_t count = 0;
           for (auto& transMapping : RegisterMap::getTransientMappings()) {
-            elementStart[count].nameOffset = getChunkSize(bytecode);
+            elementStart[count].nameOffset = this->getChunkSize(bytecode);
             pushAlignedString(obj, transMapping.dxbcSemanticName);
             count++;
           }
@@ -573,7 +574,7 @@ namespace dxup {
 
           uint32_t count = 0;
           forEachValidElement<isInput(ChunkType)>(bytecode, shdrCode, [&](const RegisterMapping& mapping, uint32_t i) {
-            elementStart[i].nameOffset = getChunkSize(bytecode);
+            elementStart[i].nameOffset = this->getChunkSize(bytecode);
             pushAlignedString(obj, convert::declUsage(ChunkType == chunks::ISGN, mapping.dclInfo.target, mapping.dclInfo.usage));
 
             count++;
@@ -582,7 +583,7 @@ namespace dxup {
           elementCount = count;
         }
 
-        headerChunkSize = getChunkSize(bytecode);
+        headerChunkSize = this->getChunkSize(bytecode);
       }
     };
 

@@ -74,16 +74,16 @@ namespace dxup {
           initVar(var::FakeDeviceIdentifier, "DXUP_FAKE_DEVICEIDENTIFIER", "{D7B71EE2-24D8-11CF-4064-EE3DBBC2D435}");
       }
 
-	  void initVar(var variable, const char* name, const char* default) {
+	  void initVar(var variable, const char* name, const char* defaultValue) {
         const char* value = getenv(name);
         const char* logending = "";
 
         if (value == nullptr) {
 	      logending = " [default]";
-	      value = default;
+	      value = defaultValue;
         }
 
-        value = value != nullptr ? value : default;
+        value = value != nullptr ? value : defaultValue;
 
         log::msg("%s=%s%s", name, value, logending);
 

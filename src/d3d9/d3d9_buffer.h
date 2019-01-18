@@ -41,7 +41,7 @@ namespace dxup {
       rectToLock.right = OffsetToLock + SizeToLock;
       bool degenerate = OffsetToLock == 0 && SizeToLock == 0;
 
-      HRESULT result = m_resource->D3D9LockRect(0, 0, &lockedRect, degenerate ? nullptr : &rectToLock, Flags, m_d3d9Desc.Usage);
+      HRESULT result = this->GetDXUPResource()->D3D9LockRect(0, 0, &lockedRect, degenerate ? nullptr : &rectToLock, Flags, this->GetD3D9Desc().Usage);
       if (FAILED(result))
         return result;
 
@@ -51,7 +51,7 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE Unlock() override {
-      return m_resource->D3D9UnlockRect(0, 0);
+      return this->GetDXUPResource()->D3D9UnlockRect(0, 0);
     }
   };
 
@@ -63,14 +63,14 @@ namespace dxup {
 
     HRESULT STDMETHODCALLTYPE GetDesc(D3DVERTEXBUFFER_DESC *pDesc) override {
       D3D11_BUFFER_DESC desc;
-      m_resource->GetResourceAs<ID3D11Buffer>()->GetDesc(&desc);
+      this->GetDXUPResource()->GetResourceAs<ID3D11Buffer>()->GetDesc(&desc);
 
       pDesc->Format = D3DFMT_VERTEXDATA;
-      pDesc->FVF = m_d3d9Desc.FVF;
-      pDesc->Pool = m_d3d9Desc.Pool;
+      pDesc->FVF = this->GetD3D9Desc().FVF;
+      pDesc->Pool = this->GetD3D9Desc().Pool;
       pDesc->Size = desc.ByteWidth;
       pDesc->Type = D3DRTYPE_VERTEXBUFFER;
-      pDesc->Usage = m_d3d9Desc.Usage;
+      pDesc->Usage = this->GetD3D9Desc().Usage;
 
       return D3D_OK;
     }
@@ -84,13 +84,13 @@ namespace dxup {
 
     HRESULT STDMETHODCALLTYPE GetDesc(D3DINDEXBUFFER_DESC *pDesc) override {
       D3D11_BUFFER_DESC desc;
-      m_resource->GetResourceAs<ID3D11Buffer>()->GetDesc(&desc);
+      this->GetDXUPResource()->GetResourceAs<ID3D11Buffer>()->GetDesc(&desc);
 
-      pDesc->Format = m_d3d9Desc.Format;
-      pDesc->Pool = m_d3d9Desc.Pool;
+      pDesc->Format = this->GetD3D9Desc().Format;
+      pDesc->Pool = this->GetD3D9Desc().Pool;
       pDesc->Size = desc.ByteWidth;
       pDesc->Type = D3DRTYPE_INDEXBUFFER;
-      pDesc->Usage = m_d3d9Desc.Usage;
+      pDesc->Usage = this->GetD3D9Desc().Usage;
 
       return D3D_OK;
     }

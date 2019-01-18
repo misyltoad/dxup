@@ -23,6 +23,10 @@ namespace dxup {
       return D3D_OK;
     }
 
+    Direct3DDevice9Ex* GetD3D9Device() {
+      return m_device;
+    }
+
     ID3D11Device* GetD3D11Device() {
       return m_device->GetD3D11Device();
     }

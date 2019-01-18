@@ -14,9 +14,6 @@ namespace dxup {
       : m_info{ info } {
       std::memcpy(m_dx9tokens, tokens, sizeof(uint32_t) * info->sizeInTokens);
 
-      bool src = info->isSrc();
-      bool dst = info->isDst();
-
       if (isIndirect()) {
         translator.markIndirect();
 

@@ -51,10 +51,10 @@ namespace dxup {
     D3D11DynamicBuffer m_upVertexBuffer;
     D3D11DynamicBuffer m_upIndexBuffer;
 
-    D3D9StateCaches m_caches;
-
     D3D9ConstantBuffer<false> m_vsConstants;
     D3D9ConstantBuffer<true> m_psConstants;
+
+    D3D9StateCaches m_caches;
   };
 
 }

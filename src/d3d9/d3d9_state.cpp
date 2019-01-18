@@ -22,7 +22,7 @@ namespace dxup {
     std::memset(vertexStrides.data(), 0, sizeof(UINT) * vertexStrides.size());
 
     if (stateBlockType != 0)
-      capture(stateBlockType, false);
+      this->capture(stateBlockType, false);
   }
 
   void D3D9State::capture(uint32_t stateBlockType, bool recapture) {
@@ -37,26 +37,26 @@ namespace dxup {
 
     if (stateBlockType == D3DSBT_PIXELSTATE || stateBlockType == D3DSBT_ALL)
     {
-      capturePixelRenderStates(recapture);
-      capturePixelTextureStates(recapture);
-      capturePixelSamplerStates(recapture);
-      capturePixelShaderStates(recapture);
+      this->capturePixelRenderStates(recapture);
+      this->capturePixelTextureStates(recapture);
+      this->capturePixelSamplerStates(recapture);
+      this->capturePixelShaderStates(recapture);
     }
     if (stateBlockType == D3DSBT_VERTEXSTATE || stateBlockType == D3DSBT_ALL)
     {
-      captureVertexRenderStates(recapture);
-      captureVertexSamplerStates(recapture);
-      captureVertexTextureStates(recapture);
-      captureVertexShaderStates(recapture);
-      captureVertexDeclaration(recapture);
+      this->captureVertexRenderStates(recapture);
+      this->captureVertexSamplerStates(recapture);
+      this->captureVertexTextureStates(recapture);
+      this->captureVertexShaderStates(recapture);
+      this->captureVertexDeclaration(recapture);
     }
     if (stateBlockType == D3DSBT_ALL)   // Capture remaining states
     {
-      captureTextures(recapture);
-      captureVertexStreams(recapture);
-      captureIndexBuffer(recapture);
-      captureViewport(recapture);
-      captureScissor(recapture);
+      this->captureTextures(recapture);
+      this->captureVertexStreams(recapture);
+      this->captureIndexBuffer(recapture);
+      this->captureViewport(recapture);
+      this->captureScissor(recapture);
       //captureClipPlanes(recapture);
 
       // There is more crap here too!
@@ -90,7 +90,7 @@ namespace dxup {
 
     forEachSampler([&](uint32_t i) {
       for (uint32_t j = 0; j < D3DSAMP_DMAPOFFSET + 1; j++) {
-        uint32_t internalSampler;
+        uint32_t internalSampler = 0;
         convert::mapStageToSampler(i, &internalSampler);
 
         if (samplerStateCaptures[internalSampler][j])
@@ -112,34 +112,36 @@ namespace dxup {
     // VS
 
     for (uint32_t i = 0; i < vsConstants.floatConstants.size(); i++) {
-      if (vsConstants.floatConstants[i].data[0] != 0x80000000)
+      uint32_t uintData = *((uint32_t*)(&vsConstants.floatConstants[i].data[0]));
+      if (uintData != 0x80000000u)
        m_device->SetVertexShaderConstantF(i, (float*)&vsConstants.floatConstants[i], 1);
     }
 
     for (uint32_t i = 0; i < vsConstants.intConstants.size(); i++) {
-      if (vsConstants.intConstants[i].data[0] != 0x80000000)
+      if ((UINT)vsConstants.intConstants[i].data[0] != 0x80000000u)
         m_device->SetVertexShaderConstantI(i, (int*)&vsConstants.intConstants[i], 1);
     }
 
     for (uint32_t i = 0; i < vsConstants.boolConstants.size(); i++) {
-      if (vsConstants.boolConstants[i] != 0x80000000)
+      if ((UINT)vsConstants.boolConstants[i] != 0x80000000u)
         m_device->SetVertexShaderConstantB(i, (int*)&vsConstants.boolConstants[i], 1);
     }
     
     // PS
 
     for (uint32_t i = 0; i < psConstants.floatConstants.size(); i++) {
-      if (psConstants.floatConstants[i].data[0] != 0x80000000)
+      uint32_t uintData = *((uint32_t*)(&psConstants.floatConstants[i].data[0]));
+      if (uintData != 0x80000000)
         m_device->SetPixelShaderConstantF(i, (float*)&psConstants.floatConstants[i], 1);
     }
 
     for (uint32_t i = 0; i < psConstants.intConstants.size(); i++) {
-      if (psConstants.intConstants[i].data[0] != 0x80000000)
+      if ((UINT)psConstants.intConstants[i].data[0] != 0x80000000u)
         m_device->SetPixelShaderConstantI(i, (int*)&psConstants.intConstants[i], 1);
     }
 
     for (uint32_t i = 0; i < psConstants.boolConstants.size(); i++) {
-      if (psConstants.boolConstants[i] != 0x80000000)
+      if ((UINT)psConstants.boolConstants[i] != 0x80000000u)
         m_device->SetPixelShaderConstantB(i, (int*)&psConstants.boolConstants[i], 1);
     }
 
@@ -764,7 +766,7 @@ namespace dxup {
     if (recapture && samplerStateCaptures[sampler][type] == false)
       return;
 
-    uint32_t internalSampler;
+    uint32_t internalSampler = 0;
     convert::mapStageToSampler(sampler, &internalSampler);
     m_device->GetSamplerState(sampler, type, &samplerStates[internalSampler][type]);
     samplerStateCaptures[internalSampler][type] = true;
@@ -969,7 +971,7 @@ namespace dxup {
   }
   void D3D9State::captureTextures(bool recapture) {
     forEachSampler([&](DWORD i) {
-      DWORD sampler;
+      DWORD sampler = 0;
       convert::mapStageToSampler(i, &sampler);
 
       if (recapture && textureCaptured[sampler] == false)

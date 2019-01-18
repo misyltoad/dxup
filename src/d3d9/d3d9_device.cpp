@@ -722,7 +722,7 @@ namespace dxup {
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
     desc.ArraySize = Type == D3DRTYPE_CUBETEXTURE ? 6 : 1;
 
-    UINT sampleCount = std::max(1u, (UINT)MultiSample);
+    //UINT sampleCount = std::max(1u, (UINT)MultiSample);
 
     bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
     bool isRenderTarget = Usage & D3DUSAGE_RENDERTARGET;
@@ -1286,8 +1286,6 @@ namespace dxup {
 
     if (pVertexElements == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateVertexDeclaration: pVertexElements was nullptr.");
-
-    D3DVERTEXELEMENT9 lastElement = D3DDECL_END();
 
     std::vector<D3D11_INPUT_ELEMENT_DESC> inputElements;
     std::vector<D3DVERTEXELEMENT9> d3d9Elements;

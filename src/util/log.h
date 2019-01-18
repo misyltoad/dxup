@@ -1,8 +1,8 @@
 #pragma once
 #include <stdarg.h>
 
-#include "../util/config.h"
-#include <Windows.h>
+#include "config.h"
+#include "windows_includes.h"
 
 namespace dxup {
   

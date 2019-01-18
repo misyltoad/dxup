@@ -56,7 +56,7 @@ namespace dxup {
     }
 
     DWORD STDMETHODCALLTYPE GetLevelCount() {
-      return (DWORD)GetDXUPResource()->GetMips();
+      return (DWORD)this->GetDXUPResource()->GetMips();
     }
 
     HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
@@ -67,7 +67,7 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE GetCubeMapSurface(D3DCUBEMAP_FACES FaceType, UINT Level, IDirect3DSurface9** ppCubeMapSurface) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, this->GetDXUPResource()->GetMips());
 
       InitReturnPtr(ppCubeMapSurface);
 
@@ -83,11 +83,11 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE GetSurfaceLevel(UINT Level, IDirect3DSurface9** ppSurfaceLevel) {
-      return GetCubeMapSurface((D3DCUBEMAP_FACES)0, Level, ppSurfaceLevel);
+      return this->GetCubeMapSurface((D3DCUBEMAP_FACES)0, Level, ppSurfaceLevel);
     }
 
     HRESULT STDMETHODCALLTYPE LockRect(D3DCUBEMAP_FACES FaceType, UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, this->GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
         return log::d3derr(D3DERR_INVALIDCALL, "LockRect: subresource out of bounds (FaceType = %d, Level = %d).", FaceType, Level);
@@ -96,11 +96,11 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE LockRect(UINT Level, D3DLOCKED_RECT* pLockedRect, const RECT* pRect, DWORD Flags) {
-      return LockRect(Face0, Level, pLockedRect, pRect, Flags);
+      return this->LockRect(Face0, Level, pLockedRect, pRect, Flags);
     }
 
     HRESULT STDMETHODCALLTYPE UnlockRect(D3DCUBEMAP_FACES FaceType, UINT Level) {
-      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, GetDXUPResource()->GetMips());
+      UINT subresource = D3D11CalcSubresource(Level, (UINT)FaceType, this->GetDXUPResource()->GetMips());
 
       if (subresource >= m_surfaces.size())
         return log::d3derr(D3DERR_INVALIDCALL, "UnlockRect: subresource out of bounds (FaceType = %d, Level = %d).", FaceType, Level);
@@ -109,7 +109,7 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level) {
-      return UnlockRect(Face0, Level);
+      return this->UnlockRect(Face0, Level);
     }
 
     HRESULT STDMETHODCALLTYPE AddDirtyRect(D3DCUBEMAP_FACES FaceType, const RECT* pDirtyRect) {
@@ -118,12 +118,12 @@ namespace dxup {
     }
 
     HRESULT STDMETHODCALLTYPE AddDirtyRect(const RECT* pDirtyRect) {
-      return AddDirtyRect(Face0, pDirtyRect);
+      return this->AddDirtyRect(Face0, pDirtyRect);
     }
 
     void STDMETHODCALLTYPE GenerateMipSubLevels() {
-      if (GetDXUPResource()->GetSRV(false) != nullptr)
-        m_device->GetContext()->GenerateMips(GetDXUPResource()->GetSRV(false));
+      if (this->GetDXUPResource()->GetSRV(false) != nullptr)
+        this->GetContext()->GenerateMips(this->GetDXUPResource()->GetSRV(false));
       else
         log::warn("GenerateMipSubLevels called on a texture with no SRV.");
     }

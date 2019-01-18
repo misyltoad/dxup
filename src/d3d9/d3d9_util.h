@@ -158,11 +158,11 @@ namespace dxup {
 
   namespace reinterpret {
     inline float dwordToFloat(DWORD val) {
-      return *((float*)(&val));
+      return (float&)val;
     }
 
     inline DWORD floatToDword(float val) {
-      return *((DWORD*)(&val));
+      return (DWORD&)val;
     }
   }
 

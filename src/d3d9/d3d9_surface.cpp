@@ -18,7 +18,7 @@ namespace dxup {
     if (singletonSurface && m_container != nullptr)
         m_container->AddRef();
 
-    SetResource(resource);
+    this->SetResource(resource);
   }
 
   Direct3DSurface9::~Direct3DSurface9() {
@@ -157,7 +157,7 @@ namespace dxup {
     m_surface = nullptr;
   }
   void Direct3DSurface9::SetResource(DXUPResource* resource) {
-    ClearResource();
+    this->ClearResource();
 
     m_resource = resource;
 

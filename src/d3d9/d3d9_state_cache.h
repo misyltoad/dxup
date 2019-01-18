@@ -34,7 +34,7 @@ namespace dxup {
     using StateMap = std::unordered_map<Desc, Com<Object>, D3D11StateDescHash, D3D11StateDescEqual>;
 
     Object* lookupObject(const Desc& desc) {
-      StateMap::const_iterator iter = m_map.find(desc);
+      typename StateMap::const_iterator iter = m_map.find(desc);
 
       if (iter == m_map.end())
         return nullptr;

@@ -1,6 +1,7 @@
 #include "d3d9_query.h"
 #include <algorithm>
-#include <Windows.h>
+#include "../util/windows_includes.h"
+#include "../util/fourcc.h"
 
 namespace dxup {
 
@@ -107,7 +108,7 @@ namespace dxup {
 
     if (m_type == D3DQUERYTYPE_VCACHE) {
       D3DDEVINFO_VCACHE* cache = (D3DDEVINFO_VCACHE*)pData;
-      cache->Pattern = 'CACH';
+      cache->Pattern = fourcc("HCAC");
       cache->OptMethod = 1;
       cache->CacheSize = 16;
       cache->MagicNumber = 8;

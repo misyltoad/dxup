@@ -3,6 +3,7 @@
 #include "../util/fourcc.h"
 #include "../util/config.h"
 #include <array>
+#include <functional>
 
 namespace dxup {
 

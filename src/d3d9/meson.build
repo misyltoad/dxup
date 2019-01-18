@@ -15,7 +15,7 @@ d3d9_main_src = [
   'd3d11_dynamic_buffer.cpp'
 ]
 
-d3d9_deps = [ lib_d3d11, lib_dxgi, util_dep, dx9asm_dep ]
+d3d9_deps = [ lib_d3d11, lib_dxgi, lib_shlwapi, util_dep, dx9asm_dep ]
 
 d3d9_dll = shared_library('d3d9'+dll_ext, d3d9_main_src,
   name_prefix         : '',
