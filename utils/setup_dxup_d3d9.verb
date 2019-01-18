@@ -1,4 +1,4 @@
-w_metadata setup_dxup dlls \
+w_metadata setup_dxup_d3d9 dlls \
     title="DXUP" \
     publisher="Joshua Ashton" \
     year="2019" \
@@ -9,20 +9,20 @@ w_metadata setup_dxup dlls \
 
 DXUP_ROOT_DIR=`dirname "$(readlink -f $1)"`
 
-load_setup_dxup()
+load_setup_dxup_d3d9()
 {
     if [ ! -e "$DXUP_ROOT_DIR/x64" ] || [ ! -e "$DXUP_ROOT_DIR/x32" ]; then
         (>&2 echo "$DXUP_ROOT_DIR/x32 or $DXUP_ROOT_DIR/x64 directory not found.")
         exit 1
     fi
 
-    for f in "$file1" "$file2" "$file3" "$file4" "$file5"; do
+    for f in "$file1"; do
         w_try cp "$DXUP_ROOT_DIR/x32/$f" "$W_SYSTEM32_DLLS/$f"
     done
 
     if [ "$W_ARCH" = "win64" ]; then
         dxup64_dir="/usr/lib64/wine/dxup"
-        for f in "$file1" "$file2" "$file3" "$file4" "$file5"; do
+        for f in "$file1"; do
             w_try cp "$DXUP_ROOT_DIR/x64/$f" "$W_SYSTEM64_DLLS/$f"
         done
     fi
