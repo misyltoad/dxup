@@ -5,6 +5,7 @@ image:
 
 install:
   - echo "yes" | sudo add-apt-repository ppa:tobydox/mingw-w64 -y
+  - echo "yes" | sudo add-apt-repository ppa:mati865/mingw-w64 -y
   - sudo apt-get update -qq
   - sudo apt-get install -qq mingw-w64 mingw-w64-tools mingw-w64-common gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64 meson ninja-build
   
