@@ -27,8 +27,12 @@ namespace dxup {
 
     Com<ID3D11Buffer> buffer;
     HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
-    m_device->CreateBuffer(&desc, nullptr, &m_buffer);
+    if (FAILED(result)) {
+      log::warn("reserve: CreateBuffer failed (length = %d.)", length);
+      return;
+    }
 
+    m_buffer = buffer;
     m_length = length;
   }
 
