@@ -57,14 +57,14 @@ namespace dxup {
     if (config::getBool(config::Debug))
       Flags |= D3D11_CREATE_DEVICE_DEBUG;
 
-    D3D_FEATURE_LEVEL FeatureLevels[] =
+    std::array<D3D_FEATURE_LEVEL, 4> featureLevels =
     {
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
     };
-    D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
+    D3D_FEATURE_LEVEL level = D3D_FEATURE_LEVEL_11_1;
 
     Com<ID3D11Device> initialDevice;
     Com<ID3D11DeviceContext> initialContext;
@@ -74,11 +74,11 @@ namespace dxup {
       D3D_DRIVER_TYPE_UNKNOWN,
       nullptr,
       Flags,
-      FeatureLevels,
-      ARRAYSIZE(FeatureLevels),
+      featureLevels.data(),
+      featureLevels.size(),
       D3D11_SDK_VERSION,
       &initialDevice,
-      &Level,
+      &level,
       &initialContext
     );
 
