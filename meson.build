@@ -1,4 +1,4 @@
-project('dxup', ['c', 'cpp'], version : 'v0.00')
+project('dxup', ['c', 'cpp'], version : 'v0.00', meson_version : '>= 0.43')
 
 cpu_family = target_machine.cpu_family()
 add_project_arguments('-DNOMINMAX', language : 'cpp')
@@ -34,6 +34,7 @@ dxup_extradep = [ ]
 if dxup_winelib
   lib_d3d11   = declare_dependency(link_args: [ '-ld3d11' ])
   lib_dxgi    = declare_dependency(link_args: [ '-ldxgi' ])
+  lib_shlwapi    = declare_dependency(link_args: [ '-lshlwapi' ])
   lib_d3dcompiler_43 = declare_dependency(link_args: [ '-L'+dxup_library_path, '-ld3dcompiler_43' ])
   lib_d3dcompiler_47 = declare_dependency(link_args: [ '-ld3dcompiler' ])
   dxup_extradep += [ declare_dependency(link_args: [ '-ldl' ]) ]
@@ -43,6 +44,7 @@ if dxup_winelib
 else
   lib_d3d11   = dxup_compiler.find_library('d3d11')
   lib_dxgi    = dxup_compiler.find_library('dxgi')
+  lib_shlwapi    = dxup_compiler.find_library('shlwapi')
   lib_d3dcompiler_43 = dxup_compiler.find_library('d3dcompiler_43', dirs : dxup_library_path)
   if dxup_compiler.get_id() == 'msvc'
     lib_d3dcompiler_47 = dxup_compiler.find_library('d3dcompiler')
@@ -63,5 +65,5 @@ dxup_version = vcs_tag(
 subdir('src')
 
 if dxup_compiler.get_id() != 'msvc'
-  subdir('wine_utils')
+  subdir('utils')
 endif
