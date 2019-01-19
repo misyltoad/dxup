@@ -12,7 +12,12 @@ namespace dxup {
       for (uint32_t col = 0; col < operation.getMatrixColumns(); col++) {
         DXBCOperation dxbcOperation{ operation };
 
-        for (uint32_t i = 0; i < operation.operandCount(); i++) {
+        uint32_t length = operation.operandCount();
+
+        if (getMajorVersion() >= 2)
+          length = operation.getInstructionLength();
+
+        for (uint32_t i = 0; i < length; i++) {
           DX9Operand* operand = operation.getOperandByIndex(i);
 
           if (operand->getType() == optype::Src0)

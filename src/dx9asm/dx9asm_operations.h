@@ -105,6 +105,10 @@ namespace dxup {
         return (getToken() & D3DSI_COMMENTSIZE_MASK) >> 16;
       }
 
+      inline uint32_t getInstructionLength() const {
+        return (getToken() & D3DSI_INSTLENGTH_MASK) >> D3DSI_INSTLENGTH_SHIFT;
+      }
+
       inline size_t operandCount() const {
         return m_operands.size();
       }
