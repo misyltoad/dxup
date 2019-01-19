@@ -1,6 +1,8 @@
 #include "d3d9_renderer.h"
 #include "d3d9_texture.h"
 #include "d3d9_util.h"
+#include "shaders/blit.vs.dxbc.h"
+#include "shaders/blit.ps.dxbc.h"
 
 #include <cfloat>
 
@@ -10,10 +12,60 @@ namespace dxup {
     : m_device{ device }
     , m_context{ context }
     , m_state{ state }
-    , m_upVertexBuffer{ device, false }
-    , m_upIndexBuffer{ device, true }
+    , m_upVertexBuffer{ device, D3D11_BIND_VERTEX_BUFFER }
+    , m_upIndexBuffer{ device, D3D11_BIND_INDEX_BUFFER }
     , m_vsConstants{ device, context }
-    , m_psConstants{ device, context } {}
+    , m_psConstants{ device, context } {
+  
+    D3D11_SAMPLER_DESC blitSampler;
+    blitSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    blitSampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    blitSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    blitSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    blitSampler.MipLODBias = 0;
+    blitSampler.MaxAnisotropy = 1;
+    blitSampler.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    blitSampler.BorderColor[0] = 1.0f;
+    blitSampler.BorderColor[1] = 1.0f;
+    blitSampler.BorderColor[2] = 1.0f;
+    blitSampler.BorderColor[3] = 1.0f;
+    blitSampler.MinLOD = -FLT_MAX;
+    blitSampler.MaxLOD = FLT_MAX;
+    HRESULT result = m_device->CreateSamplerState(&blitSampler, &m_blitSampler);
+    if (FAILED(result))
+      log::warn("D3D9ImmediateRenderer: failed to create blit sampler state.");
+
+    D3D11_RASTERIZER_DESC1 blitRaster;
+    blitRaster.FillMode = D3D11_FILL_SOLID;
+    blitRaster.CullMode = D3D11_CULL_BACK;
+    blitRaster.FrontCounterClockwise = true;
+    blitRaster.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+    blitRaster.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+    blitRaster.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    blitRaster.DepthClipEnable = true;
+    blitRaster.ScissorEnable = false;
+    blitRaster.MultisampleEnable = false;
+    blitRaster.AntialiasedLineEnable = false;
+    blitRaster.ForcedSampleCount = 0;
+    result = m_device->CreateRasterizerState1(&blitRaster, &m_blitRaster);
+    if (FAILED(result))
+      log::warn("D3D9ImmediateRenderer: failed to create blit rasterizer state.");
+
+    D3D11_DEPTH_STENCIL_DESC blitDepthStencil = { 0 };
+    blitDepthStencil.DepthEnable = false;
+    blitDepthStencil.StencilEnable = false;
+    result = m_device->CreateDepthStencilState(&blitDepthStencil, &m_blitDepthStencil);
+    if (FAILED(result))
+      log::warn("D3D9ImmediateRenderer: failed to create blit depth stencil state.");
+
+    result = m_device->CreateVertexShader(g_blit_vs, sizeof(g_blit_vs), nullptr, &m_blitVS);
+    if (FAILED(result))
+      log::warn("D3D9ImmediateRenderer: failed to create blit vs.");
+
+    result = m_device->CreatePixelShader(g_blit_ps, sizeof(g_blit_ps), nullptr, &m_blitPS);
+    if (FAILED(result))
+      log::warn("D3D9ImmediateRenderer: failed to create blit ps.");
+  }
 
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     if (Count >= 1) {
@@ -155,6 +207,52 @@ namespace dxup {
   }
 
   //
+
+  void D3D9ImmediateRenderer::blit(Direct3DSurface9* dst, Direct3DSurface9* src) {
+    D3DSURFACE_DESC desc;
+    src->GetDesc(&desc);
+
+    D3D11_VIEWPORT viewport;
+    viewport.TopLeftX = 0.0f;
+    viewport.TopLeftY = 0.0f;
+    viewport.Width = (float)desc.Width;
+    viewport.Height = (float)desc.Height;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    m_context->RSSetViewports(1, &viewport);
+    m_state->dirtyFlags |= dirtyFlags::viewport;
+
+    m_context->PSSetSamplers(0, 1, &m_blitSampler);
+    m_state->dirtySamplers |= 1;
+
+    m_context->RSSetState(m_blitRaster.ptr());
+    m_state->dirtyFlags |= dirtyFlags::rasterizer;
+
+    m_context->OMSetDepthStencilState(m_blitDepthStencil.ptr(), 0);
+    m_state->dirtyFlags |= dirtyFlags::depthStencilState;
+
+    // TODO! Do I need to do any SRGB-ness here.
+    ID3D11RenderTargetView* dstRTV = dst->GetD3D11RenderTarget(false);
+    m_context->OMSetRenderTargets(1, &dstRTV, nullptr);
+    m_state->dirtyFlags |= dirtyFlags::renderTargets;
+    
+    ID3D11ShaderResourceView* srcSRV = src->GetDXUPResource()->GetSRV(false);
+    m_context->PSSetShaderResources(0, 1, &srcSRV);
+    m_state->dirtyFlags |= dirtyFlags::textures;
+
+    m_context->VSSetShader(m_blitVS.ptr(), nullptr, 0);
+    m_state->dirtyFlags |= dirtyFlags::vertexShader;
+
+    m_context->PSSetShader(m_blitPS.ptr(), nullptr, 0);
+    m_state->dirtyFlags |= dirtyFlags::pixelShader;
+
+    m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    m_context->IASetInputLayout(nullptr);
+    m_state->dirtyFlags |= dirtyFlags::vertexDecl;
+
+    m_context->Draw(3, 0);
+  }
 
   void D3D9ImmediateRenderer::updateScissorRect() {
     m_context->RSSetScissorRects(1, (D3D11_RECT*)&m_state->scissorRect);

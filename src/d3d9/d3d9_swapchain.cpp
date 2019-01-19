@@ -1,12 +1,14 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_surface.h"
+#include "d3d9_renderer.h"
 #include <algorithm>
 
 namespace dxup {
 
   Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain)
     : Direct3DSwapChain9ExBase(device)
-    , m_swapchain(swapchain) {
+    , m_swapchain(swapchain)
+    , m_rtRequired{ false } {
     this->Reset(presentationParameters);
   }
 
@@ -14,26 +16,42 @@ namespace dxup {
     CriticalSection cs(m_device);
 
     // Get info and crap!
-    UINT bufferCount = std::min(1u, parameters->BackBufferCount);
+    UINT bufferCount = std::max(1u, parameters->BackBufferCount);
 
     // Free crap!
-    m_output = nullptr;
-
-    for (size_t i = 0; i < bufferCount; i++) {
-      if (m_buffers[i] != nullptr)
-        m_buffers[i]->ClearResource();
-    }
+    this->clearResources();
 
     // Set crap!
 
     m_presentationParameters = *parameters;
 
+    DXGI_FORMAT format = convert::format(parameters->BackBufferFormat);
+    format = convert::makeUntypeless(format, false);
+
     HRESULT result = m_swapchain->ResizeBuffers(
       bufferCount,
       parameters->BackBufferWidth,
       parameters->BackBufferHeight,
-      convert::format(parameters->BackBufferFormat, true),
+      format,
       0);
+
+    m_rtRequired = false;
+
+    // dxvk opt for arbitrary swapchain.
+    if (FAILED(result)) {
+      DXGI_FORMAT forcedFormat = convert::makeSwapchainCompliant(format);
+      log::msg("Reset: using rendertargets as intemediary for swapchain.");
+      m_rtRequired = true;
+
+      result = m_swapchain->ResizeBuffers(
+        bufferCount,
+        parameters->BackBufferWidth,
+        parameters->BackBufferHeight,
+        forcedFormat,
+        0);
+    }
+
+    m_rtRequired = true;
 
     if (FAILED(result))
       return log::d3derr(D3DERR_INVALIDCALL, "Reset: D3D11 ResizeBuffers failed in swapchain reset.");
@@ -42,23 +60,23 @@ namespace dxup {
       result = m_swapchain->SetFullscreenState(!parameters->Windowed, nullptr);
 
       if (FAILED(result))
-        log::warn("Failed to change fullscreen state!");
+        log::warn("Reset: failed to change fullscreen state!");
     }
 
     // Make crap!
 
     for (UINT i = 0; i < bufferCount; i++) {
-      Com<ID3D11Texture2D> texture;
+      Com<ID3D11Texture2D> bufferTexture;
 
-      HRESULT result = m_swapchain->GetBuffer(i, __uuidof(ID3D11Texture2D), (void**)&texture);
+      HRESULT result = m_swapchain->GetBuffer(i, __uuidof(ID3D11Texture2D), (void**)&bufferTexture);
       if (FAILED(result)) {
-        log::warn("Failed to get swapchain buffer as ID3D11Texture2D.");
+        log::warn("reset: failed to get swapchain buffer as ID3D11Texture2D.");
         continue;
       }
 
-      DXUPResource* resource = DXUPResource::Create(m_device, texture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
+      DXUPResource* resource = DXUPResource::Create(m_device, bufferTexture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
       if (resource == nullptr) {
-        log::warn("Failed to create DXUPResource for backbuffer.");
+        log::warn("reset: failed to create DXUPResource for backbuffer.");
         continue;
       }
 
@@ -71,6 +89,35 @@ namespace dxup {
         m_buffers[i]->SetResource(resource);
       else
         m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
+
+      if (m_rtRequired) {
+        D3D11_TEXTURE2D_DESC rtDesc;
+        rtDesc.Width = parameters->BackBufferWidth;
+        rtDesc.Height = parameters->BackBufferHeight;
+        rtDesc.MipLevels = 1;
+        rtDesc.ArraySize = 1;
+        rtDesc.Format = convert::makeTypeless(format);
+        rtDesc.SampleDesc.Count = 1;
+        rtDesc.SampleDesc.Quality = 0;
+        rtDesc.Usage = D3D11_USAGE_DEFAULT;
+        rtDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        rtDesc.CPUAccessFlags = 0;
+        rtDesc.MiscFlags = 0;
+
+        Com<ID3D11Texture2D> rtTexture;
+        this->GetD3D11Device()->CreateTexture2D(&rtDesc, nullptr, &rtTexture);
+
+        resource = DXUPResource::Create(m_device, rtTexture.ptr(), D3DUSAGE_RENDERTARGET, D3DFMT_UNKNOWN);
+        if (resource == nullptr) {
+          log::warn("reset: failed to create DXUPResource for rt passthrough.");
+          continue;
+        }
+      }
+
+      if (m_exposedBuffers[i] != nullptr)
+        m_exposedBuffers[i]->SetResource(resource);
+      else
+        m_exposedBuffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
     }
 
     Com<IDXGIOutput> output;
@@ -84,6 +131,20 @@ namespace dxup {
       return log::d3derr(D3DERR_INVALIDCALL, "Reset: failed to upgrade IDXGIOutput to IDXGIOutput1 for swapchain.");
 
     return D3D_OK;
+  }
+
+  void Direct3DSwapChain9Ex::clearResources() {
+    m_output = nullptr;
+
+    for (size_t i = 0; i < m_buffers.size(); i++) {
+      if (m_buffers[i] != nullptr)
+        m_buffers[i]->ClearResource();
+    }
+
+    for (size_t i = 0; i < m_exposedBuffers.size(); i++) {
+      if (m_exposedBuffers[i] != nullptr)
+        m_exposedBuffers[i]->ClearResource();
+    }
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DSwapChain9Ex::QueryInterface(REFIID riid, void** ppvObj) {
@@ -122,10 +183,10 @@ namespace dxup {
     if (!ppBackBuffer || iBackBuffer > D3DPRESENT_BACK_BUFFERS_MAX_EX)
       return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: backbuffer out of bounds.");
 
-    if (m_buffers[iBackBuffer] == nullptr)
+    if (m_exposedBuffers[iBackBuffer] == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "GetBackBuffer: invalid backbuffer requested (%d).", iBackBuffer);
 
-    *ppBackBuffer = ref(m_buffers[iBackBuffer]);
+    *ppBackBuffer = ref(m_exposedBuffers[iBackBuffer]);
 
     return D3D_OK;
   }
@@ -206,11 +267,19 @@ namespace dxup {
     return this->PresentD3D11(nullptr, nullptr, hDestWindowOverride, nullptr, 0, DXGI_PRESENT_TEST, ex);
   }
 
+  void Direct3DSwapChain9Ex::rtBlit() {
+    // TODO! Do we need to change what buffer we do this with?
+    this->GetD3D9Device()->GetRenderer()->blit(m_buffers[0].ptr(), m_exposedBuffers[0].ptr());
+  }
+
   HRESULT Direct3DSwapChain9Ex::PresentD3D11(const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion, DWORD dwFlags, UINT d3d11Flags, bool ex) {
     HRESULT result;
 
     if (hDestWindowOverride != nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "PresentD3D11: called with window override. Not presenting.");
+
+    if (m_rtRequired && !(d3d11Flags & DXGI_PRESENT_TEST))
+      this->rtBlit();
 
     if (d3d11Flags != 0) {
       result = m_swapchain->Present(0, d3d11Flags);

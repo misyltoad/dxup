@@ -537,14 +537,15 @@ namespace dxup {
     DXGI_SWAP_CHAIN_DESC SwapChainDesc;
     memset(&SwapChainDesc, 0, sizeof(SwapChainDesc));
 
-    UINT BackBufferCount = pPresentationParameters->BackBufferCount;
-    if (BackBufferCount == 0)
-      BackBufferCount = 1;
+    UINT BackBufferCount = std::max(1u, pPresentationParameters->BackBufferCount);
+
+    DXGI_FORMAT format = convert::format(pPresentationParameters->BackBufferFormat);
+    format = convert::makeUntypeless(format, false);
 
     SwapChainDesc.BufferCount = BackBufferCount;
     SwapChainDesc.BufferDesc.Width = pPresentationParameters->BackBufferWidth;
     SwapChainDesc.BufferDesc.Height = pPresentationParameters->BackBufferHeight;
-    SwapChainDesc.BufferDesc.Format = convert::format(pPresentationParameters->BackBufferFormat, true);
+    SwapChainDesc.BufferDesc.Format = format;
     SwapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
     SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
@@ -568,6 +569,13 @@ namespace dxup {
 
     Com<IDXGISwapChain> dxgiSwapChain;
     HRESULT result = parent->GetDXGIFactory()->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
+
+    // dxvk opt. for arbitrary swapchain
+    if (FAILED(result)) {
+      format = convert::makeSwapchainCompliant(format);
+      SwapChainDesc.BufferDesc.Format = format;
+      result = parent->GetDXGIFactory()->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
+    }
 
     if (FAILED(result)) {
       log::fail("Failed to make swapchain!");

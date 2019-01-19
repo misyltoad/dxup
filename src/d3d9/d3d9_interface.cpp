@@ -901,7 +901,10 @@ namespace dxup {
 
     // This is disgusting, what the fuck MS?! ~ Josh
     UINT ModeCount = 0;
-    DXGI_FORMAT dxgiFormat = convert::format(Format, true);
+
+    DXGI_FORMAT dxgiFormat = convert::format(Format);
+    dxgiFormat = convert::makeSwapchainCompliant(dxgiFormat);
+
     result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
     m_displayModes.resize(ModeCount);

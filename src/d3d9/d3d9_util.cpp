@@ -95,21 +95,8 @@ namespace dxup {
 
     FormatConverter formatConverter{ formats };
 
-    DXGI_FORMAT format(D3DFORMAT Format, bool swapchain) {
+    DXGI_FORMAT format(D3DFORMAT Format) {
       DXGI_FORMAT dxgiFormat =  formatConverter.toJ(Format);
-
-      if (swapchain) {
-        dxgiFormat = makeTypeless(dxgiFormat);
-        dxgiFormat = makeUntypeless(dxgiFormat, false);
-        if (dxgiFormat == DXGI_FORMAT_B8G8R8X8_UNORM) {
-          log::warn("format: swapchain forcing DXGI_FORMAT_B8G8R8X8_UNORM to DXGI_FORMAT_B8G8R8A8_UNORM.");
-          dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-        }
-        else if (dxgiFormat == DXGI_FORMAT_B5G6R5_UNORM) {
-          log::warn("format: swapchain forcing DXGI_FORMAT_B5G6R5_UNORM to DXGI_FORMAT_B8G8R8A8_UNORM.");
-          dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-        }
-      }
 
       if (Format != D3DFMT_UNKNOWN && dxgiFormat == DXGI_FORMAT_UNKNOWN)
         log::warn("format: D3DFORMAT %d became DXGI_FORMAT_UNKNOWN.");
@@ -160,6 +147,22 @@ namespace dxup {
 
       default: return format;
       }
+    }
+
+    DXGI_FORMAT makeSwapchainCompliant(DXGI_FORMAT format) {
+      format = makeTypeless(format);
+      format = makeUntypeless(format, false);
+        
+      if (format == DXGI_FORMAT_R8G8B8A8_UNORM ||
+          format == DXGI_FORMAT_B8G8R8A8_UNORM ||
+          format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+          format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+          format == DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM)
+        return format;
+
+      log::warn("makeSwapchainCompliant: format %d was not in the swapchain whitelist. Falling back to DXGI_FORMAT_B8G8R8A8_UNORM...");
+
+      return DXGI_FORMAT_B8G8R8A8_UNORM;
     }
 
     //

@@ -7,11 +7,13 @@
 namespace dxup {
 
   namespace convert {
-    DXGI_FORMAT format(D3DFORMAT Format, bool swapchain = false);
+    DXGI_FORMAT format(D3DFORMAT Format);
     D3DFORMAT format(DXGI_FORMAT Format);
 
     DXGI_FORMAT makeUntypeless(DXGI_FORMAT format, bool srgb);
     DXGI_FORMAT makeTypeless(DXGI_FORMAT format);
+
+    DXGI_FORMAT makeSwapchainCompliant(DXGI_FORMAT format);
 
     DXGI_MODE_SCANLINE_ORDER scanlineOrdering(D3DSCANLINEORDERING ScanlineOrdering);
     D3DSCANLINEORDERING scanlineOrdering(DXGI_MODE_SCANLINE_ORDER ScanlineOrdering);

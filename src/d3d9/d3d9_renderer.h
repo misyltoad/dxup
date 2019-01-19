@@ -21,6 +21,8 @@ namespace dxup {
     void undirtyContext();
     void handleDepthStencilDiscard();
 
+    void blit(Direct3DSurface9* dst, Direct3DSurface9* src);
+
   private:
 
     bool canDraw();
@@ -55,6 +57,12 @@ namespace dxup {
     D3D9ConstantBuffer<true> m_psConstants;
 
     D3D9StateCaches m_caches;
+
+    Com<ID3D11SamplerState> m_blitSampler;
+    Com<ID3D11RasterizerState1> m_blitRaster;
+    Com<ID3D11DepthStencilState> m_blitDepthStencil;
+    Com<ID3D11VertexShader> m_blitVS;
+    Com<ID3D11PixelShader> m_blitPS;
   };
 
 }

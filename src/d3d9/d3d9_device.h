@@ -186,6 +186,10 @@ namespace dxup {
       IDirect3DDevice9Ex** outDevice
       );
 
+    inline D3D9ImmediateRenderer* GetRenderer() {
+      return m_renderer;
+    }
+
   protected:
 
     friend class CriticalSection;
