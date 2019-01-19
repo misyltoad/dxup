@@ -51,8 +51,6 @@ namespace dxup {
         0);
     }
 
-    m_rtRequired = true;
-
     if (FAILED(result))
       return log::d3derr(D3DERR_INVALIDCALL, "Reset: D3D11 ResizeBuffers failed in swapchain reset.");
 
