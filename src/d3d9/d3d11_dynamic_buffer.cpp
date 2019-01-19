@@ -2,10 +2,10 @@
 
 namespace dxup {
 
-  D3D11DynamicBuffer::D3D11DynamicBuffer(ID3D11Device* device, bool index)
+  D3D11DynamicBuffer::D3D11DynamicBuffer(ID3D11Device* device, uint32_t bindFlags)
     : m_device{ device }
     , m_length{ 0 }
-    , m_index{ index } {}
+    , m_bindFlags{ bindFlags } {}
 
   ID3D11Buffer* D3D11DynamicBuffer::getBuffer() {
     return m_buffer.ptr();
@@ -19,7 +19,7 @@ namespace dxup {
 
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = length;
-    desc.BindFlags = m_index ? D3D11_BIND_INDEX_BUFFER : D3D11_BIND_VERTEX_BUFFER;
+    desc.BindFlags = m_bindFlags;
     desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     desc.Usage = D3D11_USAGE_DYNAMIC;
     desc.MiscFlags = 0;
