@@ -908,6 +908,9 @@ namespace dxup {
     if (pDestinationTexture == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "UpdateTexture: pDestinationTexture was nullptr");
 
+    if (pSourceTexture->GetType() != pDestinationTexture->GetType())
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateTexture: resource types don't match.");
+
     switch (pSourceTexture->GetType()) {
 
     case D3DRTYPE_TEXTURE: {
