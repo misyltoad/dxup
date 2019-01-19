@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <map>
 #include <array>
-#include <string>
+#include <cstdlib>
 
 namespace dxup { 
 
@@ -90,7 +90,7 @@ namespace dxup {
 
         VarValue typedValues;
         typedValues.strVal = value;
-        typedValues.intVal = std::stoll(typedValues.strVal);
+        typedValues.intVal = std::atoll(value);
         typedValues.boolVal = typedValues.intVal != 0;
         typedValues.floatVal = atof(value);
 
