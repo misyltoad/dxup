@@ -59,8 +59,6 @@ namespace dxup {
     D3D9StateCaches m_caches;
 
     Com<ID3D11SamplerState> m_blitSampler;
-    Com<ID3D11RasterizerState1> m_blitRaster;
-    Com<ID3D11DepthStencilState> m_blitDepthStencil;
     Com<ID3D11VertexShader> m_blitVS;
     Com<ID3D11PixelShader> m_blitPS;
   };

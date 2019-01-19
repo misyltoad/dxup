@@ -35,29 +35,6 @@ namespace dxup {
     if (FAILED(result))
       log::warn("D3D9ImmediateRenderer: failed to create blit sampler state.");
 
-    D3D11_RASTERIZER_DESC1 blitRaster;
-    blitRaster.FillMode = D3D11_FILL_SOLID;
-    blitRaster.CullMode = D3D11_CULL_BACK;
-    blitRaster.FrontCounterClockwise = true;
-    blitRaster.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
-    blitRaster.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-    blitRaster.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-    blitRaster.DepthClipEnable = true;
-    blitRaster.ScissorEnable = false;
-    blitRaster.MultisampleEnable = false;
-    blitRaster.AntialiasedLineEnable = false;
-    blitRaster.ForcedSampleCount = 0;
-    result = m_device->CreateRasterizerState1(&blitRaster, &m_blitRaster);
-    if (FAILED(result))
-      log::warn("D3D9ImmediateRenderer: failed to create blit rasterizer state.");
-
-    D3D11_DEPTH_STENCIL_DESC blitDepthStencil = { 0 };
-    blitDepthStencil.DepthEnable = false;
-    blitDepthStencil.StencilEnable = false;
-    result = m_device->CreateDepthStencilState(&blitDepthStencil, &m_blitDepthStencil);
-    if (FAILED(result))
-      log::warn("D3D9ImmediateRenderer: failed to create blit depth stencil state.");
-
     result = m_device->CreateVertexShader(g_blit_vs, sizeof(g_blit_vs), nullptr, &m_blitVS);
     if (FAILED(result))
       log::warn("D3D9ImmediateRenderer: failed to create blit vs.");
@@ -225,10 +202,10 @@ namespace dxup {
     m_context->PSSetSamplers(0, 1, &m_blitSampler);
     m_state->dirtySamplers |= 1;
 
-    m_context->RSSetState(m_blitRaster.ptr());
+    m_context->RSSetState(nullptr);
     m_state->dirtyFlags |= dirtyFlags::rasterizer;
 
-    m_context->OMSetDepthStencilState(m_blitDepthStencil.ptr(), 0);
+    m_context->OMSetDepthStencilState(nullptr, 0);
     m_state->dirtyFlags |= dirtyFlags::depthStencilState;
 
     // TODO! Do I need to do any SRGB-ness here.

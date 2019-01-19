@@ -9,7 +9,7 @@ SamplerState defaultSampler : register(s0);
 PixelShaderInput blit_vs(uint vertexID : SV_VertexID) {
   PixelShaderInput vout;
 
-  if(vertexID == 0) {
+	if(vertexID == 3) {
 		vout.texcoord = float2(1.0, -1.0);
 		vout.position = float4(1.0, 3.0, 0.0, 1.0);
 	}
