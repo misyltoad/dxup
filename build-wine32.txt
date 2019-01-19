@@ -7,12 +7,12 @@ strip = 'strip'
 [properties]
 needs_exe_wrapper = true
 
-c_args=['-m64']
-cpp_args=['-m64', '--no-gnu-unique']
-cpp_link_args=['-m64', '-mwindows']
+c_args=['-m32', '-msse', '-msse2']
+cpp_args=['-m32', '--no-gnu-unique', '-msse', '-msse2']
+cpp_link_args=['-m32', '-mwindows']
 
 [host_machine]
 system = 'linux'
-cpu_family = 'x86_64'
-cpu = 'x86_64'
+cpu_family = 'x86'
+cpu = 'i686'
 endian = 'little'
