@@ -70,7 +70,7 @@ namespace dxup {
         {"setp",    D3DSIO_SETP, 1, { Dst, Src0, Src1 }, {}},
         {"sge",     D3DSIO_SGE, 1, { Dst, Src0, Src1 }, {}, &ShaderCodeTranslator::handleSge},
         {"sgn",     D3DSIO_SGN, 1, { Dst, Src0, Src1, Src2 }, {}},
-        {"sincos",  D3DSIO_SINCOS, 1, { Dst, Src0, Src1, Src2 }, {}},
+        {"sincos",  D3DSIO_SINCOS, 1, { VaradicOperandCount }, {}, &ShaderCodeTranslator::handleSinCos},
         {"slt",     D3DSIO_SLT, 1, { Dst, Src0, Src1 }, {}, &ShaderCodeTranslator::handleSlt},
         {"sub",     D3DSIO_SUB, 1, { Dst, Src0, Src1 }, {D3D10_SB_OPCODE_ADD, negate}},
 

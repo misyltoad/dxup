@@ -123,6 +123,7 @@ namespace dxup {
       bool handleDef(DX9Operation& operation);
       bool handleDefi(DX9Operation& operation);
       bool handleDefB(DX9Operation& operation);
+      bool handleSinCos(DX9Operation& operation);
 
       bool handleIfc(DX9Operation& operation);
 

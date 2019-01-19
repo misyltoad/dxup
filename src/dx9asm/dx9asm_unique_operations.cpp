@@ -499,6 +499,21 @@ namespace dxup {
       return handleGenericDef(operation, true);
     }
 
+    bool ShaderCodeTranslator::handleSinCos(DX9Operation& operation) {
+      DX9Operand dst{ lookupOperandInfo(optype::Dst), nextToken() };
+      DX9Operand src0{ lookupOperandInfo(optype::Src0), nextToken() };
+
+      if (getMajorVersion() < 3) {
+        DX9Operand temp1{ lookupOperandInfo(optype::Src1), nextToken() };
+        DX9Operand temp2{ lookupOperandInfo(optype::Src2), nextToken() };
+        // We don't use these, but they need to be parsed away.
+      }
+
+      log::warn("handleSinCos: not implemented.");
+
+      return true;
+    }
+
     struct CompareMode {
       uint32_t opcode;
       bool swap;
