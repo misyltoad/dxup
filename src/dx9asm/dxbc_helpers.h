@@ -86,7 +86,9 @@ namespace dxup {
           log::fail("Setting more data than buffer for operand allows!");
           count = 4;
         }
-        std::memcpy(m_data, data, count * sizeof(uint32_t));
+
+        if (data)
+          std::memcpy(m_data, data, count * sizeof(uint32_t));
         m_dataCount = count;
 
         return *this;

@@ -199,6 +199,9 @@ namespace dxup {
       if (!operand.isDst() || !operand.isRegister())
         return 0;
 
+      return calcWriteMask(dx9WriteMask);
+    }
+    uint32_t calcWriteMask(uint32_t dx9WriteMask) {
       if (dx9WriteMask == D3DSP_WRITEMASK_ALL || dx9WriteMask == 0x00000000)
         return writeAll;
 

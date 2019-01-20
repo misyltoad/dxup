@@ -16,6 +16,7 @@ namespace dxup {
     uint32_t calcReadMask(const DX9Operand& operand);
     uint32_t calcReadMask(uint32_t swizzle, uint32_t numComponents);
     uint32_t calcWriteMask(const DX9Operand& operand);
+    uint32_t calcWriteMask(uint32_t dx9Mask);
 
     void calculateDXBCModifiers(DXBCOperand& dstOperand, const DX9Operation& operation, const DX9Operand& operand);
 

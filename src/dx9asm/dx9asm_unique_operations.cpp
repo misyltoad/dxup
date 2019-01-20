@@ -509,6 +509,47 @@ namespace dxup {
         // We don't use these, but they need to be parsed away.
       }
 
+      DXBCOperand sinDstOp = { *this, operation, dst, 0 };
+      DXBCOperand cosDstOp = { *this, operation, dst, 0 };
+      DXBCOperand src0Op = { *this, operation, src0, 0 };
+
+      uint32_t sinMask = 0;
+      if (dst.getWriteMaskData() & D3DSP_WRITEMASK_0)
+        sinMask = D3DSP_WRITEMASK_0;
+      else if (dst.getWriteMaskData() & D3DSP_WRITEMASK_1)
+        sinMask = D3DSP_WRITEMASK_1;
+
+      uint32_t cosMask = 0;
+
+      if (dst.getWriteMaskData() & D3DSP_WRITEMASK_0 && dst.getWriteMaskData() & D3DSP_WRITEMASK_1)
+        cosMask = D3DSP_WRITEMASK_1;
+
+      if (sinMask)
+        sinDstOp.setSwizzleOrWritemask(calcWriteMask(sinMask));
+      else {
+        sinDstOp.setRegisterType(D3D10_SB_OPERAND_TYPE_NULL);
+        sinDstOp.setDimension(D3D10_SB_OPERAND_INDEX_0D);
+        sinDstOp.setData(nullptr, 0);
+        sinDstOp.setComponents(0);
+        sinDstOp.stripModifier();
+      }
+
+      if (cosMask)
+        cosDstOp.setSwizzleOrWritemask(calcWriteMask(cosMask));
+      else {
+        cosDstOp.setRegisterType(D3D10_SB_OPERAND_TYPE_NULL);
+        cosDstOp.setData(nullptr, 0);
+        cosDstOp.setDimension(D3D10_SB_OPERAND_INDEX_0D);
+        cosDstOp.setComponents(0);
+        cosDstOp.stripModifier();
+      }
+
+      DXBCOperation{ D3D10_SB_OPCODE_SINCOS, false }
+        .appendOperand(sinDstOp)
+        .appendOperand(cosDstOp)
+        .appendOperand(src0Op)
+        .push(*this);
+
       log::warn("handleSinCos: not implemented.");
 
       return true;
