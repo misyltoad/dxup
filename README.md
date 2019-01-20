@@ -18,10 +18,15 @@ winetricks --force setup_dxup_d3d9.verb
 
 ### How do I build it?
 Simple (Linux Only):
+
 Use ``./package-release.sh master /your/target/directory --no-package`` to automagically.
+
 Advanced (Windows & Linux):
+
 Use meson to build the dlls.
+
 Windows: ``meson --backend vs2017 --buildtype release build`` in a Visual Studio x86/x64 Command Prompt depending on the arch you wish to build.
+
 Linux: ``meson --cross-file build-win64.txt --buildtype release --prefix /your/dxup/directory build.w64 `` and vice versa for each arch (change 64s to 32s.)
 
 ### Screenshots
