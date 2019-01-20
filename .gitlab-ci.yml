@@ -1,0 +1,7 @@
+dxup:
+  script:
+    - chmod +x package-release.sh
+    - ./package-release.sh ${CI_COMMIT_REF_NAME}.${CI_COMMIT_SHA} build
+  artifacts:
+    paths:
+    - build/*.tar.gz
