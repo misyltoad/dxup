@@ -550,8 +550,6 @@ namespace dxup {
         .appendOperand(src0Op)
         .push(*this);
 
-      log::warn("handleSinCos: not implemented.");
-
       return true;
     }
 
