@@ -29,6 +29,9 @@ namespace dxup {
     DXGI_FORMAT format = convert::format(parameters->BackBufferFormat);
     format = convert::makeUntypeless(format, false);
 
+    if (format == DXGI_FORMAT_B8G8R8X8_UNORM)
+      format = DXGI_FORMAT_B8G8R8A8_UNORM; // This is a simple fixup we can do to avoid a blit on both D3D11 native and older DXVK.
+
     HRESULT result = m_swapchain->ResizeBuffers(
       bufferCount,
       parameters->BackBufferWidth,
@@ -334,6 +337,9 @@ namespace dxup {
 
     DXGI_FORMAT format = convert::format(presentationParameters->BackBufferFormat);
     format = convert::makeUntypeless(format, false);
+
+    if (format == DXGI_FORMAT_B8G8R8X8_UNORM)
+      format = DXGI_FORMAT_B8G8R8A8_UNORM; // This is a simple fixup we can do to avoid a blit on both D3D11 native and older DXVK.
 
     desc.BufferCount = backBufferCount;
     desc.BufferDesc.Width = presentationParameters->BackBufferWidth;
