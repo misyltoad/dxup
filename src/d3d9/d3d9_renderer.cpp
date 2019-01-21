@@ -166,6 +166,7 @@ namespace dxup {
     m_upIndexBuffer.update(m_context, pIndexData, length);
     m_context->IASetIndexBuffer(m_upIndexBuffer.getBuffer(), IndexDataFormat == D3DFMT_INDEX32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT, 0);
 
+    m_context->IASetPrimitiveTopology(topology);
     m_context->DrawIndexed(drawCount, 0, 0);
 
     m_state->dirtyFlags |= dirtyFlags::vertexBuffers;
