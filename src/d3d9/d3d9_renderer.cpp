@@ -143,7 +143,7 @@ namespace dxup {
     }
 
     if (PrimitiveType == D3DPT_TRIANGLEFAN)
-      return drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, StartVertex);
+      return this->drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, StartVertex);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
@@ -166,7 +166,7 @@ namespace dxup {
     }
 
     if (PrimitiveType == D3DPT_TRIANGLEFAN)
-      return drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, 0);
+      return this->drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, 0);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
@@ -202,7 +202,7 @@ namespace dxup {
     }
 
     if (PrimitiveType == D3DPT_TRIANGLEFAN)
-      return drawTriangleFan(true, PrimitiveType, 0, PrimitiveCount, 0);
+      return this->drawTriangleFan(true, PrimitiveType, 0, PrimitiveCount, 0);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
@@ -239,7 +239,7 @@ namespace dxup {
     }
 
     if (PrimitiveType == D3DPT_TRIANGLEFAN)
-      return drawTriangleFan(true, PrimitiveType, startIndex, primCount, BaseVertexIndex);
+      return this->drawTriangleFan(true, PrimitiveType, startIndex, primCount, BaseVertexIndex);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);

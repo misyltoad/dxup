@@ -197,7 +197,7 @@ namespace dxup {
 
     D3DSURFACE_DESC desc;
     this->GetDesc(&desc);
-    if (rect->right > (int)desc.Width || rect->bottom > desc.Height)
+    if (rect->right > (int)desc.Width || rect->bottom > (int)desc.Height)
       return false;
 
     return true;
