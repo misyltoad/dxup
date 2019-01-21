@@ -185,5 +185,36 @@ namespace dxup {
     if (config::getBool(config::GDICompatible))
       resource->GetResource()->QueryInterface(__uuidof(IDXGISurface1), (void**)&m_surface);
   }
+  bool Direct3DSurface9::isRectValid(const RECT* rect) {
+    if (rect == nullptr)
+      return true;
 
+    if (rect->right <= rect->left || rect->bottom <= rect->top)
+      return false;
+
+    if (rect->left < 0 || rect->top < 0)
+      return false;
+
+    D3DSURFACE_DESC desc;
+    this->GetDesc(&desc);
+    if (rect->right > (int)desc.Width || rect->bottom > desc.Height)
+      return false;
+
+    return true;
+  }
+
+  bool Direct3DSurface9::isBoxValid(const D3D11_BOX* box) {
+    if (box == nullptr)
+      return true;
+
+    if (box->front != 0 || box->back != 1)
+      return false;
+
+    RECT rect;
+    rect.left = box->left;
+    rect.top = box->top;
+    rect.right = box->right;
+    rect.bottom = box->bottom;
+    return this->isRectValid(&rect);
+  }
 }

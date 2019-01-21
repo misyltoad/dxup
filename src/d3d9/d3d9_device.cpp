@@ -891,11 +891,60 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateSurface(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint) {
     CriticalSection cs(this);
 
-    RECT destRect;
-    destRect.left = pDestPoint ? pDestPoint->x : 0;
-    destRect.top = pDestPoint ? pDestPoint->y : 0;
+    Direct3DSurface9* src = reinterpret_cast<Direct3DSurface9*>(pSourceSurface);
+    Direct3DSurface9* dst = reinterpret_cast<Direct3DSurface9*>(pDestinationSurface);
 
-    StretchRect(pSourceSurface, pSourceRect, pDestinationSurface, pDestPoint ? &destRect : nullptr, D3DTEXF_NONE);
+    if (src == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: src was nullptr.");
+
+    if (dst == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: dst was nullptr.");
+
+    D3DSURFACE_DESC srcDesc;
+    D3DSURFACE_DESC dstDesc;
+    pSourceSurface->GetDesc(&srcDesc);
+    pDestinationSurface->GetDesc(&dstDesc);
+
+    D3D11_BOX srcBox;
+    srcBox.front = 0;
+    srcBox.back = 1;
+
+    UINT dstX = 0;
+    UINT dstY = 0;
+
+    if (pSourceRect != nullptr) {
+      srcBox.left = pSourceRect->left;
+      srcBox.top = pSourceRect->top;
+      srcBox.right = pSourceRect->right;
+      srcBox.bottom = pSourceRect->bottom;
+
+    }
+    else {
+      srcBox.left = 0;
+      srcBox.top = 0;
+      srcBox.right = srcDesc.Width;
+      srcBox.bottom = srcDesc.Height;
+    }
+
+    if (pDestPoint != nullptr) {
+      dstX = pDestPoint->x;
+      dstY = pDestPoint->y;
+    }
+
+    if (!src->isBoxValid(&srcBox))
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: box was invalid.");
+
+    if (srcDesc.MultiSampleType != D3DMULTISAMPLE_NONE)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: src has multisampling.");
+
+    if (dstDesc.MultiSampleType != D3DMULTISAMPLE_NONE)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: dst has multisampling.");
+
+    if (srcDesc.Format != dstDesc.Format)
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateSurface: src format is not the same as dst format.");
+
+    // TODO: do we need to do staging here too? Look into this.
+    m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), dstX, dstY, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), &srcBox);
     
     return D3D_OK;
   }

@@ -39,6 +39,9 @@ namespace dxup {
     void ClearResource();
     void SetResource(DXUPResource* resource);
 
+    bool isRectValid(const RECT* rect);
+    bool isBoxValid(const D3D11_BOX* box);
+
   private:
 
     IUnknown* m_container;
