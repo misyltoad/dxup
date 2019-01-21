@@ -2,10 +2,10 @@
 
 @ stdcall Direct3DCreate9Ex(long ptr)
 
-@ stub D3DPERF_BeginEvent
-@ stub D3DPERF_EndEvent
-@ stub D3DPERF_SetMarker
-@ stub D3DPERF_SetRegion
-@ stub D3DPERF_QueryRepeatFrame
-@ stub D3DPERF_SetOptions
-@ stub D3DPERF_GetStatus
+@ stdcall D3DPERF_BeginEvent(long wstr)
+@ stdcall D3DPERF_EndEvent()
+@ stdcall D3DPERF_SetMarker(long wstr)
+@ stdcall D3DPERF_SetRegion(long wstr)
+@ stdcall D3DPERF_QueryRepeatFrame()
+@ stdcall D3DPERF_SetOptions(long)
+@ stdcall D3DPERF_GetStatus()
