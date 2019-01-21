@@ -945,6 +945,7 @@ namespace dxup {
 
     // TODO: do we need to do staging here too? Look into this.
     m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), dstX, dstY, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), &srcBox);
+    dst->GetDXUPResource()->MarkDirty(dst->GetSlice(), dst->GetMip());
     
     return D3D_OK;
   }
@@ -1019,11 +1020,14 @@ namespace dxup {
       box.front = 0;
       box.back = 1;
       m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), x, y, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), &box);
+      dst->GetDXUPResource()->MarkDirty(dst->GetSlice(), dst->GetMip());
 
       return D3D_OK;
     }
 
     m_context->CopySubresourceRegion(dst->GetDXUPResource()->GetResource(), dst->GetSubresource(), 0, 0, 0, src->GetDXUPResource()->GetResource(), src->GetSubresource(), nullptr);
+    dst->GetDXUPResource()->MarkDirty(dst->GetSlice(), dst->GetMip());
+
     return D3D_OK;
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ColorFill(IDirect3DSurface9* pSurface, CONST RECT* pRect, D3DCOLOR color) {

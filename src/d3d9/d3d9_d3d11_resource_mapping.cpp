@@ -29,6 +29,21 @@ namespace dxup {
     return D3D11_MAP_READ_WRITE;
   }
 
+  void DXUPResource::MarkDirty(UINT slice, UINT mip) {
+    m_dirtySubresources[slice] = 1 << mip;
+  }
+  void DXUPResource::MakeClean() {
+    for (uint32_t slice = 0; slice < m_slices; slice++) {
+      uint64_t dirtyFlags = m_dirtySubresources[slice];
+
+      for (uint64_t mip = 0; mip < m_mips; mip++) {
+        UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
+        if (dirtyFlags & (1ull << mip))
+          m_device->GetContext()->CopySubresourceRegion(GetMapping(), subresource, 0, 0, 0, GetResource(), subresource, nullptr);
+      }
+    }
+  }
+
   HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage) {
     CriticalSection cs(m_device);
 
@@ -44,6 +59,9 @@ namespace dxup {
       std::memset(&m_stagingRects[subresource], 0, sizeof(RECT));
     else
       m_stagingRects[subresource] = *pRect;
+
+    if (HasStaging() && !(Flags & D3DLOCK_DISCARD) && !(Flags & D3DLOCK_NOOVERWRITE) && !(Usage & D3DUSAGE_WRITEONLY))
+      MakeClean();
 
     D3D11_MAPPED_SUBRESOURCE res;
     HRESULT result = m_device->GetContext()->Map(GetMapping(), subresource, CalcMapType(Flags, Usage), CalcMapFlags(Flags), &res);

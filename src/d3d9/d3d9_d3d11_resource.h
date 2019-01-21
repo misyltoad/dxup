@@ -43,6 +43,8 @@ namespace dxup {
 
     void SetMipMapped(UINT slice, UINT mip);
     void SetMipUnmapped(UINT slice, UINT mip);
+    void MarkDirty(UINT slice, UINT mip);
+    void MakeClean();
 
     uint64_t GetChangedMips(UINT slice);
 
@@ -79,6 +81,7 @@ namespace dxup {
 
     uint64_t m_mappedSubresources[6];
     uint64_t m_unmappedSubresources[6];
+    uint64_t m_dirtySubresources[6];
 
     Com<ID3D11Resource> m_resource;
     Com<ID3D11Resource> m_staging;

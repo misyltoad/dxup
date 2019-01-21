@@ -495,6 +495,7 @@ namespace dxup {
     {
       if (m_state->renderTargets[i] != nullptr) {
         rtvs[i] = m_state->renderTargets[i]->GetD3D11RenderTarget(m_state->renderState[D3DRS_SRGBWRITEENABLE] == TRUE);
+        m_state->renderTargets[i]->GetDXUPResource()->MarkDirty(0, 0); // Mark dirty so we copy to staging when read on the CPU again.
         if (rtvs[i] == nullptr)
           log::warn("No render target view for bound render target surface.");
       }
