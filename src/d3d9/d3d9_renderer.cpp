@@ -107,6 +107,9 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT D3D9ImmediateRenderer::DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
+    if (pVertexStreamZeroData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "DrawPrimitiveUP: pVertexStreamZeroData was nullptr.");
+
     if (!preDraw()) {
       log::warn("Invalid internal render state achieved.");
       postDraw();
@@ -134,6 +137,12 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT D3D9ImmediateRenderer::DrawIndexedPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride) {
+    if (pVertexStreamZeroData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "DrawIndexedPrimitiveUP: pVertexStreamZeroData was nullptr.");
+
+    if (pIndexData == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "DrawIndexedPrimitiveUP: pIndexData was nullptr.");
+
     if (!preDraw()) {
       log::warn("Invalid internal render state achieved.");
       postDraw();
