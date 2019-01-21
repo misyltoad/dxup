@@ -70,7 +70,7 @@ namespace dxup {
       return D3DERR_WASSTILLDRAWING;
 
     if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "Unknown error mapping subresource.");;
+      return log::d3derr(D3DERR_INVALIDCALL, "D3D9LockRect: unknown error mapping subresource.");
 
     SetMipMapped(slice, mip);
 
