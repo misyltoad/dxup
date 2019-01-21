@@ -10,8 +10,10 @@ namespace dxup {
 
     D3D11DynamicBuffer(ID3D11Device* device, uint32_t bindFlags);
 
-    void reserve(uint32_t length);
+    bool reserve(uint32_t length);
     void update(ID3D11DeviceContext* context, const void* src, uint32_t length);
+    void map(ID3D11DeviceContext* context, void** data, uint32_t length);
+    void unmap(ID3D11DeviceContext* context);
 
     ID3D11Buffer* getBuffer();
 

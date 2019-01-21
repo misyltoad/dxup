@@ -11,9 +11,9 @@ namespace dxup {
     return m_buffer.ptr();
   }
 
-  void D3D11DynamicBuffer::reserve(uint32_t length) {
+  bool D3D11DynamicBuffer::reserve(uint32_t length) {
     if (m_buffer != nullptr && m_length >= length)
-      return;
+      return false;
 
     m_buffer = nullptr;
 
@@ -29,17 +29,30 @@ namespace dxup {
     HRESULT result = m_device->CreateBuffer(&desc, nullptr, &buffer);
     if (FAILED(result)) {
       log::warn("reserve: CreateBuffer failed (length = %d.)", length);
-      return;
+      return false;
     }
 
     m_buffer = buffer;
     m_length = length;
+
+    return true;
   }
 
+  // TODO! _OVERWRITE optimization.
   void D3D11DynamicBuffer::update(ID3D11DeviceContext* context, const void* src, uint32_t length) {
     D3D11_MAPPED_SUBRESOURCE res;
     context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
     std::memcpy(res.pData, src, length);
+    context->Unmap(m_buffer.ptr(), 0);
+  }
+
+  void D3D11DynamicBuffer::map(ID3D11DeviceContext* context, void** data, uint32_t length) {
+    D3D11_MAPPED_SUBRESOURCE res;
+    context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+    *data = res.pData;
+  }
+
+  void D3D11DynamicBuffer::unmap(ID3D11DeviceContext* context) {
     context->Unmap(m_buffer.ptr(), 0);
   }
 

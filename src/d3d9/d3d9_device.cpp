@@ -780,6 +780,8 @@ namespace dxup {
     if (!ppIndexBuffer)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateIndexBuffer: ppIndexBuffer was nullptr.");
 
+    Usage &= ~D3DUSAGE_WRITEONLY; // We don't care about this for index buffers as we need staging on them for tri fan fixup.
+
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = Length;
     desc.BindFlags = D3D11_BIND_INDEX_BUFFER;

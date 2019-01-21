@@ -25,6 +25,8 @@ namespace dxup {
 
   private:
 
+    HRESULT drawTriangleFan(bool indexed, D3DPRIMITIVETYPE PrimitiveType, UINT StartIndex, UINT PrimitiveCount, UINT BaseVertexIndex);
+
     bool canDraw();
 
     bool preDraw(); // Returns CanDraw
@@ -52,6 +54,8 @@ namespace dxup {
 
     D3D11DynamicBuffer m_upVertexBuffer;
     D3D11DynamicBuffer m_upIndexBuffer;
+    D3D11DynamicBuffer m_fanIndexBuffer;
+    bool m_fanIndexed;
 
     D3D9ConstantBuffer<false> m_vsConstants;
     D3D9ConstantBuffer<true> m_psConstants;

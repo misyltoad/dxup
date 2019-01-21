@@ -14,6 +14,8 @@ namespace dxup {
     , m_state{ state }
     , m_upVertexBuffer{ device, D3D11_BIND_VERTEX_BUFFER }
     , m_upIndexBuffer{ device, D3D11_BIND_INDEX_BUFFER }
+    , m_fanIndexBuffer{ device, D3D11_BIND_INDEX_BUFFER }
+    , m_fanIndexed{ false }
     , m_vsConstants{ device, context }
     , m_psConstants{ device, context } {
   
@@ -89,12 +91,59 @@ namespace dxup {
     }
     return D3D_OK;
   }
+
+  HRESULT D3D9ImmediateRenderer::drawTriangleFan(bool indexed, D3DPRIMITIVETYPE PrimitiveType, UINT StartIndex, UINT PrimitiveCount, UINT BaseVertexIndex) {
+    const uint32_t newPrimitiveCount = PrimitiveCount * 3;
+    const uint32_t length = newPrimitiveCount * sizeof(uint16_t);
+
+    bool reserved = m_fanIndexBuffer.reserve(length);
+    if (indexed || m_fanIndexed || reserved) {
+      uint16_t* data = nullptr;
+      m_fanIndexBuffer.map(m_context, (void**)&data, length);
+
+      if (indexed && m_state->indexBuffer != nullptr) {
+        D3D11_MAPPED_SUBRESOURCE res;
+        ID3D11Resource* originalIndexBuffer = m_state->indexBuffer->GetDXUPResource()->GetStaging();
+        m_context->Map(originalIndexBuffer, 0, D3D11_MAP_READ, 0, &res);
+
+        uint16_t* originalIndices = reinterpret_cast<uint16_t*>(res.pData);
+
+        for (UINT i = 0; i < PrimitiveCount; i++) {
+          data[3 * i + 0] = originalIndices[StartIndex + 0];
+          data[3 * i + 1] = originalIndices[StartIndex + i + 1];
+          data[3 * i + 2] = originalIndices[StartIndex + i + 2];
+        }
+
+        m_context->Unmap(originalIndexBuffer, 0);
+      }
+      else {
+        for (UINT i = 0; i < PrimitiveCount; i++) {
+          data[3 * i + 0] = 0;
+          data[3 * i + 1] = i + 1;
+          data[3 * i + 2] = i + 2;
+        }
+      }
+
+      m_fanIndexBuffer.unmap(m_context);
+    }
+
+    m_fanIndexed = indexed;
+
+    m_context->IASetIndexBuffer(m_fanIndexBuffer.getBuffer(), DXGI_FORMAT_R16_UINT, 0);
+    HRESULT result = DrawIndexedPrimitive(D3DPT_TRIANGLELIST, BaseVertexIndex, 0, PrimitiveCount + 2, 0, newPrimitiveCount);
+    m_state->dirtyFlags |= dirtyFlags::indexBuffer;
+    return result;
+  }
+
   HRESULT D3D9ImmediateRenderer::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
     if (!preDraw()) {
       log::warn("Invalid internal render state achieved.");
       postDraw();
       return D3D_OK; // Lies!
     }
+
+    if (PrimitiveType == D3DPT_TRIANGLEFAN)
+      return drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, StartVertex);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
@@ -115,6 +164,9 @@ namespace dxup {
       postDraw();
       return D3D_OK; // Lies!
     }
+
+    if (PrimitiveType == D3DPT_TRIANGLEFAN)
+      return drawTriangleFan(false, PrimitiveType, 0, PrimitiveCount, 0);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
@@ -149,6 +201,9 @@ namespace dxup {
       return D3D_OK; // Lies!
     }
 
+    if (PrimitiveType == D3DPT_TRIANGLEFAN)
+      return drawTriangleFan(true, PrimitiveType, 0, PrimitiveCount, 0);
+
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, PrimitiveCount, topology);
     UINT length = (MinVertexIndex + NumVertices) * VertexStreamZeroStride;
@@ -182,6 +237,9 @@ namespace dxup {
       postDraw();
       return D3D_OK; // Lies!
     }
+
+    if (PrimitiveType == D3DPT_TRIANGLEFAN)
+      return drawTriangleFan(true, PrimitiveType, startIndex, primCount, BaseVertexIndex);
 
     D3D_PRIMITIVE_TOPOLOGY topology;
     UINT drawCount = convert::primitiveData(PrimitiveType, primCount, topology);
