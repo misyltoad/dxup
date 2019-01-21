@@ -531,78 +531,28 @@ namespace dxup {
     CriticalSection cs(this);
     InitReturnPtr(ppSwapChain);
 
-    if (!ppSwapChain)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapChain: ppSwapChain was nullptr.");
-
-    DXGI_SWAP_CHAIN_DESC SwapChainDesc;
-    memset(&SwapChainDesc, 0, sizeof(SwapChainDesc));
-
-    UINT BackBufferCount = std::max(1u, pPresentationParameters->BackBufferCount);
-
-    DXGI_FORMAT format = convert::format(pPresentationParameters->BackBufferFormat);
-    format = convert::makeUntypeless(format, false);
-
-    SwapChainDesc.BufferCount = BackBufferCount;
-    SwapChainDesc.BufferDesc.Width = pPresentationParameters->BackBufferWidth;
-    SwapChainDesc.BufferDesc.Height = pPresentationParameters->BackBufferHeight;
-    SwapChainDesc.BufferDesc.Format = format;
-    SwapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
-    SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-    SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
-    SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
-    SwapChainDesc.OutputWindow = m_window;
-    SwapChainDesc.Windowed = config::getBool(config::ForceWindowed) ? true : pPresentationParameters->Windowed;
-    SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-    //SwapChainDesc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
-
-    //if (SwapChainDesc.SampleDesc.Count == 0)
-    //  SwapChainDesc.SampleDesc.Count = 1;
-
-    //SwapChainDesc.SampleDesc.Quality = pPresentationParameters->MultiSampleQuality;
-
-    SwapChainDesc.SampleDesc.Count = 1;
-    SwapChainDesc.SampleDesc.Quality = 0;
-
-    Com<Direct3D9Ex> parent;
-    GetParent(&parent);
-
-    Com<IDXGISwapChain> dxgiSwapChain;
-    HRESULT result = parent->GetDXGIFactory()->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
-
-    // dxvk opt. for arbitrary swapchain
-    if (FAILED(result)) {
-      format = convert::makeSwapchainCompliant(format);
-      SwapChainDesc.BufferDesc.Format = format;
-      result = parent->GetDXGIFactory()->CreateSwapChain(m_device.ptr(), &SwapChainDesc, &dxgiSwapChain);
+    bool full = true;
+    for (size_t i = 0; i < m_swapchains.size(); i++) {
+      if (m_swapchains[i] == nullptr)
+        full = false;
     }
 
-    if (FAILED(result)) {
-      log::fail("Failed to make swapchain!");
+    if (full)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapChain: no free swapchain slots.");
+
+    Direct3DSwapChain9Ex** swapchain = reinterpret_cast<Direct3DSwapChain9Ex**>(ppSwapChain);
+    HRESULT result = Direct3DSwapChain9Ex::Create(this, pPresentationParameters, swapchain);
+    if (FAILED(result))
       return result;
-    }
 
-    Com<IDXGISwapChain1> upgradedSwapchain;
-    result = dxgiSwapChain->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&upgradedSwapchain);
-
-    if (FAILED(result)) {
-      log::fail("Failed to upgrade swapchain to IDXGISwapChain1!");
-      return result;
-    }
-
-    parent->GetDXGIFactory()->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER);
-
-    for (size_t i = 0; i < m_swapchains.size(); i++)
-    {
+    for (size_t i = 0; i < m_swapchains.size(); i++) {
       if (m_swapchains[i] == nullptr) {
-        m_swapchains[i] = ref( new Direct3DSwapChain9Ex(this, pPresentationParameters, upgradedSwapchain.ptr()) );
-
-        *ppSwapChain = ref(m_swapchains[i]);
-        return D3D_OK;
+        m_swapchains[i] = *swapchain;
+        break;
       }
     }
 
-    return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapchain: no more free swapchain slots.");
+    return D3D_OK;
   }
 
   Direct3DSwapChain9Ex* Direct3DDevice9Ex::GetInternalSwapchain(UINT i) {

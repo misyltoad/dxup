@@ -31,6 +31,8 @@ namespace dxup {
 
     HRESULT TestSwapchain(HWND hDestWindowOverride, bool ex);
     HRESULT WaitForVBlank();
+
+    static HRESULT Create(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* pPresentationParameters, Direct3DSwapChain9Ex** ppSwapChain);
   private:
 
     void clearResources();

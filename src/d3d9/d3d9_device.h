@@ -190,6 +190,10 @@ namespace dxup {
       return m_renderer;
     }
 
+    inline HWND getWindow() {
+      return m_window;
+    }
+
   protected:
 
     friend class CriticalSection;

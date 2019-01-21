@@ -1,6 +1,7 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_surface.h"
 #include "d3d9_renderer.h"
+#include "d3d9_interface.h"
 #include <algorithm>
 
 namespace dxup {
@@ -320,4 +321,67 @@ namespace dxup {
     return D3D_OK;
   }
 
+  HRESULT Direct3DSwapChain9Ex::Create(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, Direct3DSwapChain9Ex** ppSwapChain) {
+    InitReturnPtr(ppSwapChain);
+
+    if (!ppSwapChain)
+      return log::d3derr(D3DERR_INVALIDCALL, "CreateAdditionalSwapChain: ppSwapChain was nullptr.");
+
+    DXGI_SWAP_CHAIN_DESC desc;
+    memset(&desc, 0, sizeof(desc));
+
+    UINT backBufferCount = std::max(1u, presentationParameters->BackBufferCount);
+
+    DXGI_FORMAT format = convert::format(presentationParameters->BackBufferFormat);
+    format = convert::makeUntypeless(format, false);
+
+    desc.BufferCount = backBufferCount;
+    desc.BufferDesc.Width = presentationParameters->BackBufferWidth;
+    desc.BufferDesc.Height = presentationParameters->BackBufferHeight;
+    desc.BufferDesc.Format = format;
+    desc.BufferDesc.RefreshRate.Numerator = 0;
+    desc.BufferDesc.RefreshRate.Denominator = 1;
+    desc.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
+    desc.OutputWindow = device->getWindow();
+    desc.Windowed = config::getBool(config::ForceWindowed) ? true : presentationParameters->Windowed;
+    desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    //desc.SampleDesc.Count = (UINT)pPresentationParameters->MultiSampleType;
+
+    //if (desc.SampleDesc.Count == 0)
+    //  desc.SampleDesc.Count = 1;
+
+    //desc.SampleDesc.Quality = pPresentationParameters->MultiSampleQuality;
+
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+
+    Com<Direct3D9Ex> parent;
+    device->GetParent(&parent);
+
+    Com<IDXGISwapChain> dxgiSwapChain;
+    HRESULT result = parent->GetDXGIFactory()->CreateSwapChain(device->GetD3D11Device(), &desc, &dxgiSwapChain);
+
+    // dxvk opt. for arbitrary swapchain
+    if (FAILED(result)) {
+      format = convert::makeSwapchainCompliant(format);
+      desc.BufferDesc.Format = format;
+      result = parent->GetDXGIFactory()->CreateSwapChain(device->GetD3D11Device(), &desc, &dxgiSwapChain);
+    }
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Swapchain - Create: failed to make D3D11 swapchain.");
+
+    Com<IDXGISwapChain1> upgradedSwapchain;
+    result = dxgiSwapChain->QueryInterface(__uuidof(IDXGISwapChain1), (void**)&upgradedSwapchain);
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Swapchain - Create: failed to upgrade swapchain to IDXGISwapChain1!");
+
+    parent->GetDXGIFactory()->MakeWindowAssociation(device->getWindow(), DXGI_MWA_NO_ALT_ENTER);
+
+    *ppSwapChain = ref(new Direct3DSwapChain9Ex(device, presentationParameters, upgradedSwapchain.ptr()));
+    return D3D_OK;
+  }
 }
