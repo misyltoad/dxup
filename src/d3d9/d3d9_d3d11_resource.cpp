@@ -178,5 +178,7 @@ namespace dxup {
     , m_dynamic{ dynamic } {
     m_stagingRects.resize(GetSubresources());
     ResetMipMapTracking();
+    for (uint32_t i = 0; i < 6; i++)
+      m_dirtySubresources[i] = 0;
   }
 }
