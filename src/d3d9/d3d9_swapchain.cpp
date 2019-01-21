@@ -283,19 +283,41 @@ namespace dxup {
     if (m_rtRequired && !(d3d11Flags & DXGI_PRESENT_TEST))
       this->rtBlit();
 
-    if (d3d11Flags != 0) {
-      result = m_swapchain->Present(0, d3d11Flags);
+    UINT syncInterval;
+
+    if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_IMMEDIATE)
+      syncInterval = 0;
+    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT || m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_ONE)
+      syncInterval = 1;
+    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_TWO)
+      syncInterval = 2;
+    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_THREE)
+      syncInterval = 3;
+    else //if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_FOUR)
+      syncInterval = 4;
+
+    if (dwFlags & D3DPRESENT_FORCEIMMEDIATE)
+      syncInterval = 0;
+
+    if (dwFlags & D3DPRESENT_DONOTWAIT)
+      d3d11Flags |= DXGI_PRESENT_DO_NOT_WAIT;
+
+    if (d3d11Flags & DXGI_PRESENT_TEST) {
+      result = m_swapchain->Present(syncInterval, d3d11Flags);
     }
     else {
       // We may need to do more here for rects...
       //m_swapchain->ResizeTarget
       //m_swapchain->ResizeBuffers
-      result = m_swapchain->Present(0, d3d11Flags);
+      result = m_swapchain->Present(syncInterval, d3d11Flags);
     }
 
     if (d3d11Flags & DXGI_PRESENT_TEST && FAILED(result))
         return D3DERR_DEVICELOST;
     else {
+
+      if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+        return D3DERR_WASSTILLDRAWING;
 
       if (result == DXGI_ERROR_DEVICE_REMOVED)
         return D3DERR_DEVICEREMOVED;
