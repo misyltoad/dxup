@@ -942,8 +942,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface) {
     CriticalSection cs(this);
 
-    StretchRect(pRenderTarget, NULL, pDestSurface, NULL, D3DTEXF_NONE);
-    return D3D_OK;
+    return UpdateSurface(pRenderTarget, nullptr, pDestSurface, nullptr);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
     CriticalSection cs(this);
