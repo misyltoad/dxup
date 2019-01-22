@@ -63,7 +63,7 @@ namespace dxup {
           initVar(var::RefactoringAllowed, "DXUP_REFACTORINGALLOWED", "1");
           initVar(var::GDICompatible, "DXUP_GDI_COMPATIBLE", "0");
 
-          initVar(var::UseFakes, "DXUP_USEFAKES", "1");
+          initVar(var::UseFakes, "DXUP_USEFAKES", "0");
           initVar(var::FakeDriver, "DXUP_FAKE_DRIVER", "aticfx32.dll");
           initVar(var::FakeDescription, "DXUP_FAKE_DESCRIPTION", "AMD Radeon R9 200 Series");
           initVar(var::FakeDeviceName, "DXUP_FAKE_DEVICENAME", "\\\\.\\DISPLAY1");
