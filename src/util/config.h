@@ -20,6 +20,7 @@ namespace dxup {
       RefactoringAllowed,
       GDICompatible,
 
+      RespectVSync,
       UseFakes,
       FakeDriver,
       FakeDescription,

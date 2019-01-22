@@ -283,21 +283,23 @@ namespace dxup {
     if (m_rtRequired && !(d3d11Flags & DXGI_PRESENT_TEST))
       this->rtBlit();
 
-    UINT syncInterval;
+    UINT syncInterval = 0;
 
-    if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_IMMEDIATE)
-      syncInterval = 0;
-    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT || m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_ONE)
-      syncInterval = 1;
-    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_TWO)
-      syncInterval = 2;
-    else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_THREE)
-      syncInterval = 3;
-    else //if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_FOUR)
-      syncInterval = 4;
+    if (config::getBool(config::RespectVSync)) {
+      if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_IMMEDIATE)
+        syncInterval = 0;
+      else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT || m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_ONE)
+        syncInterval = 1;
+      else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_TWO)
+        syncInterval = 2;
+      else if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_THREE)
+        syncInterval = 3;
+      else //if (m_presentationParameters.PresentationInterval == D3DPRESENT_INTERVAL_FOUR)
+        syncInterval = 4;
 
-    if (dwFlags & D3DPRESENT_FORCEIMMEDIATE)
-      syncInterval = 0;
+      if (dwFlags & D3DPRESENT_FORCEIMMEDIATE)
+        syncInterval = 0;
+    }
 
     if (dwFlags & D3DPRESENT_DONOTWAIT)
       d3d11Flags |= DXGI_PRESENT_DO_NOT_WAIT;
