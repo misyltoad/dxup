@@ -987,25 +987,18 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::ColorFill(IDirect3DSurface9* pSurface, CONST RECT* pRect, D3DCOLOR color) {
     CriticalSection cs(this);
 
-    /*if (pSurface == nullptr)
-      return D3DERR_INVALIDCALL;
+    if (pSurface == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "ColorFill: pSurface was nullptr.");
 
-    D3DLOCKED_RECT lockedRect;
-    HRESULT result = pSurface->LockRect(&lockedRect, pRect, 0);
-    if (FAILED(result))
-      return D3DERR_INVALIDCALL;
+    Direct3DSurface9* src = reinterpret_cast<Direct3DSurface9*>(pSurface);
 
-    D3DSURFACE_DESC desc;
-    pSurface->GetDesc(&desc);
+    if (src->GetD3D11RenderTarget(false) == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "ColorFill: pSurface had no rtv, is it sysmem or something?");
 
-    UINT rows = pRect ? pRect->bottom - pRect->top : desc.Height;
-    UINT width = pRect ? pRect->right - pRect->left : desc.Width;
+    float d3d11Color[4];
+    convert::color(color, d3d11Color);
 
-    for (int y = 0; y < rows; y++) {
-      for (int x = 0; x < width; x++) {
-        lockedRect.pBits[(y * width) + x] = 
-      }
-    }*/
+    m_context->ClearView(src->GetD3D11RenderTarget(false), d3d11Color, pRect, pRect == nullptr ? 0 : 1);
 
     return D3D_OK;
   }
