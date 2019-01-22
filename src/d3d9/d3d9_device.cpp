@@ -581,7 +581,7 @@ namespace dxup {
     UINT swapchainCount = 0;
 
     for (size_t i = 0; i < m_swapchains.size(); i++) {
-      if (m_swapchains[i] == nullptr)
+      if (m_swapchains[i] != nullptr)
         swapchainCount++;
     }
     return swapchainCount;
