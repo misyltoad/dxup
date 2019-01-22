@@ -156,6 +156,10 @@ namespace dxup {
 
       return D3D_OK;
     }
+
+    inline void wideStringToMultiByte(const WCHAR* wide, char* mb, uint32_t mblen) {
+      WideCharToMultiByte(CP_ACP, 0, wide, -1, mb, mblen, nullptr, nullptr);
+    }
   }
 
   namespace reinterpret {

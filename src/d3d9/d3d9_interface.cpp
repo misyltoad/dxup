@@ -55,8 +55,8 @@ namespace dxup {
       DXGI_OUTPUT_DESC outDesc;
       output->GetDesc(&outDesc);
 
-      wcstombs(pIdentifier->Description, desc.Description, MAX_DEVICE_IDENTIFIER_STRING);
-      wcstombs(pIdentifier->DeviceName, outDesc.DeviceName, 32);
+      convert::wideStringToMultiByte(desc.Description, pIdentifier->Description, MAX_DEVICE_IDENTIFIER_STRING);
+      convert::wideStringToMultiByte(outDesc.DeviceName, pIdentifier->DeviceName, 32);
       strcpy(pIdentifier->Driver, "d3d9.dll");
       pIdentifier->DriverVersion.QuadPart = 0;
       pIdentifier->VendorId = desc.VendorId;
