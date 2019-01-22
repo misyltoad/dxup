@@ -145,7 +145,7 @@ namespace dxup {
         .push(*this);
 
       // dst = int(dst)
-      DXBCOperation{ D3D10_SB_OPCODE_FTOI, operation.saturate() }
+      DXBCOperation{ D3D10_SB_OPCODE_FTOI, false }
         .appendOperand(dstOp)
         .appendOperand(tempOpSrc)
         .push(*this);
