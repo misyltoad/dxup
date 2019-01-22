@@ -96,7 +96,7 @@ namespace dxup {
         {"texm3x3tex",  D3DSIO_TEXM3x3TEX, 1, { Dst, Src0 }, {}},
         {"texm3x3vspec",  D3DSIO_TEXM3x3VSPEC, 1, { Dst, Src0 }, {}},
         {"texreg2ar",  D3DSIO_TEXREG2AR, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleTexReg2Ar},
-        {"texreg2gb",  D3DSIO_TEXREG2GB, 1, { Dst, Src0 }, {}},
+        {"texreg2gb",  D3DSIO_TEXREG2GB, 1, { Dst, Src0 }, {}, &ShaderCodeTranslator::handleTexReg2Gb},
         {"texreg2rgb",  D3DSIO_TEXREG2RGB, 1, { Dst, Src0 }, {}},
       };
     }
