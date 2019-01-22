@@ -58,7 +58,7 @@ else
 endif
 
 dxup_version = vcs_tag(
-  command: ['git', 'describe', '--dirty=+'],
+  command: ['git', 'describe', '--always', '--dirty=+'],
   input:  'version.h.in',
   output: 'version.h')
 
