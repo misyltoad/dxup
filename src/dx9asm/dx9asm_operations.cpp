@@ -27,7 +27,7 @@ namespace dxup {
         {"def",     D3DSIO_DEF, 1, {Dst, Vec4}, {}, &ShaderCodeTranslator::handleDef},
         {"defb",    D3DSIO_DEFB, 1, {Dst, Bool}, {}, &ShaderCodeTranslator::handleDefB},
         {"defi",    D3DSIO_DEFI, 1, {Dst, Vec4}, {}, &ShaderCodeTranslator::handleDefi},
-        {"dp2add",  D3DSIO_DP2ADD, 1, {Dst, Src0, Src1, Src3}, {}},
+        {"dp2add",  D3DSIO_DP2ADD, 1, {Dst, Src0, Src1, Src2}, {}, &ShaderCodeTranslator::handleDp2Add},
         {"dp3",     D3DSIO_DP3, 1, {Dst, Src0, Src1}, { D3D10_SB_OPCODE_DP3, 0, 3, 3 }},
         {"dp4",     D3DSIO_DP4, 1, {Dst, Src0, Src1}, { D3D10_SB_OPCODE_DP4, 0 }},
         {"dsx",     D3DSIO_DSX, 1, {Dst, Src0}, {}},
