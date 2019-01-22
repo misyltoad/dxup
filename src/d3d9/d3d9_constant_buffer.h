@@ -30,7 +30,7 @@ namespace dxup {
       : m_device{ device }
       , m_context{ context } {
       D3D11_BUFFER_DESC cbDesc;
-      cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants) + sizeof(D3D9ShaderConstants::boolConstants); // TODO make bool constants a bitfield.
+      cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants) + (4 * sizeof(D3D9ShaderConstants::boolConstants)); // TODO make bool constants a bitfield.
       cbDesc.Usage = D3D11_USAGE_DYNAMIC;
       cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
       cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -52,7 +52,12 @@ namespace dxup {
       uint8_t* data = (uint8_t*)res.pData;
       std::memcpy(data, constants.floatConstants.data(), sizeof(constants.floatConstants));
       std::memcpy(data + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
-      std::memcpy(data + sizeof(constants.floatConstants) + sizeof(constants.intConstants), constants.boolConstants.data(), sizeof(constants.boolConstants));
+
+      int* boolData = (int*)(data + sizeof(constants.floatConstants) + sizeof(constants.intConstants));
+      for (uint32_t i = 0; i < constants.boolConstants.size(); i++) {
+        for (uint32_t j = 0; j < 4; j++)
+          boolData[i * 4 + j] = constants.boolConstants[i];
+      }
 
       m_context->Unmap(m_buffer.ptr(), 0);
     }

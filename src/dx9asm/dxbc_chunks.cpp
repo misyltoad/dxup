@@ -34,7 +34,7 @@ namespace dxup {
     void forEachVariable(ShaderBytecode& bytecode, ShaderCodeTranslator& shdrCode, T func) {
       uint32_t num = 0;
       if (shdrCode.isIndirectMarked())
-        num = 256 + 16; // Do all 256 if we use indirect addressing.
+        num = 256 + 16 + 16; // Do all 256 if we use indirect addressing.
       else
         num = shdrCode.getRegisterMap().getDXBCTypeCount(D3D10_SB_OPERAND_TYPE_CONSTANT_BUFFER);
 
@@ -261,7 +261,7 @@ namespace dxup {
           uint32_t intVecTypeOffset = this->getChunkSize(bytecode);
           pushObject(obj, variableType);
 
-          variableType.columns = 1;
+          //variableType.columns = 1;
 
           uint32_t boolTypeOffset = this->getChunkSize(bytecode);
           pushObject(obj, variableType);
@@ -287,7 +287,7 @@ namespace dxup {
             }
             else {
               // bool constants
-              info.size = sizeof(int);
+              info.size = 4 * sizeof(int); //sizeof(int);
               info.typeOffset = boolTypeOffset;
             }
 
