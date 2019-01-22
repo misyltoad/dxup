@@ -1,7 +1,8 @@
 dxup:
   script:
     - chmod +x package-release.sh
-    - ./package-release.sh ${CI_COMMIT_REF_NAME}.${CI_COMMIT_SHA} build
+    - ./package-release.sh release build --no-package
   artifacts:
+    name: "dxup-${CI_COMMIT_REF_NAME}.${CI_COMMIT_SHA}"
     paths:
-    - build/*.tar.gz
+    - build/dxup-release
