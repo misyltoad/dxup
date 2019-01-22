@@ -40,7 +40,7 @@ namespace dxup {
         {"exp",     D3DSIO_EXP, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_EXP, 0}},
         {"expp",    D3DSIO_EXPP, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_EXP, 0}},
         {"frc",     D3DSIO_FRC, 1, { Dst, Src0 }, {D3D10_SB_OPCODE_FRC, 0}},
-        {"if",      D3DSIO_IF, 1, { Src0 }, {D3D10_SB_OPCODE_IF, 0}},
+        {"if",      D3DSIO_IF, 1, { Src0 }, {}, &ShaderCodeTranslator::handleIf},
         {"ifc",     D3DSIO_IFC, 1, { Src0, Src1 }, {}, &ShaderCodeTranslator::handleIfc},
         {"label",   D3DSIO_LABEL, 1, { Label }, {}},
         {"lit",     D3DSIO_LIT, 1, { Dst, Src0 }, {}},

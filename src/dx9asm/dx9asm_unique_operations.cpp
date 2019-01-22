@@ -596,7 +596,20 @@ namespace dxup {
         .push(*this);
 
       DXBCOperation{ D3D10_SB_OPCODE_IF, false }
+        .setExtra(ENCODE_D3D10_SB_INSTRUCTION_TEST_BOOLEAN(D3D10_SB_INSTRUCTION_TEST_NONZERO))
         .appendOperand(tempOpSrc)
+        .push(*this);
+
+      return true;
+    }
+
+    bool ShaderCodeTranslator::handleIf(DX9Operation& operation) {
+      const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+      DXBCOperand src0Op = { *this, operation, *src0, 0 };
+
+      DXBCOperation{ D3D10_SB_OPCODE_IF, false }
+        .setExtra(ENCODE_D3D10_SB_INSTRUCTION_TEST_BOOLEAN(D3D10_SB_INSTRUCTION_TEST_NONZERO))
+        .appendOperand(src0Op)
         .push(*this);
 
       return true;
