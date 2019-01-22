@@ -117,7 +117,7 @@ namespace dxup {
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
 
-      DXBCOperation{ D3D10_SB_OPCODE_MOV, false }
+      DXBCOperation{ D3D10_SB_OPCODE_MOV, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(srcOp)
         .push(*this);
@@ -544,7 +544,7 @@ namespace dxup {
         cosDstOp.stripModifier();
       }
 
-      DXBCOperation{ D3D10_SB_OPCODE_SINCOS, false }
+      DXBCOperation{ D3D10_SB_OPCODE_SINCOS, operation.saturate() }
         .appendOperand(sinDstOp)
         .appendOperand(cosDstOp)
         .appendOperand(src0Op)
@@ -575,7 +575,7 @@ namespace dxup {
         .appendOperand(src1Op)
         .push(*this);
 
-      DXBCOperation{ D3D10_SB_OPCODE_ADD, false }
+      DXBCOperation{ D3D10_SB_OPCODE_ADD, operation.saturate() }
         .appendOperand(dstOp)
         .appendOperand(tempOpSrc)
         .appendOperand(src2Op)
