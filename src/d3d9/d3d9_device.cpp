@@ -568,8 +568,11 @@ namespace dxup {
     CriticalSection cs(this);
 
     InitReturnPtr(pSwapChain);
-    if (!pSwapChain || iSwapChain >= m_swapchains.size() || GetInternalSwapchain(iSwapChain) == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "GetSwapChain: invalid swapchain requested.");
+    if (pSwapChain == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetSwapChain: pSwapChain was nullptr.");
+
+    if (GetInternalSwapchain(iSwapChain) == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "GetSwapChain: invalid swapchain requested (%d).", iSwapChain);
 
     *pSwapChain = ref(GetInternalSwapchain(iSwapChain));
 
