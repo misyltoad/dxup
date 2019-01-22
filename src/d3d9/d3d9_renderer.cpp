@@ -109,18 +109,18 @@ namespace dxup {
         uint16_t* originalIndices = reinterpret_cast<uint16_t*>(res.pData);
 
         for (UINT i = 0; i < PrimitiveCount; i++) {
-          data[3 * i + 0] = originalIndices[StartIndex + 0];
-          data[3 * i + 1] = originalIndices[StartIndex + i + 1];
-          data[3 * i + 2] = originalIndices[StartIndex + i + 2];
+          data[3 * i + 0] = originalIndices[StartIndex + i + 1];
+          data[3 * i + 1] = originalIndices[StartIndex + i + 2];
+          data[3 * i + 2] = originalIndices[StartIndex + 0];
         }
 
         m_context->Unmap(originalIndexBuffer, 0);
       }
       else {
         for (UINT i = 0; i < PrimitiveCount; i++) {
-          data[3 * i + 0] = 0;
-          data[3 * i + 1] = i + 1;
-          data[3 * i + 2] = i + 2;
+          data[3 * i + 0] = i + 1;
+          data[3 * i + 1] = i + 2;
+          data[3 * i + 2] = 0;
         }
       }
 
