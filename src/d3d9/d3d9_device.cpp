@@ -1008,7 +1008,7 @@ namespace dxup {
     if (Pool == D3DPOOL_MANAGED)
       return log::d3derr(D3DERR_INVALIDCALL, "CreateOffscreenPlainSurface: attempted to make offscreen surface w/ managed pool.");
 
-    return CreateRenderTarget(Width, Height, Format, D3DMULTISAMPLE_NONE, 0, D3DPOOL_DEFAULT, ppSurface, pSharedHandle);
+    return CreateRenderTarget(Width, Height, Format, D3DMULTISAMPLE_NONE, 0, Pool, ppSurface, pSharedHandle);
   }
 
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DSurface9* pRenderTarget) {
