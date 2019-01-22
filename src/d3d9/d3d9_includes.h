@@ -39,6 +39,10 @@
 #define D3DCURSOR_IMMEDIATE_UPDATE             0x00000001L
 #endif
 
+#ifndef D3DPRESENT_FORCEIMMEDIATE
+#define D3DPRESENT_FORCEIMMEDIATE              0x00000100L
+#endif
+
 // d3d11
 
 #ifndef _MSC_VER
