@@ -111,7 +111,7 @@ namespace dxup {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
 
-      if (dst->getRegType() == D3DSPR_ADDR)
+      if (src0->getRegType() != D3DSPR_CONSTINT && dst->getRegType() == D3DSPR_ADDR && getMajorVersion() == 1 && getMinorVersion() == 1)
         return handleMova(operation);
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
@@ -128,6 +128,9 @@ namespace dxup {
     bool ShaderCodeTranslator::handleMova(DX9Operation& operation) {
       const DX9Operand* dst = operation.getOperandByType(optype::Dst);
       const DX9Operand* src0 = operation.getOperandByType(optype::Src0);
+
+      if (src0->getRegType() == D3DSPR_CONSTINT)
+        return handleMov(operation);
 
       DXBCOperand dstOp = { *this, operation, *dst, 0 };
       DXBCOperand srcOp = { *this, operation, *src0, 0 };
