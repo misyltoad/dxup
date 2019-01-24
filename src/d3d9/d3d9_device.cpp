@@ -192,9 +192,6 @@ namespace dxup {
       return log::d3derr(D3DERR_INVALIDCALL, "Reset: pPresentationParameters was nullptr.");
 
     // Unbind current state...
-
-    SetVertexShader(nullptr);
-    SetPixelShader(nullptr);
     SetDepthStencilSurface(nullptr);
 
     for (uint32_t i = 0; i < 4; i++)
