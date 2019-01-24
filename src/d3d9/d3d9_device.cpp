@@ -17,6 +17,7 @@
 #include "d3d9_state.h"
 #include "d3d9_renderer.h"
 #include <d3d11_4.h>
+#include <cfloat>
 
 namespace dxup {
 
@@ -1731,14 +1732,18 @@ namespace dxup {
   ID3D11Device* Direct3DDevice9Ex::GetD3D11Device() {
     return m_device.ptr();
   }
+
+  inline void setFPUFlag(uint32_t newValue, uint32_t mask) {
+    uint32_t currentWord = 0;
+    _controlfp_s(&currentWord, newValue, mask);
+  }
   
   void Direct3DDevice9Ex::setupFPUFlags() {
-    uint32_t currentWord = 0;
-    _controlfp_s(&currentWord, _MCW_EM, _MCW_EM); // mask exceptions
+    setFPUFlag(_MCW_EM, _MCW_EM); // mask exceptions
 
     if (config::getBool(config::RespectPrecision)) {
-      _controlfp_s(&currentWord, _PC_24, _MCW_PC); // single precision
-      _controlfp_s(&currentWord, _RC_NEAR, _MCW_RC); // round to nearest
+      setFPUFlag(_PC_24, _MCW_PC); // single precision
+      setFPUFlag(_RC_NEAR, _MCW_RC); // round to nearest
 
       // TODO! Find out if we want to respect this by default.
     }
