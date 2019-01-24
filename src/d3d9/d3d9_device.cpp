@@ -44,6 +44,9 @@ namespace dxup {
     , m_stateBlock{ nullptr } {
     m_renderer = new D3D9ImmediateRenderer{ device, context, m_state };
     InitializeCriticalSection(&m_criticalSection);
+
+    if (!(behaviourFlags & D3DCREATE_FPU_PRESERVE))
+      setupFPUFlags();
   }
 
   HRESULT Direct3DDevice9Ex::CreateD3D11Device(UINT adapter, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** dxgiAdapter) {
@@ -1727,6 +1730,18 @@ namespace dxup {
   }
   ID3D11Device* Direct3DDevice9Ex::GetD3D11Device() {
     return m_device.ptr();
+  }
+  
+  void Direct3DDevice9Ex::setupFPUFlags() {
+    uint32_t currentWord = 0;
+    _controlfp_s(&currentWord, _MCW_EM, _MCW_EM); // mask exceptions
+
+    if (config::getBool(config::RespectPrecision)) {
+      _controlfp_s(&currentWord, _PC_24, _MCW_PC); // single precision
+      _controlfp_s(&currentWord, _RC_NEAR, _MCW_RC); // round to nearest
+
+      // TODO! Find out if we want to respect this by default.
+    }
   }
 
 }

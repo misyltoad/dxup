@@ -62,6 +62,7 @@ namespace dxup {
           initVar(var::InitialHideCursor, "DXUP_INITIALHIDECURSOR", "0");
           initVar(var::RefactoringAllowed, "DXUP_REFACTORINGALLOWED", "1");
           initVar(var::GDICompatible, "DXUP_GDI_COMPATIBLE", "0");
+          initVar(var::RespectPrecision, "DXUP_RESPECT_PRECISION", "1");
 
           initVar(var::RespectVSync, "DXUP_RESPECT_VSYNC", "1");
           initVar(var::UseFakes, "DXUP_USEFAKES", "0");

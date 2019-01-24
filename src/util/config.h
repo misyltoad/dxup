@@ -19,6 +19,7 @@ namespace dxup {
       InitialHideCursor,
       RefactoringAllowed,
       GDICompatible,
+      RespectPrecision,
 
       RespectVSync,
       UseFakes,

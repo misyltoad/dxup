@@ -205,6 +205,7 @@ namespace dxup {
 
     static HRESULT CreateD3D11Device(UINT adpater, Direct3D9Ex* parent, ID3D11Device1** device, ID3D11DeviceContext1** context, IDXGIDevice1** dxgiDevice, IDXGIAdapter1** adapter);
     static void SetupD3D11Debug(ID3D11Device* device);
+    void setupFPUFlags();
 
     Direct3DDevice9Ex(
       UINT adapterNum,
