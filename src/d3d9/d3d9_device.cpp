@@ -17,7 +17,7 @@
 #include "d3d9_state.h"
 #include "d3d9_renderer.h"
 #include <d3d11_4.h>
-#include <cfloat>
+#include <float.h>
 
 namespace dxup {
 
@@ -1732,21 +1732,27 @@ namespace dxup {
   ID3D11Device* Direct3DDevice9Ex::GetD3D11Device() {
     return m_device.ptr();
   }
-
-  inline void setFPUFlag(uint32_t newValue, uint32_t mask) {
-    uint32_t currentWord = 0;
-    _controlfp_s(&currentWord, newValue, mask);
-  }
   
   void Direct3DDevice9Ex::setupFPUFlags() {
-    setFPUFlag(_MCW_EM, _MCW_EM); // mask exceptions
+#ifdef _MSC_VER
+    uint32_t currentWord = 0;
+    _controlfp_s(&currentWord, _MCW_EM, _MCW_EM); // mask exceptions
 
     if (config::getBool(config::RespectPrecision)) {
-      setFPUFlag(_PC_24, _MCW_PC); // single precision
-      setFPUFlag(_RC_NEAR, _MCW_RC); // round to nearest
+      _controlfp_s(&currentWord, _PC_24, _MCW_PC); // single precision
+      _controlfp_s(&currentWord, _RC_NEAR, _MCW_RC); // round to nearest
 
       // TODO! Find out if we want to respect this by default.
     }
+#else
+    if (!config::getBool(config::RespectPrecision))
+      log::warn("DXUP_RESPECT_PRECISION ignored on Linux.");
+
+    WORD cw;
+    __asm__ volatile ("fnstcw %0" : "=m" (cw));
+    cw = (cw & ~0xf3f) | 0x3f;
+    __asm__ volatile ("fldcw %0" : : "m" (cw));
+#endif
   }
 
 }
