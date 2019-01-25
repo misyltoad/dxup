@@ -83,11 +83,13 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DQuery9::GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) {
     CriticalSection cs(m_device);
 
-    if (pData == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "GetData: pData was nullptr.");
+    if (pData != nullptr && dwSize != 0) {
+      if (pData == nullptr)
+        return log::d3derr(D3DERR_INVALIDCALL, "GetData: pData was nullptr.");
 
-    if (dwSize < GetDataSize())
-      return log::d3derr(D3DERR_INVALIDCALL, "GetData: dwSize was less than the required data size.");
+      if (dwSize < GetDataSize())
+        return log::d3derr(D3DERR_INVALIDCALL, "GetData: dwSize was less than the required data size.");
+    }
 
     bool flush = dwGetDataFlags & D3DGETDATA_FLUSH;
 
@@ -97,8 +99,12 @@ namespace dxup {
       HRESULT result = m_device->GetContext()->GetData(m_query.ptr(), &queryData, GetD3D11DataSize(), flush ? 0 : D3D11_ASYNC_GETDATA_DONOTFLUSH);
       std::memcpy(pData, &queryData, std::min((size_t)GetD3D11DataSize(), (size_t)dwSize));
 
-      if (FAILED(result))
-        return S_FALSE;
+      if (FAILED(result)) {
+        if (flush)
+          return D3DERR_INVALIDCALL;
+        else
+          return S_FALSE;
+      }
       else
         return D3D_OK;
     }
