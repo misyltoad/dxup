@@ -85,9 +85,8 @@ namespace dxup {
     if (entry.data != nullptr) {
 
       if (entry.flags & D3DSPD_IUNKNOWN) {
-        IUnknown* unknown = (IUnknown*)entry.data;
-        if (unknown != nullptr)
-          unknown->Release();
+        IUnknown* unknown = reinterpret_cast<IUnknown*>(entry.data);
+        unknown->Release();
       }
       
       uint8_t* data = reinterpret_cast<uint8_t*>(entry.data);

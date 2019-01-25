@@ -56,7 +56,6 @@ namespace dxup {
 
     UINT m_slice;
     UINT m_mip;
-    UINT m_totalMips;
   };
 
 }

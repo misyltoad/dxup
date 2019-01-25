@@ -12,8 +12,7 @@ namespace dxup {
   // I am sorry. I feel like I let everyone down taking so long to make this piece of crap.
 
   D3D9State::D3D9State(Direct3DDevice9Ex* device, uint32_t stateBlockType)
-    : stateBlockType{ stateBlockType }
-    , m_device{ device } {
+    : m_device{ device } {
     dirtyFlags = 0;
     dirtySamplers = 0;
 

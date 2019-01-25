@@ -14,6 +14,7 @@ namespace dxup {
     , m_rtView(nullptr)
     , m_rtViewSRGB(nullptr)
     , m_singletonSurface(singletonSurface)
+    , m_useRect(false)
   {
     if (singletonSurface && m_container != nullptr)
         m_container->AddRef();
@@ -146,7 +147,7 @@ namespace dxup {
     return m_slice;
   }
   UINT Direct3DSurface9::GetSubresource() {
-    return D3D11CalcSubresource(m_mip, m_slice, m_totalMips);
+    return D3D11CalcSubresource(m_mip, m_slice, this->GetDXUPResource()->GetMips());
   }
 
   void Direct3DSurface9::ClearResource() {

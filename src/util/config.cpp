@@ -22,7 +22,7 @@ namespace dxup {
 
       if (cachedWine == false) {
         typedef const char*(*WineGetVersion)(void);
-        WineGetVersion wine_get_version = nullptr;
+        WineGetVersion wine_get_version;
 
         HMODULE module = GetModuleHandleA("ntdll.dll");
 
@@ -65,7 +65,7 @@ namespace dxup {
           initVar(var::RespectPrecision, "DXUP_RESPECT_PRECISION", "1");
 
           initVar(var::RespectVSync, "DXUP_RESPECT_VSYNC", "1");
-          initVar(var::UseFakes, "DXUP_USEFAKES", "0");
+          initVar(var::UseFakes, "DXUP_USEFAKES", "1");
           initVar(var::FakeDriver, "DXUP_FAKE_DRIVER", "aticfx32.dll");
           initVar(var::FakeDescription, "DXUP_FAKE_DESCRIPTION", "AMD Radeon R9 200 Series");
           initVar(var::FakeDeviceName, "DXUP_FAKE_DEVICENAME", "\\\\.\\DISPLAY1");

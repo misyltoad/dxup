@@ -93,8 +93,6 @@ namespace dxup {
 
   protected:
 
-    uint32_t stateBlockType;
-
     friend class D3D9ImmediateRenderer;
 
     uint32_t dirtyFlags;

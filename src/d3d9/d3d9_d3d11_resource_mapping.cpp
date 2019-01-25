@@ -112,15 +112,16 @@ namespace dxup {
 
     UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
 
-    m_device->GetContext()->Unmap(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips));
+    ID3D11DeviceContext* context = m_device->GetContext();
+    context->Unmap(GetMapping(), D3D11CalcSubresource(mip, slice, m_mips));
     SetMipUnmapped(slice, mip);
 
     // We need to make this format an 8888. DXGI has no 888 type.
     if (m_fixup8888 != nullptr) {
       D3D11_MAPPED_SUBRESOURCE d3d9Res;
       D3D11_MAPPED_SUBRESOURCE fixupRes;
-      m_device->GetContext()->Map(GetStaging(), subresource, D3D11_MAP_READ, 0, &d3d9Res);
-      m_device->GetContext()->Map(m_fixup8888.ptr(), subresource, D3D11_MAP_WRITE, 0, &fixupRes);
+      context->Map(GetStaging(), subresource, D3D11_MAP_READ, 0, &d3d9Res);
+      context->Map(m_fixup8888.ptr(), subresource, D3D11_MAP_WRITE, 0, &fixupRes);
 
       D3D11_TEXTURE2D_DESC desc;
       ID3D11Texture2D* texture = reinterpret_cast<ID3D11Texture2D*>(m_staging.ptr());
@@ -142,8 +143,8 @@ namespace dxup {
         }
       }
 
-      m_device->GetContext()->Unmap(m_fixup8888.ptr(), subresource);
-      m_device->GetContext()->Unmap(GetStaging(), subresource);
+      context->Unmap(m_fixup8888.ptr(), subresource);
+      context->Unmap(GetStaging(), subresource);
     }
 
     if (HasStaging() && CanPushStaging())

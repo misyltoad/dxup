@@ -63,6 +63,7 @@ namespace dxup {
       pIdentifier->DeviceId = desc.DeviceId;
       pIdentifier->SubSysId = desc.SubSysId;
       pIdentifier->Revision = desc.Revision;
+      std::memset(&pIdentifier->DeviceIdentifier, 0, sizeof(pIdentifier->DeviceIdentifier));
       std::memcpy(&pIdentifier->DeviceIdentifier, &desc.AdapterLuid, sizeof(LUID));
     }
     else {
@@ -907,11 +908,14 @@ namespace dxup {
 
     result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, nullptr);
 
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateDisplayModes: GetDisplayModeList failed to get mode count.");
+
     m_displayModes.resize(ModeCount);
 
     result = output->GetDisplayModeList(dxgiFormat, 0, &ModeCount, m_displayModes.data());
     if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "UpdateDisplayModes: GetDisplayModeList failed.");
+      return log::d3derr(D3DERR_INVALIDCALL, "UpdateDisplayModes: GetDisplayModeList failed to list modes.");
 
     std::reverse(m_displayModes.begin(), m_displayModes.end());
 

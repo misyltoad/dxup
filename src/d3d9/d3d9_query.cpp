@@ -61,7 +61,7 @@ namespace dxup {
     case D3D11_QUERY_EVENT: return sizeof(BOOL);
     default:
     case D3D11_QUERY_OCCLUSION:
-    case D3DQUERYTYPE_TIMESTAMPDISJOINT:
+    case D3D11_QUERY_TIMESTAMP_DISJOINT:
     case D3D11_QUERY_TIMESTAMP: return sizeof(UINT64);
     }
   }

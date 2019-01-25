@@ -182,7 +182,7 @@ namespace dxup {
     desc.MiscFlags = 0;
   }
 
-  inline bool isRectDegenerate(RECT rect) {
+  inline bool isRectDegenerate(const RECT& rect) {
     return rect.top == 0 && rect.right == 0 && rect.left == 0 && rect.bottom == 0;
   }
 

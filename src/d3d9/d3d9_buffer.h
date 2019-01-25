@@ -83,14 +83,16 @@ namespace dxup {
       : Direct3DIndexBuffer9Base{ device, resource, d3d9Desc } {}
 
     HRESULT STDMETHODCALLTYPE GetDesc(D3DINDEXBUFFER_DESC *pDesc) override {
-      D3D11_BUFFER_DESC desc;
-      this->GetDXUPResource()->GetResourceAs<ID3D11Buffer>()->GetDesc(&desc);
+      D3D11_BUFFER_DESC d3d11Desc;
+      this->GetDXUPResource()->GetResourceAs<ID3D11Buffer>()->GetDesc(&d3d11Desc);
 
-      pDesc->Format = this->GetD3D9Desc().Format;
-      pDesc->Pool = this->GetD3D9Desc().Pool;
-      pDesc->Size = desc.ByteWidth;
+      const D3D9ResourceDesc& d3d9Desc = this->GetD3D9Desc();
+
+      pDesc->Format = d3d9Desc.Format;
+      pDesc->Pool = d3d9Desc.Pool;
+      pDesc->Size = d3d11Desc.ByteWidth;
       pDesc->Type = D3DRTYPE_INDEXBUFFER;
-      pDesc->Usage = this->GetD3D9Desc().Usage;
+      pDesc->Usage = d3d9Desc.Usage;
 
       return D3D_OK;
     }
