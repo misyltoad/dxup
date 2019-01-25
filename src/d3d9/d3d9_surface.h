@@ -51,7 +51,6 @@ namespace dxup {
     Com<ID3D11RenderTargetView> m_rtViewSRGB;
     Com<ID3D11DepthStencilView> m_dsView;
 
-    bool m_useRect;
     bool m_singletonSurface;
 
     UINT m_slice;

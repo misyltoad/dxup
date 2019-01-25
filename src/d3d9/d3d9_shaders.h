@@ -21,7 +21,7 @@ namespace dxup {
       : m_shader { shader }
       , m_shaderNum{ shaderNum }
       , m_translation{ translation }
-      , D3D9DeviceUnknown<Base>(device) {
+      , D3D9DeviceUnknown<Base>{device} {
 
       m_dx9asm.resize(dx9asm::byteCodeLength((const uint32_t*)code));
 

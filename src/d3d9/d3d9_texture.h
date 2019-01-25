@@ -15,7 +15,7 @@ namespace dxup {
   public:
 
     Direct3DGeneric2DTexture9(bool singletonSurface, Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc)
-      : Direct3DResource9<ResourceType, ID3D9BaseType>(device, resource, desc)
+      : Direct3DResource9<ResourceType, ID3D9BaseType>{ device, resource, desc }
       , m_singletonSurface{ singletonSurface } {
       m_surfaces.reserve(resource->GetSubresources());
 

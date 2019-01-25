@@ -7,14 +7,13 @@
 namespace dxup {
 
   Direct3DSurface9::Direct3DSurface9(bool singletonSurface, UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc)
-    : Direct3DSurface9Base(device, nullptr, desc)
-    , m_container(container)
-    , m_slice(slice)
-    , m_mip(mip)
-    , m_rtView(nullptr)
-    , m_rtViewSRGB(nullptr)
-    , m_singletonSurface(singletonSurface)
-    , m_useRect(false)
+    : Direct3DSurface9Base{ device, nullptr, desc }
+    , m_container{ container }
+    , m_slice{ slice }
+    , m_mip{ mip }
+    , m_rtView{ nullptr }
+    , m_rtViewSRGB{ nullptr }
+    , m_singletonSurface{ singletonSurface }
   {
     if (singletonSurface && m_container != nullptr)
         m_container->AddRef();

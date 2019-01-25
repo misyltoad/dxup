@@ -6,8 +6,8 @@
 namespace dxup {
 
   Direct3DQuery9::Direct3DQuery9(Direct3DDevice9Ex* device, D3DQUERYTYPE type)
-    : D3D9DeviceUnknown<IDirect3DQuery9>(device)
-    , m_type(type) {
+    : D3D9DeviceUnknown<IDirect3DQuery9>{ device }
+    , m_type{ type } {
     bool doD3D11Query = true;
     switch (m_type) {
     case D3DQUERYTYPE_EVENT: m_d3d11Type = D3D11_QUERY_EVENT; break;

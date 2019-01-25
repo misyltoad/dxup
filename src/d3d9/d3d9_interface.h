@@ -8,7 +8,7 @@ namespace dxup {
 
     public:
       Direct3D9Ex(IDXGIFactory1* dxgiFactory)
-       : m_dxgiFactory(dxgiFactory)
+        : m_dxgiFactory{ dxgiFactory }
       {}
 
       HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppv) override;

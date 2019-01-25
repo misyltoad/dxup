@@ -11,7 +11,7 @@ namespace dxup {
   public:
 
     Direct3DVertexDeclaration9(Direct3DDevice9Ex* device, std::vector<D3D11_INPUT_ELEMENT_DESC>& d3d11Descs, std::vector<D3DVERTEXELEMENT9>& d3d9Descs)
-      : D3D9DeviceUnknown<IDirect3DVertexDeclaration9>(device)
+      : D3D9DeviceUnknown<IDirect3DVertexDeclaration9>{ device }
       , m_d3d11Descs{ d3d11Descs }
       , m_d3d9Descs{ d3d9Descs } { }
 

@@ -33,14 +33,14 @@ namespace dxup {
     uint8_t flags
   )
     : m_adapterNum{ adapterNum }
-    , m_adapter(adapter)
+    , m_adapter{ adapter }
     , m_window{ window }
-    , m_device(device)
-    , m_context(context)
-    , m_parent(parent)
+    , m_device{ device }
+    , m_context{ context }
+    , m_parent{ parent }
     , m_behaviourFlags{ behaviourFlags }
-    , m_flags(flags)
-    , m_deviceType(deviceType)
+    , m_flags{ flags }
+    , m_deviceType{ deviceType }
     , m_state{ new D3D9State(this, 0) }
     , m_stateBlock{ nullptr } {
     m_renderer = new D3D9ImmediateRenderer{ device, context, m_state };

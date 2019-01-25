@@ -7,8 +7,8 @@
 namespace dxup {
 
   Direct3DSwapChain9Ex::Direct3DSwapChain9Ex(Direct3DDevice9Ex* device, D3DPRESENT_PARAMETERS* presentationParameters, IDXGISwapChain1* swapchain)
-    : Direct3DSwapChain9ExBase(device)
-    , m_swapchain(swapchain)
+    : Direct3DSwapChain9ExBase{ device }
+    , m_swapchain{ swapchain }
     , m_rtRequired{ false } {
     this->Reset(presentationParameters);
   }

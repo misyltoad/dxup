@@ -3,8 +3,7 @@
 
 namespace dxup {
 
-  UINT bitsPerPixel(DXGI_FORMAT fmt)
-  {
+  UINT bitsPerPixel(DXGI_FORMAT fmt) {
     switch (fmt) {
     case DXGI_FORMAT_R32G32B32A32_TYPELESS:
     case DXGI_FORMAT_R32G32B32A32_FLOAT:
