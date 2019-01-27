@@ -723,7 +723,7 @@ namespace dxup {
     d3d9Desc.Usage = Usage;
 
     if (Type == D3DRTYPE_CUBETEXTURE)
-      *ppTexture = ref(new Direct3DCubeTexture9(singletonSurface, this, resource, d3d9Desc));
+      *ppTexture = ref(new Direct3DCubeTexture9(this, resource, d3d9Desc));
     else
       *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, resource, d3d9Desc));
 
@@ -768,7 +768,7 @@ namespace dxup {
 
     D3D9ResourceDesc d3d9Desc;
     d3d9Desc.Pool = Pool;
-    d3d9Desc.FVF = FVF;
+    d3d9Desc.FVF = FVF;https://www.youtube.com/watch?v=Zsu0RGeJkQg&t=907s
     d3d9Desc.Usage = Usage;
 
     *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, resource, d3d9Desc));

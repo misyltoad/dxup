@@ -12,7 +12,8 @@ d3d9_main_src = [
   'd3d9_state_cache.cpp',
   'd3d9_state.cpp',
   'd3d9_renderer.cpp',
-  'd3d11_dynamic_buffer.cpp'
+  'd3d11_dynamic_buffer.cpp',
+  'd3d9_texture.cpp'
 ]
 
 d3d9_deps = [ lib_d3d11, lib_dxgi, lib_shlwapi, util_dep, dx9asm_dep ]
