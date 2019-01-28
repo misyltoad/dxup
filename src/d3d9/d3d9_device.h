@@ -156,21 +156,6 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX *pFullscreenDisplayMode) override;
     HRESULT STDMETHODCALLTYPE GetDisplayModeEx(UINT iSwapChain, D3DDISPLAYMODEEX* pMode, D3DDISPLAYROTATION* pRotation) override;
 
-    HRESULT CreateTextureInternal(
-      D3DRESOURCETYPE Type,
-      bool FakeSurface,
-      UINT Width,
-      UINT Height,
-      UINT Levels,
-      DWORD Usage,
-      D3DFORMAT Format,
-      D3DPOOL Pool,
-      D3DMULTISAMPLE_TYPE MultiSample,
-      DWORD MultisampleQuality,
-      BOOL Discard,
-      void** ppTexture,
-      HANDLE* pSharedHandle);
-
     void GetParent(Direct3D9Ex** parent);
     ID3D11DeviceContext* GetContext();
     ID3D11Device* GetD3D11Device();
@@ -185,6 +170,10 @@ namespace dxup {
       DWORD behaviourFlags,
       IDirect3DDevice9Ex** outDevice
       );
+
+    inline bool checkFormat(DWORD usage, D3DRESOURCETYPE type, D3DFORMAT format) {
+      return m_parent->CheckDeviceFormat(m_adapterNum, m_deviceType, D3DFMT_X8R8G8B8, usage, type, format) == D3D_OK;
+    }
 
     inline D3D9ImmediateRenderer* GetRenderer() {
       return m_renderer;

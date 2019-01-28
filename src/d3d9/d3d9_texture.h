@@ -66,7 +66,6 @@ namespace dxup {
 
   public:
 
-    Direct3DTexture9(bool singletonSurface, Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
     ~Direct3DTexture9();
 
     HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) override;
@@ -75,11 +74,19 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level) override;
     HRESULT STDMETHODCALLTYPE AddDirtyRect(const RECT* pDirtyRect) override;
 
-    bool IsFakeSurface();
+    static HRESULT Create(Direct3DDevice9Ex* device,
+                          UINT width,
+				          UINT height,
+                          UINT levels,
+                          DWORD usage,
+                          D3DFORMAT format,
+                          D3DPOOL pool,
+                          Direct3DTexture9** outTexture);
 
   private:
 
-    bool m_singletonSurface;
+	Direct3DTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
+
     std::vector<IDirect3DSurface9*> m_surfaces;
 
   };
@@ -89,7 +96,6 @@ namespace dxup {
 
   public:
 
-    Direct3DCubeTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
     ~Direct3DCubeTexture9();
 
     HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) override;
@@ -98,9 +104,20 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE UnlockRect(D3DCUBEMAP_FACES FaceType, UINT Level) override;
     HRESULT STDMETHODCALLTYPE AddDirtyRect(D3DCUBEMAP_FACES FaceType, const RECT* pDirtyRect) override;
 
+    static HRESULT Create(Direct3DDevice9Ex* device,
+                          UINT edgeLength,
+                          UINT levels,
+                          DWORD usage,
+                          D3DFORMAT format,
+                          D3DPOOL pool,
+                          Direct3DCubeTexture9** outTexture);
+
   private:
+
+    Direct3DCubeTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
 
     std::vector<IDirect3DSurface9*> m_surfaces;
 
   };
+
 }

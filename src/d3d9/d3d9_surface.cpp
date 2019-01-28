@@ -6,34 +6,21 @@
 
 namespace dxup {
 
-  Direct3DSurface9::Direct3DSurface9(bool singletonSurface, UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc)
+  Direct3DSurface9::Direct3DSurface9(UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc)
     : Direct3DSurface9Base{ device, nullptr, desc }
     , m_container{ container }
     , m_slice{ slice }
     , m_mip{ mip }
     , m_rtView{ nullptr }
-    , m_rtViewSRGB{ nullptr }
-    , m_singletonSurface{ singletonSurface }
-  {
-    if (singletonSurface && m_container != nullptr)
-        m_container->AddRef();
-
+    , m_rtViewSRGB{ nullptr } {
     this->SetResource(resource);
   }
 
-  Direct3DSurface9::~Direct3DSurface9() {
-    if (m_singletonSurface && m_container != nullptr)
-      m_container->Release();
-  }
-
   HRESULT Direct3DSurface9::GetContainer(REFIID riid, void** ppContainer) {
+    InitReturnPtr(ppContainer);
+
     if (ppContainer == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "GetContainer: ppContainer was nullptr.");
-
-    if (riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IDirect3DDevice9Ex)) {
-      *ppContainer = (void*)ref(m_device);
-      return D3D_OK;
-    }
 
     if (m_container == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "GetContainer: m_container was nullptr.");
@@ -216,5 +203,75 @@ namespace dxup {
     rect.right = box->right;
     rect.bottom = box->bottom;
     return this->isRectValid(&rect);
+  }
+
+  HRESULT Direct3DSurface9::Create(Direct3DDevice9Ex* device,
+                                   UINT width,
+                                   UINT height,
+                                   DWORD usage,
+                                   D3DFORMAT format,
+                                   D3DMULTISAMPLE_TYPE multisample,
+                                   BOOL discard,
+                                   Direct3DSurface9** outSurface) {
+    InitReturnPtr(outSurface);
+
+    if (width == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: width was 0.");
+
+    if (height == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: height was 0.");
+
+    if (!device->checkFormat(usage, D3DRTYPE_SURFACE, format))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: unsupported format (%d).", format);
+
+    if (!outSurface)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: outSurface was nullptr.");
+
+    D3D11_TEXTURE2D_DESC desc;
+    desc.Width = width;
+    desc.Height = height;
+    desc.Format = convert::format(format);
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.CPUAccessFlags = 0;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+
+    desc.SampleDesc.Count = std::clamp((UINT)multisample, 1u, 16u);
+    desc.SampleDesc.Quality = 0;
+    desc.BindFlags = 0;
+    desc.MiscFlags = 0;
+
+    if (!(usage & D3DUSAGE_DEPTHSTENCIL))
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+    desc.BindFlags |= (usage & D3DUSAGE_RENDERTARGET) ? D3D11_BIND_RENDER_TARGET : 0;
+    desc.BindFlags |= (usage & D3DUSAGE_DEPTHSTENCIL) ? D3D11_BIND_DEPTH_STENCIL : 0;
+
+    Com<ID3D11Texture2D> texture;
+    HRESULT result = device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &texture);
+
+    if (result == E_OUTOFMEMORY)
+      return log::d3derr(D3DERR_OUTOFVIDEOMEMORY, "Direct3DSurface9::Create: out of vram.");
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: failed to create D3D11 texture. D3DFORMAT: %d, DXGI_FORMAT: %d", format, desc.Format); // TODO: stringify
+
+    DXUPResource * resource = DXUPResource::Create(device, texture.ptr(), usage, format);
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::Create: failed to create DXUP resource.");
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Format = format;
+    d3d9Desc.Pool = D3DPOOL_DEFAULT;
+    d3d9Desc.Usage = usage;
+    d3d9Desc.Discard = discard;
+
+    *outSurface = ref(Direct3DSurface9::Wrap(0, 0, device, device, resource, d3d9Desc));
+
+    return D3D_OK;
+  }
+
+  Direct3DSurface9* Direct3DSurface9::Wrap(UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc) {
+    return new Direct3DSurface9(slice, mip, device, container, resource, desc);
   }
 }

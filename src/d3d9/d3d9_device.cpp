@@ -635,99 +635,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateTexture(UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DTexture9** ppTexture, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    return CreateTextureInternal(D3DRTYPE_TEXTURE, false, Width, Height, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, (void**)ppTexture, pSharedHandle);
-  }
-
-  HRESULT Direct3DDevice9Ex::CreateTextureInternal(
-    D3DRESOURCETYPE Type,
-    bool singletonSurface,
-    UINT Width, 
-    UINT Height,
-    UINT Levels,
-    DWORD Usage,
-    D3DFORMAT Format,
-    D3DPOOL Pool, 
-    D3DMULTISAMPLE_TYPE MultiSample,
-    DWORD MultisampleQuality,
-    BOOL Discard,
-    void** ppTexture,
-    HANDLE* pSharedHandle) {
-    InitReturnPtr(ppTexture);
-    InitReturnPtr(pSharedHandle);
-
-    if (Width == 0)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: width was 0.");
-
-    if (Height == 0)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: height was 0.");
-
-    if (Usage & D3DUSAGE_AUTOGENMIPMAP && Levels > 1)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: mipmap generation requested with more than 1 level.");
-
-    if (m_parent->CheckDeviceFormat(m_adapterNum, m_deviceType, D3DFMT_X8R8G8B8, Usage, Type, Format) != D3D_OK)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: unsupported format (%d).", Format);
-
-    if (!ppTexture)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: ppTexture was nullptr.");
-
-    D3D11_USAGE d3d11Usage = convert::usage(Pool, Usage);
-
-    if (Type == D3DRTYPE_CUBETEXTURE)
-      d3d11Usage = D3D11_USAGE_DEFAULT;
-
-    D3D11_TEXTURE2D_DESC desc;
-    desc.Width = Width;
-    desc.Height = Height;
-    desc.Format = convert::format(Format);
-    desc.Usage = d3d11Usage;
-    desc.CPUAccessFlags = Type == D3DRTYPE_CUBETEXTURE ? 0 : convert::cpuFlags(Pool, Usage);
-    desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : Levels;
-    desc.ArraySize = Type == D3DRTYPE_CUBETEXTURE ? 6 : 1;
-
-    //UINT sampleCount = std::max(1u, (UINT)MultiSample);
-
-    bool isDepthStencil = Usage & D3DUSAGE_DEPTHSTENCIL;
-    bool isRenderTarget = Usage & D3DUSAGE_RENDERTARGET;
-
-    //m_device->CheckMultisampleQualityLevels(desc.Format, sampleCount, )
-    desc.SampleDesc.Count = 1;//sampleCount;
-    desc.SampleDesc.Quality = 0;//equateMultisampleQuality ? sampleCount : 0;
-    desc.BindFlags = 0;
-    desc.MiscFlags = Type == D3DRTYPE_CUBETEXTURE ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
-
-    if (!isDepthStencil && d3d11Usage != D3D11_USAGE_STAGING)
-      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
-    if (d3d11Usage == D3D11_USAGE_DEFAULT) {
-
-      desc.BindFlags |= isRenderTarget ? D3D11_BIND_RENDER_TARGET : 0;
-      desc.BindFlags |= isDepthStencil ? D3D11_BIND_DEPTH_STENCIL : 0;
-
-      desc.MiscFlags |= Usage & D3DUSAGE_AUTOGENMIPMAP ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
-    }
-
-    Com<ID3D11Texture2D> texture;
-    HRESULT result = m_device->CreateTexture2D(&desc, nullptr, &texture);
-
-    if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: failed to create D3D11 texture. D3DFORMAT: %d, DXGI_FORMAT: %d", Format, desc.Format); // TODO: stringify
-
-    DXUPResource* resource = DXUPResource::Create(this, texture.ptr(), Usage, Format);
-    if (resource == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateTextureInternal: failed to create DXUP resource.");
-
-    D3D9ResourceDesc d3d9Desc;
-    d3d9Desc.Discard = Discard;
-    d3d9Desc.Format = Format;
-    d3d9Desc.Pool = Pool;
-    d3d9Desc.Usage = Usage;
-
-    if (Type == D3DRTYPE_CUBETEXTURE)
-      *ppTexture = ref(new Direct3DCubeTexture9(this, resource, d3d9Desc));
-    else
-      *ppTexture = ref(new Direct3DTexture9(singletonSurface, this, resource, d3d9Desc));
-
-    return D3D_OK;
+    return Direct3DTexture9::Create(this, Width, Height, Levels, Usage, Format, Pool, (Direct3DTexture9**)ppTexture);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVolumeTexture(UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DVolumeTexture9** ppVolumeTexture, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
@@ -738,7 +646,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateCubeTexture(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    return CreateTextureInternal(D3DRTYPE_CUBETEXTURE, false, EdgeLength, EdgeLength, Levels, Usage, Format, Pool, D3DMULTISAMPLE_NONMASKABLE, 0, false, (void**)ppCubeTexture, pSharedHandle);
+    return Direct3DCubeTexture9::Create(this, EdgeLength, Levels, Usage, Format, Pool, (Direct3DCubeTexture9**)ppCubeTexture);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVertexBuffer(UINT Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
@@ -815,34 +723,12 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateRenderTarget(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Lockable, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    InitReturnPtr(ppSurface);
-    if (ppSurface == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateRenderTarget: ppSurface was nullptr.");
-
-    Com<IDirect3DTexture9> d3d9Texture;
-
-    // NOTE(Josh): May need to handle Lockable in future.
-    HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_RENDERTARGET, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, false, (void**) &d3d9Texture, pSharedHandle);
-
-    if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateRenderTarget: failed to create rendertarget.");
-
-    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
+    return Direct3DSurface9::Create(this, Width, Height, D3DUSAGE_RENDERTARGET, Format, MultiSample, false, (Direct3DSurface9 **)ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateDepthStencilSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    InitReturnPtr(ppSurface);
-    if (ppSurface == nullptr)
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateDepthStencilSurface: ppSurface was nullptr.");
-
-    Com<IDirect3DTexture9> d3d9Texture;
-    HRESULT result = CreateTextureInternal(D3DRTYPE_TEXTURE, true, Width, Height, 1, D3DUSAGE_DEPTHSTENCIL, Format, D3DPOOL_DEFAULT, MultiSample, MultisampleQuality, Discard, (void**) &d3d9Texture, pSharedHandle);
-
-    if (FAILED(result))
-      return log::d3derr(D3DERR_INVALIDCALL, "CreateDepthStencilSurface: failed to create depth stencil.");
-
-    return d3d9Texture->GetSurfaceLevel(0, ppSurface);
+    return Direct3DSurface9::Create(this, Width, Height, D3DUSAGE_DEPTHSTENCIL, Format, MultiSample, Discard, (Direct3DSurface9**)ppSurface);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::UpdateSurface(IDirect3DSurface9* pSourceSurface, CONST RECT* pSourceRect, IDirect3DSurface9* pDestinationSurface, CONST POINT* pDestPoint) {
     CriticalSection cs(this);

@@ -5,27 +5,22 @@ namespace dxup {
 
   // Direct3DTexture9
 
-  Direct3DTexture9::Direct3DTexture9(bool singletonSurface, Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc)
-    : Direct3DTexture9Base{ device, resource, desc }
-    , m_singletonSurface{ singletonSurface } {
+  Direct3DTexture9::Direct3DTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc)
+    : Direct3DTexture9Base{ device, resource, desc } {
     m_surfaces.reserve(resource->GetSubresources());
 
     for (UINT mip = 0; mip < resource->GetMips(); mip++) {
-      Direct3DSurface9* surface = new Direct3DSurface9(singletonSurface, 0, mip, device, this, resource, desc);
-
-      if (!singletonSurface)
-        surface->AddRefPrivate();
+      Direct3DSurface9* surface = Direct3DSurface9::Wrap(0, mip, device, this, resource, desc);
+      surface->AddRefPrivate();
 
       m_surfaces.push_back(surface);
     }
   }
 
   Direct3DTexture9::~Direct3DTexture9() {
-    if (!m_singletonSurface) {
-      for (IDirect3DSurface9* surface : m_surfaces) {
-        Direct3DSurface9* internalSurface = reinterpret_cast<Direct3DSurface9*>(surface);
-        internalSurface->ReleasePrivate();
-      }
+    for (IDirect3DSurface9* surface : m_surfaces) {
+      Direct3DSurface9* internalSurface = reinterpret_cast<Direct3DSurface9*>(surface);
+      internalSurface->ReleasePrivate();
     }
   }
 
@@ -85,8 +80,76 @@ namespace dxup {
     return D3D_OK;
   }
 
-  inline bool Direct3DTexture9::IsFakeSurface() {
-    return m_singletonSurface;
+  HRESULT Direct3DTexture9::Create(Direct3DDevice9Ex* device,
+                                   UINT width,
+				                   UINT height,
+                                   UINT levels,
+                                   DWORD usage,
+                                   D3DFORMAT format,
+                                   D3DPOOL pool,
+                                   Direct3DTexture9** outTexture) {
+    InitReturnPtr(outTexture);
+
+    if (width == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: width was 0.");
+
+    if (height == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: height was 0.");
+
+    if (usage & D3DUSAGE_AUTOGENMIPMAP && levels > 1)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: mipmap generation requested with more than 1 level.");
+
+    if (!device->checkFormat(usage, D3DRTYPE_TEXTURE, format))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: unsupported format (%d).", format);
+
+    if (outTexture == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: outTexture was nullptr.");
+
+    D3D11_USAGE d3d11Usage = convert::usage(pool, usage);
+
+    D3D11_TEXTURE2D_DESC desc;
+    desc.Width = width;
+    desc.Height = height;
+    desc.Format = convert::format(format);
+    desc.Usage = d3d11Usage;
+    desc.CPUAccessFlags = convert::cpuFlags(pool, usage);
+    desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : levels;
+    desc.ArraySize = 1;
+
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.BindFlags = 0;
+    desc.MiscFlags = 0;
+
+    if (!(usage & D3DUSAGE_DEPTHSTENCIL) && d3d11Usage != D3D11_USAGE_STAGING)
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+    desc.BindFlags |= ( (usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP) ) ? D3D11_BIND_RENDER_TARGET : 0;
+    desc.BindFlags |= (usage & D3DUSAGE_DEPTHSTENCIL) ? D3D11_BIND_DEPTH_STENCIL : 0;
+
+    desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+
+    Com<ID3D11Texture2D> texture;
+    HRESULT result = device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &texture);
+
+    if (result == E_OUTOFMEMORY)
+      return log::d3derr(D3DERR_OUTOFVIDEOMEMORY, "Direct3DTexture9::Create: out of vram.");
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: failed to create D3D11 texture. D3DFORMAT: %d, DXGI_FORMAT: %d", format, desc.Format); // TODO: stringify
+
+    DXUPResource* resource = DXUPResource::Create(device, texture.ptr(), usage, format);
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: failed to create DXUP resource.");
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Format = format;
+    d3d9Desc.Pool = pool;
+    d3d9Desc.Usage = usage;
+
+    *outTexture = ref(new Direct3DTexture9(device, resource, d3d9Desc));
+
+    return D3D_OK;
   }
 
   // Direct3DCubeTexture9
@@ -98,7 +161,7 @@ namespace dxup {
     // This should allow us to match D3D11CalcSubresource.
     for (UINT slice = 0; slice < 6; slice++) {
       for (UINT mip = 0; mip < resource->GetMips(); mip++) {
-        Direct3DSurface9* surface = new Direct3DSurface9(false, slice, mip, device, this, resource, desc);
+        Direct3DSurface9* surface = Direct3DSurface9::Wrap(slice, mip, device, this, resource, desc);
         surface->AddRefPrivate();
 
         m_surfaces.push_back(surface);
@@ -168,4 +231,67 @@ namespace dxup {
 
     return D3D_OK;
   }
+
+  HRESULT Direct3DCubeTexture9::Create(Direct3DDevice9Ex* device,
+                                       UINT edgeLength,
+                                       UINT levels,
+                                       DWORD usage,
+                                       D3DFORMAT format,
+                                       D3DPOOL pool,
+                                       Direct3DCubeTexture9** outTexture) {
+    InitReturnPtr(outTexture);
+
+    if (edgeLength == 0)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: edgeLength was 0.");
+
+    if (usage& D3DUSAGE_AUTOGENMIPMAP&& levels > 1)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: mipmap generation requested with more than 1 level.");
+
+    if (!device->checkFormat(usage, D3DRTYPE_CUBETEXTURE, format))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: unsupported format (%d).", format);
+
+    if (outTexture == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: outTexture was nullptr.");
+
+    D3D11_TEXTURE2D_DESC desc;
+    desc.Width = edgeLength;
+    desc.Height = edgeLength;
+    desc.Format = convert::format(format);
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.CPUAccessFlags = 0;
+    desc.MipLevels = levels;
+    desc.ArraySize = 6;
+
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.BindFlags = 0;
+    desc.MiscFlags = 0;
+
+    // Todo! Investigate below flags:
+    desc.BindFlags |= ((usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP)) ? D3D11_BIND_RENDER_TARGET : 0;
+    desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+
+    Com<ID3D11Texture2D> texture;
+    HRESULT result = device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &texture);
+
+    if (result == E_OUTOFMEMORY)
+      return log::d3derr(D3DERR_OUTOFVIDEOMEMORY, "Direct3DCubeTexture9::Create: out of vram.");
+
+    if (FAILED(result))
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: failed to create D3D11 texture. D3DFORMAT: %d, DXGI_FORMAT: %d", format, desc.Format); // TODO: stringify
+
+    DXUPResource * resource = DXUPResource::Create(device, texture.ptr(), usage, format);
+    if (resource == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: failed to create DXUP resource.");
+
+    D3D9ResourceDesc d3d9Desc;
+    d3d9Desc.Format = format;
+    d3d9Desc.Pool = pool;
+    d3d9Desc.Usage = usage;
+
+    *outTexture = ref(new Direct3DCubeTexture9(device, resource, d3d9Desc));
+
+    return D3D_OK;
+  }
+
 }

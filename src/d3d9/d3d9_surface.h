@@ -13,9 +13,6 @@ namespace dxup {
     
   public:
 
-    Direct3DSurface9(bool fakeSurface, UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc);
-    ~Direct3DSurface9();
-
     HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppv) override;
     HRESULT WINAPI GetContainer(REFIID riid, void** ppContainer) override;
     HRESULT WINAPI GetDesc(D3DSURFACE_DESC *pDesc) override;
@@ -42,7 +39,20 @@ namespace dxup {
     bool isRectValid(const RECT* rect);
     bool isBoxValid(const D3D11_BOX* box);
 
+    static HRESULT Create(Direct3DDevice9Ex* device,
+                          UINT width,
+                          UINT height,
+                          DWORD usage,
+                          D3DFORMAT format,
+                          D3DMULTISAMPLE_TYPE multisample,
+                          BOOL discard,
+                          Direct3DSurface9** outSurface);
+
+    static Direct3DSurface9* Wrap(UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc);
+
   private:
+
+    Direct3DSurface9(UINT slice, UINT mip, Direct3DDevice9Ex* device, IUnknown* container, DXUPResource* resource, const D3D9ResourceDesc& desc);
 
     IUnknown* m_container;
 
@@ -50,8 +60,6 @@ namespace dxup {
     Com<ID3D11RenderTargetView> m_rtView;
     Com<ID3D11RenderTargetView> m_rtViewSRGB;
     Com<ID3D11DepthStencilView> m_dsView;
-
-    bool m_singletonSurface;
 
     UINT m_slice;
     UINT m_mip;

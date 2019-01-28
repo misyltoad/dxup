@@ -90,7 +90,7 @@ namespace dxup {
       if (m_buffers[i] != nullptr)
         m_buffers[i]->SetResource(resource);
       else
-        m_buffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
+        m_buffers[i] = Direct3DSurface9::Wrap(0, 0, m_device, this, resource, d3d9Desc);
 
       if (m_rtRequired) {
         D3D11_TEXTURE2D_DESC rtDesc;
@@ -119,7 +119,7 @@ namespace dxup {
       if (m_exposedBuffers[i] != nullptr)
         m_exposedBuffers[i]->SetResource(resource);
       else
-        m_exposedBuffers[i] = new Direct3DSurface9(false, 0, 0, m_device, this, resource, d3d9Desc);
+        m_exposedBuffers[i] = Direct3DSurface9::Wrap(0, 0, m_device, this, resource, d3d9Desc);
     }
 
     Com<IDXGIOutput> output;

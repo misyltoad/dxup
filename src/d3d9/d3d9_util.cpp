@@ -189,7 +189,7 @@ namespace dxup {
       if (pool == D3DPOOL_SYSTEMMEM || pool == D3DPOOL_SCRATCH)
         return D3D11_USAGE_STAGING;
 
-      if (usage & D3DUSAGE_DYNAMIC)
+      if (usage & D3DUSAGE_DYNAMIC && !(usage & D3DUSAGE_RENDERTARGET) && !(usage & D3DUSAGE_DEPTHSTENCIL) && !(usage & D3DUSAGE_AUTOGENMIPMAP))
         return D3D11_USAGE_DYNAMIC;
 
       return D3D11_USAGE_DEFAULT;
