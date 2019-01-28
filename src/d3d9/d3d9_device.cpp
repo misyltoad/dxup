@@ -676,7 +676,7 @@ namespace dxup {
 
     D3D9ResourceDesc d3d9Desc;
     d3d9Desc.Pool = Pool;
-    d3d9Desc.FVF = FVF;https://www.youtube.com/watch?v=Zsu0RGeJkQg&t=907s
+    d3d9Desc.FVF = FVF;
     d3d9Desc.Usage = Usage;
 
     *ppVertexBuffer = ref(new Direct3DVertexBuffer9(this, resource, d3d9Desc));
