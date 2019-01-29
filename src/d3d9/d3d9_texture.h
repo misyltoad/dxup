@@ -3,6 +3,7 @@
 #include "d3d9_d3d11_resource.h"
 #include "d3d9_resource.h"
 #include "d3d9_surface.h"
+#include "d3d9_volume.h"
 #include <vector>
 
 namespace dxup {
@@ -117,6 +118,37 @@ namespace dxup {
     Direct3DCubeTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
 
     std::vector<IDirect3DSurface9*> m_surfaces;
+
+  };
+
+  using Direct3DVolumeTexture9Base = Direct3DBaseTexture9<D3DRTYPE_VOLUMETEXTURE, IDirect3DVolumeTexture9>;
+  class Direct3DVolumeTexture9 final : public Direct3DVolumeTexture9Base {
+
+  public:
+
+    ~Direct3DVolumeTexture9();
+
+    HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DVOLUME_DESC* pDesc) override;
+    HRESULT STDMETHODCALLTYPE GetVolumeLevel(UINT Level, IDirect3DVolume9** ppVolumeLevel) override;
+    HRESULT STDMETHODCALLTYPE LockBox(UINT Level, D3DLOCKED_BOX* pLockedBox, const D3DBOX* pBox, DWORD Flags) override;
+    HRESULT STDMETHODCALLTYPE UnlockBox(UINT Level) override;
+    HRESULT STDMETHODCALLTYPE AddDirtyBox(const D3DBOX* pDirtyBox) override;
+
+    static HRESULT Create(Direct3DDevice9Ex* device,
+                          UINT width,
+                          UINT height,
+                          UINT depth,
+                          UINT levels,
+                          DWORD usage,
+                          D3DFORMAT format,
+                          D3DPOOL pool,
+                          Direct3DVolumeTexture9** outTexture);
+
+  private:
+
+    Direct3DVolumeTexture9(Direct3DDevice9Ex* device, DXUPResource* resource, const D3D9ResourceDesc& desc);
+
+    std::vector<IDirect3DVolume9*> m_volumes;
 
   };
 

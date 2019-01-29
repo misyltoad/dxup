@@ -3,6 +3,7 @@ d3d9_main_src = [
   'd3d9_interface.cpp',
   'd3d9_main.cpp',
   'd3d9_surface.cpp',
+  'd3d9_volume.cpp',
   'd3d9_swapchain.cpp',
   'd3d9_util.cpp',
   'd3d9_format.cpp',

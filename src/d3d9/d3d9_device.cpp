@@ -640,8 +640,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateVolumeTexture(UINT Width, UINT Height, UINT Depth, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DVolumeTexture9** ppVolumeTexture, HANDLE* pSharedHandle) {
     CriticalSection cs(this);
 
-    log::stub("Direct3DDevice9Ex::CreateVolumeTexture");
-    return D3D_OK;
+    return Direct3DVolumeTexture9::Create(this, Width, Height, Depth, Levels, Usage, Format, Pool, (Direct3DVolumeTexture9**)ppVolumeTexture);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::CreateCubeTexture(UINT EdgeLength, UINT Levels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, IDirect3DCubeTexture9** ppCubeTexture, HANDLE* pSharedHandle) {
     CriticalSection cs(this);

@@ -166,13 +166,30 @@ namespace dxup {
 
         D3D11_BOX box = { 0 };
         if (useRect) {
-          box.left = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Left);
-          box.top = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Top);
-          box.right = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Right);
-          box.bottom = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Bottom);
+          D3D11_RESOURCE_DIMENSION dimension;
+          GetResource()->GetType(&dimension);
 
-          box.front = 0;
-          box.back = 1;
+          if (dimension == D3D11_RESOURCE_DIMENSION_BUFFER) {
+            box.top = 0;
+            box.bottom = 1;
+            box.left = m_stagingBoxes[subresource].Left;
+            box.right = m_stagingBoxes[subresource].Right;
+          }
+          else {
+            box.top = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Top);
+            box.bottom = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Bottom);
+            box.left = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Left);
+            box.right = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Right);
+          }
+
+          if (dimension == D3D11_RESOURCE_DIMENSION_TEXTURE2D || dimension == D3D11_RESOURCE_DIMENSION_BUFFER) {
+            box.front = 0;
+            box.back = 1;
+          }
+          else {
+            box.front = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Front);
+            box.back = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Back);
+          }
         }
 
         if (delta & (1ull << mip))

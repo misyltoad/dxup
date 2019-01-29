@@ -23,6 +23,41 @@ namespace dxup {
     return false;
   }
 
+  DXUPResource* DXUPResource::CreateTexture3D(Direct3DDevice9Ex* device, ID3D11Texture3D* texture, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
+    D3D11_TEXTURE3D_DESC desc;
+    texture->GetDesc(&desc);
+
+    Com<ID3D11ShaderResourceView> srv;
+    Com<ID3D11ShaderResourceView> srvSRGB;
+    if (desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+
+      D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+      srvDesc.ViewDimension = D3D10_1_SRV_DIMENSION_TEXTURE3D;
+      srvDesc.Texture3D.MipLevels = 0xFFFFFFFF;
+      srvDesc.Texture3D.MostDetailedMip = 0;
+
+      srvDesc.Format = desc.Format;
+      srvDesc.Format = convert::makeUntypeless(srvDesc.Format, false);
+      device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srv);
+
+      srvDesc.Format = desc.Format;
+      srvDesc.Format = convert::makeUntypeless(srvDesc.Format, true);
+      device->GetD3D11Device()->CreateShaderResourceView(texture, &srvDesc, &srvSRGB);
+    }
+
+    Com<ID3D11Texture3D> stagingTexture;
+    if (NeedsStaging(desc.Usage, d3d9Usage, d3d9Format)) {
+      makeStagingDesc(desc, d3d9Usage, d3d9Format);
+
+      device->GetD3D11Device()->CreateTexture3D(&desc, nullptr, &stagingTexture);
+
+      if (d3d9Format == D3DFMT_R8G8B8)
+        log::warn("CreateTexture3D: has format D3DFMT_R8G8B8.");
+    }
+
+    return new DXUPResource(device, texture, stagingTexture.ptr(), nullptr, srv.ptr(), srvSRGB.ptr(), desc.Format, 1, std::max(desc.MipLevels, 1u), desc.Usage == D3D11_USAGE_DYNAMIC);
+  }
+
   DXUPResource* DXUPResource::CreateTexture2D(Direct3DDevice9Ex* device, ID3D11Texture2D* texture, DWORD d3d9Usage, D3DFORMAT d3d9Format) {
     D3D11_TEXTURE2D_DESC desc;
     texture->GetDesc(&desc);
@@ -86,6 +121,8 @@ namespace dxup {
     D3D11_RESOURCE_DIMENSION dimension;
     resource->GetType(&dimension);
 
+    if (dimension == D3D11_RESOURCE_DIMENSION_TEXTURE3D)
+      return CreateTexture3D(device, useAs<ID3D11Texture3D>(resource), d3d9Usage, d3d9Format);
     if (dimension == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
       return CreateTexture2D(device, useAs<ID3D11Texture2D>(resource), d3d9Usage, d3d9Format);
     else if (dimension == D3D11_RESOURCE_DIMENSION_BUFFER)
