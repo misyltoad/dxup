@@ -133,8 +133,8 @@ namespace dxup {
       uint8_t* write = (uint8_t*)fixupRes.pData;
 
       // TODO: Investigate if this is right or good enough.
-      uint32_t mippedHeight = desc.Height >> mip;
-      uint32_t mippedWidth = desc.Width >> mip;
+      uint32_t mippedHeight = std::max(1u, desc.Height >> mip);
+      uint32_t mippedWidth = std::max(1u, desc.Width >> mip);
 
       for (uint32_t y = 0; y < mippedHeight; y++) {
         for (uint32_t x = 0; x < mippedWidth; x++) {
