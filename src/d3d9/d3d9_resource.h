@@ -38,18 +38,18 @@ namespace dxup {
     HRESULT STDMETHODCALLTYPE FreePrivateData(REFGUID refguid) override {
       return m_map.FreePrivateData(refguid);
     }
-    DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) override {
+    DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) {
       DWORD oldPriority = m_d3d9Desc.Priority;
       m_d3d9Desc.Priority = PriorityNew;
       return oldPriority;
     }
-    DWORD STDMETHODCALLTYPE GetPriority() override {
+    DWORD STDMETHODCALLTYPE GetPriority() {
       return m_d3d9Desc.Priority;
     }
-    void STDMETHODCALLTYPE PreLoad() override {
+    void STDMETHODCALLTYPE PreLoad() {
       log::stub("Direct3DResource9::PreLoad");
     }
-    D3DRESOURCETYPE STDMETHODCALLTYPE GetType() override {
+    D3DRESOURCETYPE STDMETHODCALLTYPE GetType() {
       return ResourceType;
     }
 

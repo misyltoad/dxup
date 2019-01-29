@@ -32,26 +32,28 @@ namespace dxup {
       if (ppbData == nullptr)
         return log::d3derr(D3DERR_INVALIDCALL, "ReturnPtr for buffer lock was null!");
 
-      D3DLOCKED_RECT lockedRect;
+      D3DLOCKED_BOX lockedBox;
 
-      RECT rectToLock;
-      rectToLock.top = 0;
-      rectToLock.bottom = 1;
-      rectToLock.left = OffsetToLock;
-      rectToLock.right = OffsetToLock + SizeToLock;
+      D3DBOX boxToLock;
+      boxToLock.Top = 0;
+      boxToLock.Bottom = 1;
+      boxToLock.Left = OffsetToLock;
+      boxToLock.Right = OffsetToLock + SizeToLock;
+      boxToLock.Front = 0;
+      boxToLock.Back = 1;
       bool degenerate = OffsetToLock == 0 && SizeToLock == 0;
 
-      HRESULT result = this->GetDXUPResource()->D3D9LockRect(0, 0, &lockedRect, degenerate ? nullptr : &rectToLock, Flags, this->GetD3D9Desc().Usage);
+      HRESULT result = this->GetDXUPResource()->D3D9LockBox(0, 0, &lockedBox, degenerate ? nullptr : &boxToLock, Flags, this->GetD3D9Desc().Usage);
       if (FAILED(result))
         return result;
 
-      *ppbData = lockedRect.pBits;
+      *ppbData = lockedBox.pBits;
 
       return D3D_OK;
     }
 
     HRESULT STDMETHODCALLTYPE Unlock() override {
-      return this->GetDXUPResource()->D3D9UnlockRect(0, 0);
+      return this->GetDXUPResource()->D3D9UnlockBox(0, 0);
     }
   };
 

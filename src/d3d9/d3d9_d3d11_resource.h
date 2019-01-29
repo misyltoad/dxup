@@ -54,8 +54,8 @@ namespace dxup {
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObj) override;
 
-    HRESULT D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage);
-    HRESULT D3D9UnlockRect(UINT slice, UINT mip);
+    HRESULT D3D9LockBox(UINT slice, UINT mip, D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags, DWORD Usage);
+    HRESULT D3D9UnlockBox(UINT slice, UINT mip);
 
     DXGI_FORMAT GetDXGIFormat();
 
@@ -87,8 +87,8 @@ namespace dxup {
     Com<ID3D11Resource> m_staging;
     Com<ID3D11Resource> m_fixup8888;
 
-    bool IsStagingRectDegenerate(UINT subresource);
-    std::vector<RECT> m_stagingRects;
+    bool IsStagingBoxDegenerate(UINT subresource);
+    std::vector<D3DBOX> m_stagingBoxes;
 
     bool m_dynamic;
 

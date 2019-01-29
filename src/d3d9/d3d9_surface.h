@@ -20,7 +20,6 @@ namespace dxup {
     HRESULT WINAPI UnlockRect() override;
     HRESULT WINAPI GetDC(HDC *phdc) override;
     HRESULT WINAPI ReleaseDC(HDC hdc) override;
-    D3DRESOURCETYPE STDMETHODCALLTYPE GetType() override;
 
     UINT GetMip();
     UINT GetSlice();

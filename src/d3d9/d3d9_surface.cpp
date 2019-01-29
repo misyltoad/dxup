@@ -61,14 +61,28 @@ namespace dxup {
     return D3D_OK;
   }
   HRESULT Direct3DSurface9::LockRect(D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
-    return m_resource->D3D9LockRect(m_slice, m_mip, pLockedRect, pRect, Flags, m_d3d9Desc.Usage);
+    if (pLockedRect == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "Direct3DSurface9::LockRect: pLockedRect was nullptr.");
+
+    D3DLOCKED_BOX lockedBox;
+    D3DBOX box;
+
+    if (pRect != nullptr) {
+      box.Top = pRect->top;
+      box.Left = pRect->left;
+      box.Bottom = pRect->bottom;
+      box.Right = pRect->right;
+      box.Front = 0;
+      box.Back = 1;
+    }
+    HRESULT result = m_resource->D3D9LockBox(m_slice, m_mip, &lockedBox, pRect != nullptr ? &box : nullptr, Flags, m_d3d9Desc.Usage);
+    pLockedRect->pBits = lockedBox.pBits;
+    pLockedRect->Pitch = lockedBox.RowPitch;
+
+    return result;
   }
   HRESULT Direct3DSurface9::UnlockRect() {
-    return m_resource->D3D9UnlockRect(m_slice, m_mip);
-  }
-
-  D3DRESOURCETYPE STDMETHODCALLTYPE Direct3DSurface9::GetType() {
-    return D3DRTYPE_SURFACE;
+    return m_resource->D3D9UnlockBox(m_slice, m_mip);
   }
 
   HRESULT Direct3DSurface9::GetDC(HDC *phdc) {

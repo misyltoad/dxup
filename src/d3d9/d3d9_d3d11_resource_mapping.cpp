@@ -3,8 +3,8 @@
 
 namespace dxup {
 
-  bool DXUPResource::IsStagingRectDegenerate(UINT subresource) {
-    return isRectDegenerate(m_stagingRects[subresource]);
+  bool DXUPResource::IsStagingBoxDegenerate(UINT subresource) {
+    return isBoxDegenerate(m_stagingBoxes[subresource]);
   }
 
   UINT DXUPResource::CalcMapFlags(UINT d3d9LockFlags) {
@@ -65,21 +65,22 @@ namespace dxup {
     }
   }
 
-  HRESULT DXUPResource::D3D9LockRect(UINT slice, UINT mip, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags, DWORD Usage) {
+  HRESULT DXUPResource::D3D9LockBox(UINT slice, UINT mip, D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags, DWORD Usage) {
     CriticalSection cs(m_device);
 
-    if (!pLockedRect)
-      return log::d3derr(D3DERR_INVALIDCALL, "Return value (locked rect) was null in D3D9LockRect.");
+    if (pLockedBox == nullptr)
+      return log::d3derr(D3DERR_INVALIDCALL, "D3D9LockBox: return value (locked box) was nullptr.");
 
-    pLockedRect->pBits = nullptr;
-    pLockedRect->Pitch = 0;
+    pLockedBox->pBits = nullptr;
+    pLockedBox->RowPitch = 0;
+    pLockedBox->SlicePitch = 0;
 
     UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
 
-    if (pRect == nullptr)
-      std::memset(&m_stagingRects[subresource], 0, sizeof(RECT));
+    if (pBox == nullptr)
+      std::memset(&m_stagingBoxes[subresource], 0, sizeof(D3DBOX));
     else
-      m_stagingRects[subresource] = *pRect;
+      m_stagingBoxes[subresource] = *pBox;
 
     if (!(Flags & D3DLOCK_DISCARD) && !(Flags & D3DLOCK_NOOVERWRITE) && !(Usage & D3DUSAGE_WRITEONLY))
       MakeClean();
@@ -97,17 +98,18 @@ namespace dxup {
 
     size_t offset = 0;
 
-    if (!IsStagingRectDegenerate(subresource))
-      offset = (m_stagingRects[subresource].top * res.RowPitch) + (m_stagingRects[subresource].left * bitsPerPixel(m_dxgiFormat) / 8);
+    if (!IsStagingBoxDegenerate(subresource))
+      offset = (m_stagingBoxes[subresource].Top * res.RowPitch) + (m_stagingBoxes[subresource].Left * bitsPerPixel(m_dxgiFormat) / 8);
 
     uint8_t* data = (uint8_t*)res.pData;
-    pLockedRect->pBits = &data[offset];
-    pLockedRect->Pitch = res.RowPitch;
+    pLockedBox->pBits = &data[offset];
+    pLockedBox->RowPitch = res.RowPitch;
+    pLockedBox->SlicePitch = res.DepthPitch;
 
     return D3D_OK;
   }
 
-  HRESULT DXUPResource::D3D9UnlockRect(UINT slice, UINT mip) {
+  HRESULT DXUPResource::D3D9UnlockBox(UINT slice, UINT mip) {
     CriticalSection cs(m_device);
 
     UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
@@ -160,14 +162,14 @@ namespace dxup {
       for (uint64_t mip = 0; mip < m_mips; mip++) {
         UINT subresource = D3D11CalcSubresource(mip, slice, m_mips);
 
-        bool useRect = !IsStagingRectDegenerate(subresource);
+        bool useRect = !IsStagingBoxDegenerate(subresource);
 
         D3D11_BOX box = { 0 };
         if (useRect) {
-          box.left = alignRectForFormat(true, m_dxgiFormat, m_stagingRects[subresource].left);
-          box.top = alignRectForFormat(true, m_dxgiFormat, m_stagingRects[subresource].top);
-          box.right = alignRectForFormat(false, m_dxgiFormat, m_stagingRects[subresource].right);
-          box.bottom = alignRectForFormat(false, m_dxgiFormat, m_stagingRects[subresource].bottom);
+          box.left = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Left);
+          box.top = alignRectForFormat(true, m_dxgiFormat, m_stagingBoxes[subresource].Top);
+          box.right = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Right);
+          box.bottom = alignRectForFormat(false, m_dxgiFormat, m_stagingBoxes[subresource].Bottom);
 
           box.front = 0;
           box.back = 1;

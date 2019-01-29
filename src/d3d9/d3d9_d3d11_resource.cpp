@@ -176,7 +176,7 @@ namespace dxup {
     , m_mips{ mips }
     , m_dxgiFormat{ dxgiFormat }
     , m_dynamic{ dynamic } {
-    m_stagingRects.resize(GetSubresources());
+    m_stagingBoxes.resize(GetSubresources());
     ResetMipMapTracking();
     for (uint32_t i = 0; i < 6; i++)
       m_dirtySubresources[i] = 0;

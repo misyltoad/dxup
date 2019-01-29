@@ -186,6 +186,10 @@ namespace dxup {
     return rect.top == 0 && rect.right == 0 && rect.left == 0 && rect.bottom == 0;
   }
 
+  inline bool isBoxDegenerate(const D3DBOX& box) {
+    return box.Top == 0 && box.Right == 0 && box.Left == 0 && box.Bottom == 0 && box.Front == 0 && box.Back == 0;
+  }
+
   template <typename T, typename J>
   T* useAs(J* obj) {
     return reinterpret_cast<T*>(obj);
