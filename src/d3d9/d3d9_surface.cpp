@@ -3,6 +3,7 @@
 #include "d3d9_texture.h"
 #include "d3d9_format.h"
 #include "../util/config.h"
+#include <algorithm>
 
 namespace dxup {
 
