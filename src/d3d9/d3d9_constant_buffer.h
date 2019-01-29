@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstring>
 #include "../util/vectypes.h"
+#include "d3d11_dynamic_buffer.h"
 
 namespace dxup {
 
@@ -28,28 +29,32 @@ namespace dxup {
 
     D3D9ConstantBuffer(ID3D11Device1* device, ID3D11DeviceContext1* context)
       : m_device{ device }
-      , m_context{ context } {
-      D3D11_BUFFER_DESC cbDesc;
-      cbDesc.ByteWidth = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants) + (4 * sizeof(D3D9ShaderConstants::boolConstants)); // TODO make bool constants a bitfield.
-      cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-      cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-      cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-      cbDesc.MiscFlags = 0;
-      cbDesc.StructureByteStride = 0;
+      , m_context{ context }
+      , m_buffer{ device, D3D11_BIND_CONSTANT_BUFFER }
+      , m_offset{ 0 } {
+    }
 
-      HRESULT result = m_device->CreateBuffer(&cbDesc, nullptr, &m_buffer);
-      if (FAILED(result))
-        log::fail("Couldn't create constant buffer.");
+    constexpr uint32_t getConstantSize() {
+      return 4 * sizeof(float);
+    }
 
-      bind();
+    constexpr uint32_t getLength() {
+      uint32_t length = sizeof(D3D9ShaderConstants::floatConstants) + sizeof(D3D9ShaderConstants::intConstants) + (4 * sizeof(D3D9ShaderConstants::boolConstants));
+      return alignTo(length, 16 * getConstantSize());
+    }
+
+    constexpr uint32_t getConstantCount() {
+      return getLength() / (getConstantSize());
     }
 
     void update(const D3D9ShaderConstants& constants) {
-      D3D11_MAPPED_SUBRESOURCE res;
-      m_context->Map(m_buffer.ptr(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+      const uint32_t length = getLength();
+      m_buffer.reserve(length); // TODO make bool constants a bitfield.
+
+      uint8_t* data;
+      m_buffer.map(m_context, (void**)(&data), length);
 
       // This can probably be consolidated into a single one.
-      uint8_t* data = (uint8_t*)res.pData;
       std::memcpy(data, constants.floatConstants.data(), sizeof(constants.floatConstants));
       std::memcpy(data + sizeof(constants.floatConstants), constants.intConstants.data(), sizeof(constants.intConstants));
 
@@ -59,15 +64,24 @@ namespace dxup {
           boolData[i * 4 + j] = constants.boolConstants[i];
       }
 
-      m_context->Unmap(m_buffer.ptr(), 0);
+      m_offset = m_buffer.unmap(m_context, length);
+      bind();
     }
 
     void bind() {
-      ID3D11Buffer* buffer = m_buffer.ptr();
+      const uint32_t constantOffset = m_offset / getConstantSize();
+      const uint32_t constantCount = getConstantCount();
+
+      ID3D11Buffer* buffer = m_buffer.getBuffer();
+
       if constexpr (Pixel)
-        m_context->PSSetConstantBuffers(0, 1, &buffer);
+        m_context->PSSetConstantBuffers1(0, 1, &buffer, &constantOffset, &constantCount);
       else
-        m_context->VSSetConstantBuffers(0, 1, &buffer);
+        m_context->VSSetConstantBuffers1(0, 1, &buffer, &constantOffset, &constantCount);
+    }
+
+    void endFrame() {
+      m_buffer.endFrame();
     }
 
   private:
@@ -76,7 +90,8 @@ namespace dxup {
     ID3D11Device1* m_device;
     ID3D11DeviceContext1* m_context;
 
-    Com<ID3D11Buffer> m_buffer;
+    D3D11DynamicBuffer m_buffer;
+    uint32_t m_offset;
   };
 
 }

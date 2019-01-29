@@ -593,6 +593,7 @@ namespace dxup {
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::Present(CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) {
     CriticalSection cs(this);
 
+    m_renderer->endFrame();
     return PresentEx(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, 0);
   }
   HRESULT STDMETHODCALLTYPE Direct3DDevice9Ex::GetBackBuffer(UINT iSwapChain, UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface9** ppBackBuffer) {

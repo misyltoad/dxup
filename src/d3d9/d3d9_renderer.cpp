@@ -46,6 +46,15 @@ namespace dxup {
       log::warn("D3D9ImmediateRenderer: failed to create blit ps.");
   }
 
+  void D3D9ImmediateRenderer::endFrame() {
+    m_fanIndexBuffer.endFrame();
+    m_upIndexBuffer.endFrame();
+    m_upVertexBuffer.endFrame();
+
+    m_vsConstants.endFrame();
+    m_psConstants.endFrame();
+  }
+
   HRESULT D3D9ImmediateRenderer::Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, D3DCOLOR Color, float Z, DWORD Stencil) {
     if (Count >= 1) {
       bool fullRectClear = pRects->x1 == 0 &&
@@ -96,40 +105,39 @@ namespace dxup {
     const uint32_t newPrimitiveCount = PrimitiveCount * 3;
     const uint32_t length = newPrimitiveCount * sizeof(uint16_t);
 
-    bool reserved = m_fanIndexBuffer.reserve(length);
-    if (indexed || m_fanIndexed || reserved) {
-      uint16_t* data = nullptr;
-      m_fanIndexBuffer.map(m_context, (void**)&data, length);
+    m_fanIndexBuffer.reserve(length);
 
-      if (indexed && m_state->indexBuffer != nullptr) {
-        D3D11_MAPPED_SUBRESOURCE res;
-        ID3D11Resource* originalIndexBuffer = m_state->indexBuffer->GetDXUPResource()->GetStaging();
-        m_context->Map(originalIndexBuffer, 0, D3D11_MAP_READ, 0, &res);
+    uint16_t* data = nullptr;
+    m_fanIndexBuffer.map(m_context, (void**)&data, length);
 
-        uint16_t* originalIndices = reinterpret_cast<uint16_t*>(res.pData);
+    if (indexed && m_state->indexBuffer != nullptr) {
+      D3D11_MAPPED_SUBRESOURCE res;
+      ID3D11Resource* originalIndexBuffer = m_state->indexBuffer->GetDXUPResource()->GetStaging();
+      m_context->Map(originalIndexBuffer, 0, D3D11_MAP_READ, 0, &res);
 
-        for (UINT i = 0; i < PrimitiveCount; i++) {
-          data[3 * i + 0] = originalIndices[StartIndex + i + 1];
-          data[3 * i + 1] = originalIndices[StartIndex + i + 2];
-          data[3 * i + 2] = originalIndices[StartIndex + 0];
-        }
+      uint16_t* originalIndices = reinterpret_cast<uint16_t*>(res.pData);
 
-        m_context->Unmap(originalIndexBuffer, 0);
-      }
-      else {
-        for (UINT i = 0; i < PrimitiveCount; i++) {
-          data[3 * i + 0] = i + 1;
-          data[3 * i + 1] = i + 2;
-          data[3 * i + 2] = 0;
-        }
+      for (UINT i = 0; i < PrimitiveCount; i++) {
+        data[3 * i + 0] = originalIndices[StartIndex + i + 1];
+        data[3 * i + 1] = originalIndices[StartIndex + i + 2];
+        data[3 * i + 2] = originalIndices[StartIndex + 0];
       }
 
-      m_fanIndexBuffer.unmap(m_context);
+      m_context->Unmap(originalIndexBuffer, 0);
     }
+    else {
+      for (UINT i = 0; i < PrimitiveCount; i++) {
+        data[3 * i + 0] = i + 1;
+        data[3 * i + 1] = i + 2;
+        data[3 * i + 2] = 0;
+      }
+    }
+
+    uint32_t offset = m_fanIndexBuffer.unmap(m_context, length);
 
     m_fanIndexed = indexed;
 
-    m_context->IASetIndexBuffer(m_fanIndexBuffer.getBuffer(), DXGI_FORMAT_R16_UINT, 0);
+    m_context->IASetIndexBuffer(m_fanIndexBuffer.getBuffer(), DXGI_FORMAT_R16_UINT, offset);
     HRESULT result = DrawIndexedPrimitive(D3DPT_TRIANGLELIST, BaseVertexIndex, 0, PrimitiveCount + 2, 0, newPrimitiveCount);
     m_state->dirtyFlags |= dirtyFlags::indexBuffer;
     return result;
@@ -173,9 +181,8 @@ namespace dxup {
     UINT length = drawCount * VertexStreamZeroStride;
 
     m_upVertexBuffer.reserve(length);
-    m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
+    uint32_t offset = m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
 
-    const UINT offset = 0;
     ID3D11Buffer* buffer = m_upVertexBuffer.getBuffer();
     m_context->IASetVertexBuffers(0, 1, &buffer, &VertexStreamZeroStride, &offset);
 
@@ -209,9 +216,8 @@ namespace dxup {
     UINT length = (MinVertexIndex + NumVertices) * VertexStreamZeroStride;
 
     m_upVertexBuffer.reserve(length);
-    m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
+    uint32_t offset = m_upVertexBuffer.update(m_context, pVertexStreamZeroData, length);
 
-    const UINT offset = 0;
     ID3D11Buffer* buffer = m_upVertexBuffer.getBuffer();
     m_context->IASetVertexBuffers(0, 1, &buffer, &VertexStreamZeroStride, &offset);
 

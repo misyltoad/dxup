@@ -31,12 +31,12 @@ namespace dxup {
   }
 
   template <typename T>
-  T alignTo(T num, T align) {
+  constexpr T alignTo(T num, T align) {
     return ((num + align - 1) / align) * align;
   }
 
   template <typename T>
-  T alignDown(T num, T align) {
+  constexpr T alignDown(T num, T align) {
     return (num / align) * align;
   }
 

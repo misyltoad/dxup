@@ -22,6 +22,7 @@ namespace dxup {
     void handleDepthStencilDiscard();
 
     void blit(Direct3DSurface9* dst, Direct3DSurface9* src);
+    void endFrame();
 
   private:
 
