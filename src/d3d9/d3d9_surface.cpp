@@ -50,8 +50,8 @@ namespace dxup {
     m_resource->GetResourceAs<ID3D11Texture2D>()->GetDesc(&desc);
 
     pDesc->Format = m_d3d9Desc.Format;
-    pDesc->Height = desc.Height;
-    pDesc->Width = desc.Width;
+    pDesc->Height = std::max(1u, desc.Height >> m_mip);
+    pDesc->Width = std::max(1u, desc.Width >> m_mip);
     pDesc->Pool = m_d3d9Desc.Pool;
     pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
     pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
