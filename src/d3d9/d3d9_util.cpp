@@ -185,18 +185,18 @@ namespace dxup {
       return scanlineConverter.toT(ScanlineOrdering);
     }
 
-    D3D11_USAGE usage(D3DPOOL pool, UINT usage) {
+    D3D11_USAGE usage(D3DPOOL pool, UINT usage, D3DRESOURCETYPE type) {
       if (pool == D3DPOOL_SYSTEMMEM || pool == D3DPOOL_SCRATCH)
         return D3D11_USAGE_STAGING;
 
-      if (usage & D3DUSAGE_DYNAMIC && !(usage & D3DUSAGE_RENDERTARGET) && !(usage & D3DUSAGE_DEPTHSTENCIL) && !(usage & D3DUSAGE_AUTOGENMIPMAP))
+      if (usage & D3DUSAGE_DYNAMIC && !(usage & D3DUSAGE_RENDERTARGET) && !(usage & D3DUSAGE_DEPTHSTENCIL) && !(usage & D3DUSAGE_AUTOGENMIPMAP) && type != D3DRTYPE_CUBETEXTURE)
         return D3D11_USAGE_DYNAMIC;
 
       return D3D11_USAGE_DEFAULT;
     }
 
-    UINT cpuFlags(D3DPOOL pool, UINT usage) {
-      D3D11_USAGE d3d11Usage = convert::usage(pool, usage);
+    UINT cpuFlags(D3DPOOL pool, UINT usage, D3DRESOURCETYPE type) {
+      D3D11_USAGE d3d11Usage = convert::usage(pool, usage, type);
       if (d3d11Usage != D3D11_USAGE_DEFAULT) {
         if (usage & D3DUSAGE_WRITEONLY)
           return D3D11_CPU_ACCESS_WRITE;

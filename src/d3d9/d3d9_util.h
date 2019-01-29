@@ -18,8 +18,8 @@ namespace dxup {
     DXGI_MODE_SCANLINE_ORDER scanlineOrdering(D3DSCANLINEORDERING ScanlineOrdering);
     D3DSCANLINEORDERING scanlineOrdering(DXGI_MODE_SCANLINE_ORDER ScanlineOrdering);
 
-    UINT cpuFlags(D3DPOOL pool, UINT usage);
-    D3D11_USAGE usage(D3DPOOL pool, UINT usage);
+    UINT cpuFlags(D3DPOOL pool, UINT usage, D3DRESOURCETYPE type);
+    D3D11_USAGE usage(D3DPOOL pool, UINT usage, D3DRESOURCETYPE type);
 
     UINT primitiveData(D3DPRIMITIVETYPE type, UINT count, D3D_PRIMITIVE_TOPOLOGY& topology);
 

@@ -99,14 +99,14 @@ namespace dxup {
     if (outTexture == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "Direct3DTexture9::Create: outTexture was nullptr.");
 
-    D3D11_USAGE d3d11Usage = convert::usage(pool, usage);
+    D3D11_USAGE d3d11Usage = convert::usage(pool, usage, D3DRTYPE_TEXTURE);
 
     D3D11_TEXTURE2D_DESC desc;
     desc.Width = width;
     desc.Height = height;
     desc.Format = convert::format(format);
     desc.Usage = d3d11Usage;
-    desc.CPUAccessFlags = convert::cpuFlags(pool, usage);
+    desc.CPUAccessFlags = convert::cpuFlags(pool, usage, D3DRTYPE_TEXTURE);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : levels;
     desc.ArraySize = 1;
 
@@ -118,10 +118,12 @@ namespace dxup {
     if (!(usage & D3DUSAGE_DEPTHSTENCIL) && d3d11Usage != D3D11_USAGE_STAGING)
       desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 
-    desc.BindFlags |= ( (usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP) ) ? D3D11_BIND_RENDER_TARGET : 0;
-    desc.BindFlags |= (usage & D3DUSAGE_DEPTHSTENCIL) ? D3D11_BIND_DEPTH_STENCIL : 0;
+    if (d3d11Usage != D3D11_USAGE_STAGING) {
+      desc.BindFlags |= ((usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP)) ? D3D11_BIND_RENDER_TARGET : 0;
+      desc.BindFlags |= (usage & D3DUSAGE_DEPTHSTENCIL) ? D3D11_BIND_DEPTH_STENCIL : 0;
 
-    desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+      desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+    }
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &texture);
@@ -247,12 +249,14 @@ namespace dxup {
     if (outTexture == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "Direct3DCubeTexture9::Create: outTexture was nullptr.");
 
+    D3D11_USAGE d3d11Usage = convert::usage(pool, usage, D3DRTYPE_CUBETEXTURE);
+
     D3D11_TEXTURE2D_DESC desc;
     desc.Width = edgeLength;
     desc.Height = edgeLength;
     desc.Format = convert::format(format);
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.CPUAccessFlags = 0;
+    desc.Usage = d3d11Usage;
+    desc.CPUAccessFlags = convert::cpuFlags(pool, usage, D3DRTYPE_CUBETEXTURE);
     desc.MipLevels = levels;
     desc.ArraySize = 6;
 
@@ -261,9 +265,13 @@ namespace dxup {
     desc.BindFlags = 0;
     desc.MiscFlags = 0;
 
-    // Todo! Investigate below flags:
-    desc.BindFlags |= ((usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP)) ? D3D11_BIND_RENDER_TARGET : 0;
-    desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+    if (d3d11Usage != D3D11_USAGE_STAGING) {
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+      // Todo! Investigate below flags:
+      desc.BindFlags |= ((usage & D3DUSAGE_RENDERTARGET) || (usage & D3DUSAGE_AUTOGENMIPMAP)) ? D3D11_BIND_RENDER_TARGET : 0;
+      desc.MiscFlags |= (usage & D3DUSAGE_AUTOGENMIPMAP) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+    }
 
     Com<ID3D11Texture2D> texture;
     HRESULT result = device->GetD3D11Device()->CreateTexture2D(&desc, nullptr, &texture);
@@ -385,14 +393,14 @@ namespace dxup {
     if (outTexture == nullptr)
       return log::d3derr(D3DERR_INVALIDCALL, "Direct3DVolumeTexture9::Create: outTexture was nullptr.");
 
-    D3D11_USAGE d3d11Usage = convert::usage(pool, usage);
+    D3D11_USAGE d3d11Usage = convert::usage(pool, usage, D3DRTYPE_VOLUMETEXTURE);
 
     D3D11_TEXTURE3D_DESC desc;
     desc.Width = width;
     desc.Height = height;
     desc.Format = convert::format(format);
     desc.Usage = d3d11Usage;
-    desc.CPUAccessFlags = convert::cpuFlags(pool, usage);
+    desc.CPUAccessFlags = convert::cpuFlags(pool, usage, D3DRTYPE_VOLUMETEXTURE);
     desc.MipLevels = d3d11Usage == D3D11_USAGE_DYNAMIC ? 1 : levels;
     desc.BindFlags = 0;
     desc.MiscFlags = 0;

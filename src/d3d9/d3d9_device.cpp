@@ -659,8 +659,8 @@ namespace dxup {
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = Length;
     desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
-    desc.Usage = convert::usage(Pool, Usage);
+    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage, D3DRTYPE_VERTEXBUFFER);
+    desc.Usage = convert::usage(Pool, Usage, D3DRTYPE_VERTEXBUFFER);
     desc.MiscFlags = 0;
     desc.StructureByteStride = 0;
 
@@ -696,8 +696,8 @@ namespace dxup {
     D3D11_BUFFER_DESC desc;
     desc.ByteWidth = Length;
     desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage);
-    desc.Usage = convert::usage(Pool, Usage);
+    desc.CPUAccessFlags = convert::cpuFlags(Pool, Usage, D3DRTYPE_INDEXBUFFER);
+    desc.Usage = convert::usage(Pool, Usage, D3DRTYPE_INDEXBUFFER);
     desc.MiscFlags = 0;
     desc.StructureByteStride = 0;
 
