@@ -398,6 +398,7 @@ namespace dxup {
     D3D11_TEXTURE3D_DESC desc;
     desc.Width = width;
     desc.Height = height;
+    desc.Depth = depth;
     desc.Format = convert::format(format);
     desc.Usage = d3d11Usage;
     desc.CPUAccessFlags = convert::cpuFlags(pool, usage, D3DRTYPE_VOLUMETEXTURE);
