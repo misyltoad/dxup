@@ -54,7 +54,11 @@ namespace dxup {
     pDesc->Height = std::max(1u, desc.Height >> m_mip);
     pDesc->Width = std::max(1u, desc.Width >> m_mip);
     pDesc->Pool = m_d3d9Desc.Pool;
-    pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)desc.SampleDesc.Count;
+    uint32_t sampleCount = desc.SampleDesc.Count;
+    if (sampleCount == 1)
+      sampleCount = 0; // Accounts for 0 samples being 1 in D3D9 and 1 being some random thing that doesnt make sense.
+
+    pDesc->MultiSampleType = (D3DMULTISAMPLE_TYPE)sampleCount;
     pDesc->MultiSampleQuality = desc.SampleDesc.Quality;
     pDesc->Type = D3DRTYPE_SURFACE;
     pDesc->Usage = m_d3d9Desc.Usage;
