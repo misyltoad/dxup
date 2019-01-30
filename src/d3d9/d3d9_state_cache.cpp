@@ -1,83 +1,43 @@
 #include "d3d9_state_cache.h"
+#define XXH_INLINE_ALL
+#include "../extern/xxhash/xxhash.h"
 
 namespace dxup {
 
   // These hash functions only include states that we change to avoid collisions!
   // Remember to update me if we do change more states!
 
+  template <typename T>
+  inline size_t hashDesc(const T& desc) {
+#ifdef _WIN32
+    return XXH32(&desc, sizeof(T), 0);
+#else
+    return XXH64(&desc, sizeof(T), 0);
+#endif
+  }
+
   size_t D3D11StateDescHash::operator () (const D3D11_SAMPLER_DESC& desc) const {
-    HashState hash;
-    std::hash<float> fhash;
-
-    hash.add(desc.AddressU);
-    hash.add(desc.AddressV);
-    hash.add(desc.AddressW);
-    for (uint32_t i = 0; i < 4; i++)
-      hash.add(fhash(desc.BorderColor[i]));
-    hash.add(desc.Filter);
-    hash.add(desc.MaxAnisotropy);
-    hash.add(fhash(desc.MipLODBias));
-    hash.add(fhash(desc.MaxLOD));
-
-    return hash;
+    return hashDesc(desc);
   }
 
   size_t D3D11StateDescHash::operator () (const D3D11_RENDER_TARGET_BLEND_DESC1& desc) const {
-    HashState hash;
-    hash.add(desc.BlendEnable);
-    hash.add(desc.SrcBlend);
-    hash.add(desc.DestBlend);
-    hash.add(desc.BlendOp);
-    hash.add(desc.SrcBlendAlpha);
-    hash.add(desc.DestBlendAlpha);
-    hash.add(desc.BlendOpAlpha);
-    hash.add(desc.RenderTargetWriteMask);
-    return hash;
+    return hashDesc(desc);
   }
 
   size_t D3D11StateDescHash::operator () (const D3D11_BLEND_DESC1& desc) const {
-    HashState hash;
-    // For now we only use one.
-    hash.add(this->operator()(desc.RenderTarget[0]));
-    return hash;
+    return hashDesc(desc.RenderTarget[0]);
   }
 
   size_t D3D11StateDescHash::operator () (const D3D11_RASTERIZER_DESC1& desc) const {
-    std::hash<float> fhash;
-
-    HashState hash;
-    hash.add(desc.FillMode);
-    hash.add(desc.CullMode);
-    hash.add(desc.DepthBias);
-    hash.add(fhash(desc.SlopeScaledDepthBias));
-    hash.add(fhash(desc.DepthBiasClamp));
-    hash.add(desc.ScissorEnable);
-    hash.add(desc.MultisampleEnable); // Sample stuff is included even though we don't use it because we probably will soon.
-    hash.add(desc.AntialiasedLineEnable);
-    hash.add(desc.ForcedSampleCount);
-    return hash;
+    return hashDesc(desc);
   }
 
   size_t D3D11StateDescHash::operator () (const D3D11_DEPTH_STENCILOP_DESC& desc) const {
-    HashState hash;
-    hash.add(desc.StencilFunc);
-    hash.add(desc.StencilDepthFailOp);
-    hash.add(desc.StencilPassOp);
-    hash.add(desc.StencilFailOp);
-    return hash;
+    return hashDesc(desc);
   }
 
   size_t D3D11StateDescHash::operator () (const D3D11_DEPTH_STENCIL_DESC& desc) const {
-    HashState hash;
-    hash.add(desc.DepthEnable);
-    hash.add(desc.DepthWriteMask);
-    hash.add(desc.DepthFunc);
-    hash.add(desc.StencilEnable);
-    hash.add(desc.StencilReadMask);
-    hash.add(desc.StencilWriteMask);
-    hash.add(this->operator () (desc.FrontFace));
-    hash.add(this->operator () (desc.BackFace));
-    return hash;
+    return hashDesc(desc);
   }
 
   // eq

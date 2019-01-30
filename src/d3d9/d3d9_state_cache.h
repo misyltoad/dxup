@@ -2,7 +2,6 @@
 #include <vector>
 #include <string>
 #include "d3d9_base.h"
-#include <unordered_map>
 
 #include "../util/hash.h"
 
@@ -31,24 +30,30 @@ namespace dxup {
 
   public:
 
-    using StateMap = std::unordered_map<Desc, Com<Object>, D3D11StateDescHash, D3D11StateDescEqual>;
-
-    Object* lookupObject(const Desc& desc) {
-      typename StateMap::const_iterator iter = m_map.find(desc);
-
-      if (iter == m_map.end())
-        return nullptr;
-
-      return iter->second.ptr();
+    using StatePair = std::pair<size_t, Com<Object>>;
+    
+    size_t hash(const Desc& desc) {
+      static D3D11StateDescHash hasher;
+      return hasher.operator()(desc);
     }
 
-    void pushState(const Desc& desc, Object* object) {
-      m_map.emplace(desc, object);
+    Object* lookupObject(size_t hash) {
+      for (const auto& obj : m_objects) {
+        if (obj.first == hash)
+          return obj.second.ptr();
+      }
+      return nullptr;
+    }
+
+    void pushState(size_t hash, const Desc& desc, Object* object) {
+      StatePair pair = StatePair{ hash, object };
+      m_objects.push_back(pair);
     }
 
   private:
 
-    StateMap m_map;
+    std::vector<StatePair> m_objects;
+
   };
 
 }

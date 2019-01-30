@@ -369,7 +369,8 @@ namespace dxup {
     desc.StencilReadMask = (UINT8)(m_state->renderState[D3DRS_STENCILMASK] & 0x000000FF); // I think we can do this.
     desc.StencilWriteMask = (UINT8)(m_state->renderState[D3DRS_STENCILWRITEMASK] & 0x000000FF);
 
-    ID3D11DepthStencilState* state = m_caches.depthStencil.lookupObject(desc);
+    size_t hash = m_caches.depthStencil.hash(desc);
+    ID3D11DepthStencilState* state = m_caches.depthStencil.lookupObject(hash);
 
     if (state == nullptr) {
       Com<ID3D11DepthStencilState> comState;
@@ -380,7 +381,7 @@ namespace dxup {
         return;
       }
 
-      m_caches.depthStencil.pushState(desc, comState.ptr());
+      m_caches.depthStencil.pushState(hash, desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -402,7 +403,8 @@ namespace dxup {
     desc.ScissorEnable = m_state->renderState[D3DRS_SCISSORTESTENABLE] == TRUE ? TRUE : FALSE;
     desc.SlopeScaledDepthBias = reinterpret::dwordToFloat(m_state->renderState[D3DRS_SLOPESCALEDEPTHBIAS]);
 
-    ID3D11RasterizerState1* state = m_caches.rasterizer.lookupObject(desc);
+    size_t hash = m_caches.rasterizer.hash(desc);
+    ID3D11RasterizerState1* state = m_caches.rasterizer.lookupObject(hash);
 
     if (state == nullptr) {
       Com<ID3D11RasterizerState1> comState;
@@ -413,7 +415,7 @@ namespace dxup {
         return;
       }
 
-      m_caches.rasterizer.pushState(desc, comState.ptr());
+      m_caches.rasterizer.pushState(hash, desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -456,7 +458,8 @@ namespace dxup {
       desc.RenderTarget[i].SrcBlendAlpha = separateAlpha ? convert::blend(m_state->renderState[D3DRS_SRCBLENDALPHA]) : D3D11_BLEND_ONE;
     }
 
-    ID3D11BlendState1* state = m_caches.blendState.lookupObject(desc);
+    size_t hash = m_caches.blendState.hash(desc);
+    ID3D11BlendState1* state = m_caches.blendState.lookupObject(hash);
 
     if (state == nullptr) {
       Com<ID3D11BlendState1> comState;
@@ -467,7 +470,7 @@ namespace dxup {
         return;
       }
 
-      m_caches.blendState.pushState(desc, comState.ptr());
+      m_caches.blendState.pushState(hash, desc, comState.ptr());
       state = comState.ptr();
     }
 
@@ -490,7 +493,8 @@ namespace dxup {
     desc.MaxLOD = (FLOAT)samplerState[D3DSAMP_MAXMIPLEVEL];
     desc.MinLOD = -FLT_MAX;
 
-    ID3D11SamplerState* state = m_caches.sampler.lookupObject(desc);
+    size_t hash = m_caches.sampler.hash(desc);
+    ID3D11SamplerState* state = m_caches.sampler.lookupObject(hash);
 
     if (state == nullptr) {
       Com<ID3D11SamplerState> comState;
@@ -501,7 +505,7 @@ namespace dxup {
         return;
       }
 
-      m_caches.sampler.pushState(desc, comState.ptr());
+      m_caches.sampler.pushState(hash, desc, comState.ptr());
       state = comState.ptr();
     }
 
