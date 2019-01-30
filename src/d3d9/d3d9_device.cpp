@@ -166,7 +166,7 @@ namespace dxup {
     if (presentParameters->BackBufferFormat == D3DFMT_UNKNOWN)
       presentParameters->BackBufferFormat = D3DFMT_A8B8G8R8;
 
-    Direct3DDevice9Ex* d3d9Device = new Direct3DDevice9Ex(
+    Direct3DDevice9Ex* d3d9Device = ref(new Direct3DDevice9Ex(
       adapter,
       dxgiAdapter.ptr(),
       window,
@@ -175,7 +175,7 @@ namespace dxup {
       parent,
       deviceType,
       behaviourFlags,
-      flags);
+      flags)); // We must ref before reset or we get deleted due to internal ref changes.
 
     result = d3d9Device->Reset(presentParameters);
 
@@ -184,7 +184,7 @@ namespace dxup {
       return log::d3derr(D3DERR_INVALIDCALL, "Device creation: initial reset failed."); 
     }
 
-    *outDevice = ref(d3d9Device);
+    *outDevice = d3d9Device;
 
     return D3D_OK;
   }
