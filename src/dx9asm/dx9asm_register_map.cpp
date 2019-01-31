@@ -70,7 +70,7 @@ namespace dxup {
 
       if (mapping != nullptr) {
         mapping->writeMask |= writeMask;
-        mapping->readMask |= readMask;
+        //mapping->readMask |= readMask;
 
         return mapping;
       }
