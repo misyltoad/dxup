@@ -402,8 +402,9 @@ namespace dxup {
           d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
           d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
 
-          std::array<D3D11_MESSAGE_ID, 1> messagesToHide = {
+          std::array<D3D11_MESSAGE_ID, 2> messagesToHide = {
             D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+            D3D11_MESSAGE_ID_OMSETRENDERTARGETS_INVALIDVIEW, // This is a validation error for some reason but it does not actually matter and is fully supported.
           };
 
           D3D11_INFO_QUEUE_FILTER filter;
